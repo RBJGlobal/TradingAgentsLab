@@ -12,11 +12,25 @@
 
 **Owner:** Junaid Siddiqi, founder. Treats Claude as principal developer/architect for TradingAgentsLab.
 
-## Where we are right now (as of 2026-06-16, overnight stability sweep)
+## Where we are right now (as of 2026-06-16, stability sweep + deferred-cleanup pass complete)
 
 ### Headline
 
-**Aggressive regression sweep done on branch `regression-sweep-2026-06-16` (UNPUSHED — founder reviews local state first).** Founder's brief: confirm a stable/clean codebase, fix anything breaking, and leave two files for the morning — a small **`REMAINING.md`** (what's left) alongside the larger **`backlog.md`** (what's done). Established a green baseline, ran a 5-agent read-only review fleet (architect + 4 code-reviewers, Sonnet), fixed **3 confirmed-breaking bugs with tests**, and deferred everything else (curated in `REMAINING.md`) rather than risk unsupervised cleanup.
+**The full regression sweep AND the deferred cleanup are done on branch `regression-sweep-2026-06-16` (UNPUSHED — merge after founder review).** Overnight: green baseline + 5-agent read-only review fleet + 3 confirmed-breaking fixes. Daytime (founder authorized clearing the whole deferred list): worked through every `REMAINING.md` Part 2 item — security, dead code, robustness, the 3 renderer bugs (2 real, fixed with a new React Testing Library harness; 1 was a theoretical non-bug, left alone), contract/doc drift, and the flaky storage test (fixed at the source). Several agent-reported items were re-confirmed as already-fine and correctly left untouched.
+
+**Net state:** codebase is clean; `REMAINING.md` is down to the 3 roadmap items + one small `auth_kind` decision. Two commits on the branch: `812131f` + the renderer/harness/docs commit.
+
+### Gates (final, all green)
+- engine pytest **265**, type-check clean, vitest **17** (+2 new component tests), prod build clean, dev-smoke **17/17**.
+- The previously-flaky `test_concurrent_writes_dont_collide` is fixed at the source (init RLock + pragma reorder): 0/20 stress failures.
+
+### Open
+- **Founder decision:** `auth_kind` storage — leave as provenance (recommended) / surface in History / remove the write (REMAINING.md Part 2).
+- **Roadmap:** Phase 6 Clawless tap (needs token), watchlist daily cadence, signed DMG (Apple-gated).
+- **Branch unpushed** — merge `regression-sweep-2026-06-16` to main after review (squash; carries both sweep + cleanup + the earlier doc reconciliation). `main` still at `f6dfb23`.
+- RTL dev-deps added 6 dev-only npm-audit advisories (not shipped); `npm audit fix` optional.
+
+### Prior overnight detail (same branch)
 
 ### What shipped on the branch (commit pending)
 - **3 fixes + 7 tests** (only): yfinance NaN trailing-bar (`data_providers.py`), Alpaca `period_low` empty-`min()` crash (`data_providers.py:383,489`), Telegram bot-token leak into `last_error` (`telegram_bot.py` + `_redact_token`). See WORKLOG 2026-06-16 for detail.

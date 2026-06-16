@@ -162,7 +162,15 @@ export function startEngine(): Promise<EngineHandshake> {
         handshakeSettled = true;
         clearTimeout(timeoutTimer);
         handshakePromise = null;
-        reject(new Error(`engine: invalid handshake line: ${firstLine}`));
+        // Redact the bearer token before it reaches an error/log surface. A
+        // handshake line split across stdout buffers can arrive truncated
+        // mid-token; strip the token value (closing quote optional) so a
+        // partial token is never echoed.
+        const safeLine = firstLine.replace(
+          /("token"\s*:\s*")[^"]*("?)/,
+          '$1<redacted>$2',
+        );
+        reject(new Error(`engine: invalid handshake line: ${safeLine}`));
       }
     };
 

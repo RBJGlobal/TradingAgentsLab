@@ -691,16 +691,18 @@ function LocalLLMRow({ disabled, onChange }: LocalLLMRowProps) {
   }, [savingFor]);
 
   const onPickModel = useCallback(
-    async (baseUrl: string, model: string) => {
-      if (disabled) return;
+    async (baseUrl: string, model: string): Promise<boolean> => {
+      if (disabled) return false;
       setSavingFor(baseUrl);
       setSaveError(null);
       try {
         await saveLocalConfig({ base_url: baseUrl, model });
         setSaved({ base_url: baseUrl, model });
         onChange();
+        return true;
       } catch (err) {
         setSaveError(err instanceof Error ? err.message : 'save failed');
+        return false;
       } finally {
         setSavingFor(null);
       }
@@ -715,11 +717,14 @@ function LocalLLMRow({ disabled, onChange }: LocalLLMRowProps) {
       setSaveError('Both base URL and model are required.');
       return;
     }
-    await onPickModel(url, model);
-    if (!saveError) {
+    // Use onPickModel's return value, not the saveError state: state read
+    // right after the await is the previous render's value (stale closure),
+    // so the form would close on failure / stay open on success.
+    const ok = await onPickModel(url, model);
+    if (ok) {
       setManualOpen(false);
     }
-  }, [manualUrl, manualModel, onPickModel, saveError]);
+  }, [manualUrl, manualModel, onPickModel]);
 
   const onClear = useCallback(async () => {
     if (!saved) return;

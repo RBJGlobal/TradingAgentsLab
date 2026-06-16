@@ -13,7 +13,7 @@ If anything in this doc disagrees with `engine/server.py`, treat the source as a
 | HTTP | `Authorization: Bearer <token>` header on every request. 401 otherwise. |
 | WebSocket | `?token=<token>` query parameter (browsers can't set headers on `WebSocket`). Server closes with code `1008 invalid token` on mismatch before `accept()`. |
 
-CORS is configured for renderer origin `http://localhost:5173` (and `http://127.0.0.1:5173`). WebSocket is not subject to CORS but is harmlessly covered.
+CORS uses `allow_origins=["*"]` (see `engine/server.py`). This is intentional and not a security boundary: the engine binds to loopback only and every endpoint is bearer-gated, while the renderer's origin is `null` (Electron `file://`) in production and the Playwright e2e harness also loads `file://`, so a wildcard is the only value that works across both. WebSocket is not subject to CORS.
 
 ## HTTP endpoints
 
@@ -56,7 +56,8 @@ Returns a compact view of recent OHLCV data anchored on `trade_date`. Response s
   "period_change_pct": 19.38,
   "avg_volume": 147571146.0,
   "sessions": 24,
-  "source": "yfinance"
+  "source": "yfinance",
+  "asset_class": "equity"
 }
 ```
 

@@ -6,6 +6,35 @@
 
 ---
 
+## 2026-06-16 (cont.) — deferred-cleanup pass: cleared the entire REMAINING.md Part 2
+
+**Goal:** Founder reviewed the overnight sweep and authorized working through every deliberately-deferred item so the codebase is clean and we don't repeat the exercise. Re-confirmed each agent-reported finding against source before acting (several turned out to be already-fine — see below). Same branch `regression-sweep-2026-06-16`, unpushed.
+
+**Fixed + tested:**
+- **Security** — `main.ts setWindowOpenHandler`: only http(s) URLs reach `shell.openExternal` (file:/javascript:/other denied).
+- **Alpaca incomplete-bar guard** — drop null-close bars in both equity and crypto summaries (mirrors last night's yfinance NaN fix); +2 tests.
+- **storage init race (the flaky test, fixed at the source)** — `_ensure_initialized` now serializes under an RLock (double-checked); also moved `busy_timeout` to be the first pragma. Root cause was two threads racing the DDL + WAL-mode switch on a fresh DB (busy_timeout doesn't cover the journal_mode change). Stress: **0/20 failures** (was ~8/12). Real prod robustness fix, not just test tolerance.
+- **telegram `stop()` race** — `_reply` guards `_client is None` instead of asserting; +1 test.
+- **webhooks** — catch `httpx.TimeoutException` (the real type), not the unreachable `asyncio.TimeoutError`.
+- **Renderer (new React Testing Library + happy-dom harness)** — Settings Local-LLM manual form now closes on success via `onPickModel` returning a bool (was a stale-closure read of `saveError`); DebateStream elapsed clock resets its refs when events clear so a 2nd run in the same session times fresh. New `debate-stream.test.tsx` (bug-sensitive, fake-timer based) + the harness wired into `vitest.config.ts` via per-file `@vitest-environment`.
+- **Contract/docs** — `HealthInfo` interface matches what the engine emits (`live_providers` + `live_default_models`, dropped phantom `live_default_model`); `engine-runner` handshake error redacts a partial token; `window-state` caps restored size to the display work area; `docs/api.md` CORS description + `asset_class` example corrected.
+
+**Dead code removed / de-exported (all confirmed zero-ref):** `analyze()` + `AnalyzeResponse`, `getCredentials()`, `EncryptionUnavailableError`/`buildMenu` exports, `estimate_cost` re-export.
+
+**Re-confirmed as already-fine (NO change — re-confirmation prevented redundant/incorrect edits):** model-picker vs cost-catalog sync (already guarded by `test_catalog_consistency`, and the flagged models already have cost rows); `AGENTS_PER_PHASE` cross-ref comment (already present); OAuth refresh-token bridge comment (accurate as written); Analyze Cmd+Enter shortcut (the `[ticker, date]` dep set is correct — the agent's "stale onAnalyze" was theoretical; left untouched to avoid churning the critical handler).
+
+**Accepted as-is:** `__main__` port TOCTOU (harmless single-process prod).
+
+**Deferred to a founder decision (not breaking):** `auth_kind` is written to SQLite but never read back — leave as provenance (recommended) / surface in History / remove the write. See REMAINING.md Part 2.
+
+**Two commits this pass:** `812131f` (security + dead code + robustness) and the renderer/harness/docs commit. **Gates green:** engine **265**, type-check clean, vitest **17** (+2 component), build clean, dev-smoke **17/17**.
+
+**Note:** RTL dev-deps added 6 npm-audit advisories (dev-only test tooling, not shipped). `npm audit fix` optional.
+
+**Next session opens with:** founder's `auth_kind` decision; then Phase 6 Clawless (needs token) or watchlist cadence. Branch unpushed — merge after founder review.
+
+---
+
 ## 2026-06-16 — overnight stability sweep: aggressive regression review + 3 confirmed-breaking fixes
 
 **Goal:** Founder asked for an aggressive regression/code-review sweep (architect + code-reviewers teamed up) to confirm a stable, clean codebase, fix anything breaking, and leave two review files for the morning: a small "what's remaining" + the existing larger "what's done" (`backlog.md`). Autonomous overnight run on branch `regression-sweep-2026-06-16` (NOT pushed — founder reviews local state).

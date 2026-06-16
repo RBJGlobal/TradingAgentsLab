@@ -439,7 +439,11 @@ export interface HealthInfo {
   engine_state: string;
   data_provider?: string;
   live_supported?: boolean;
-  live_default_model?: string;
+  // Match what the engine actually emits (server.py /health): the list of
+  // allowed providers and the per-provider default model map. (The old
+  // singular `live_default_model` was a phantom field the engine never sent.)
+  live_providers?: string[];
+  live_default_models?: Record<string, string>;
   storage_path?: string;
 }
 
