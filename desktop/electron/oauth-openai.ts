@@ -342,11 +342,6 @@ export class OpenAIOAuthService {
     return refreshInFlight;
   }
 
-  /** Read raw credentials for the engine to use as Bearer token. */
-  getCredentials(): StoredOAuthCredentials | null {
-    return loadStored();
-  }
-
   disconnect(): boolean {
     return deleteSecret(OPENAI_OAUTH_SECRET_KEY);
   }

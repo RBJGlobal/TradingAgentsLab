@@ -1264,3 +1264,15 @@ def test_redact_token_handles_real_httpx_error_string():
         assert "bot<redacted>" in cleaned
     else:  # pragma: no cover - raise_for_status must raise on 403
         raise AssertionError("expected HTTPStatusError")
+
+
+@pytest.mark.asyncio
+async def test_reply_on_stopped_bot_is_silently_dropped():
+    """Regression: stop() cancels the poll loop but not in-flight handler
+    tasks. One resuming after _client is nulled must drop its reply gracefully
+    instead of raising from an assert (which previously surfaced as an
+    unhandled-exception log and lost the user's final reply)."""
+    bot = TelegramBot()
+    assert bot._client is None  # fresh / stopped state
+    # Must not raise.
+    await bot._reply(12345, "this should be dropped, not crash")

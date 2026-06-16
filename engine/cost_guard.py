@@ -62,7 +62,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator, Literal, Optional
 
-from .llm_providers import _COST_PER_M_TOKENS, estimate_cost
+from .llm_providers import _COST_PER_M_TOKENS
 from .live_debate import MAX_AGENTS_PER_SESSION
 
 
@@ -679,7 +679,6 @@ __all__ = [
     "reserve",
     "finalize_reservation",
     "worst_case_reservation",
-    "estimate_cost",
     "config_to_dict",
     "spend_to_dict",
     "check_result_to_dict",

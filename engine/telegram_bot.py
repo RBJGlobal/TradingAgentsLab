@@ -964,7 +964,11 @@ class TelegramBot:
         """Send a Telegram DM. Pass `with_keyboard=True` to attach the
         persistent reply keyboard (for allowlisted users). Pending users
         get the standard keyboard so they can still type freely."""
-        assert self._client is not None and self._config is not None
+        # stop() cancels the poll loop but not in-flight fire-and-forget
+        # message handlers; one resuming after stop() has nulled _client must
+        # drop its reply gracefully rather than raise from an assert.
+        if self._client is None or self._config is None:
+            return
         # Truncate to Telegram's effective ceiling, preserving headroom for
         # the trailing disclaimer line in the formatter (already accounted
         # for via _REPLY_MAX_CHARS but defensive trim is cheap).

@@ -368,6 +368,16 @@ class AlpacaProvider:
                 f"{start_dt.date().isoformat()} and {end_dt.date().isoformat()}"
             )
 
+        # Drop incomplete/forming bars (null close). A still-open session would
+        # otherwise make last_close fall to 0.0 — a fake price on the decision
+        # card and a fabricated number in the LLM context. Mirrors the yfinance
+        # NaN-bar guard in _yfinance_quote_summary.
+        bars = [b for b in bars if b.get("c") is not None]
+        if not bars:
+            raise DataUnavailable(
+                f"alpaca returned only incomplete bars for {symbol} up to "
+                f"{trade_date} — no closed session to summarize yet"
+            )
         # Trim to the most recent lookback_days bars.
         bars = bars[-lookback_days:]
         first = bars[0]
@@ -475,6 +485,14 @@ class AlpacaProvider:
             raise DataUnavailable(
                 f"alpaca returned no crypto bars for {spec.alpaca_symbol} between "
                 f"{start_dt.date().isoformat()} and {end_dt.date().isoformat()}"
+            )
+
+        # Drop incomplete/forming bars (null close) — see the equity path.
+        bars = [b for b in bars if b.get("c") is not None]
+        if not bars:
+            raise DataUnavailable(
+                f"alpaca returned only incomplete crypto bars for "
+                f"{spec.alpaca_symbol} up to {trade_date} — no closed bar yet"
             )
 
         bars = bars[-lookback_days:]

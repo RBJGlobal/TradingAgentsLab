@@ -309,7 +309,10 @@ async def _fire_one(
             http_status=resp.status_code,
             error=f"HTTP {resp.status_code}",
         )
-    except asyncio.TimeoutError:
+    except httpx.TimeoutException:
+        # httpx raises its own TimeoutException (ReadTimeout/ConnectTimeout/…),
+        # NOT the builtin/asyncio TimeoutError — catch the right type so a slow
+        # receiver is reported as "timeout" rather than the generic failure.
         return WebhookResult(
             id=config.id, name=config.name, status="failed", error="timeout"
         )

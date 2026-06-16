@@ -299,14 +299,6 @@ export interface AnalyzeDecision {
   reasoning: string;
 }
 
-export interface AnalyzeResponse {
-  ok: boolean;
-  ticker: string;
-  trade_date: string;
-  decision: AnalyzeDecision;
-  agents: unknown[];
-}
-
 export interface SessionCompleteEvent {
   type: 'session.complete';
   ticker: string;
@@ -882,22 +874,6 @@ export async function getLocalRuntimes(): Promise<LocalRuntime[]> {
   }
   const body = (await res.json()) as { runtimes: LocalRuntime[] };
   return body.runtimes;
-}
-
-export async function analyze(req: AnalyzeRequest): Promise<AnalyzeResponse> {
-  const { port, token } = await handshake();
-  const res = await fetchWithTimeout(`http://127.0.0.1:${port}/analyze`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(req),
-  });
-  if (!res.ok) {
-    throw new Error(`analyze failed: ${res.status} ${res.statusText}`);
-  }
-  return (await res.json()) as AnalyzeResponse;
 }
 
 export async function streamDebate(

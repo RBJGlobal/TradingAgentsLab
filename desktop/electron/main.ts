@@ -92,7 +92,12 @@ async function createWindow() {
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    // Only hand http(s) links off to the OS browser. A file:, javascript:,
+    // or other-scheme URL from a renderer bug must never reach the OS via
+    // shell.openExternal. The window itself is never opened either way.
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      void shell.openExternal(url);
+    }
     return { action: 'deny' };
   });
 

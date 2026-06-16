@@ -20,7 +20,7 @@ function navTo(win: BrowserWindow | null, route: Route): void {
   send(win, 'menu:navigate', route);
 }
 
-export function buildMenu(getWin: () => BrowserWindow | null): Menu {
+function buildMenu(getWin: () => BrowserWindow | null): Menu {
   const isMac = process.platform === 'darwin';
 
   const fileMenu: MenuItemConstructorOptions = {
