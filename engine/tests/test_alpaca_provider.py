@@ -222,6 +222,66 @@ async def test_alpaca_news_returns_empty_list_on_failure():
     assert out == []
 
 
+@pytest.mark.asyncio
+async def test_alpaca_quote_summary_survives_all_null_lows():
+    """Regression: Alpaca occasionally returns bars with null `l` (low) for
+    incomplete / after-hours sessions. period_low used a filtered min() that
+    raised ValueError on an empty sequence when EVERY low was null, crashing
+    the summary (silently — swallowed by _fetch_summary_safe, so the data
+    card just never appeared). It must degrade to 0.0 instead of raising."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"bars": [
+            {"t": "2026-05-08T20:00:00Z", "o": 100.0, "h": 110.0, "l": None, "c": 105.0, "v": 1000},
+            {"t": "2026-05-09T20:00:00Z", "o": 105.0, "h": 112.0, "l": None, "c": 108.0, "v": 1200},
+        ]})
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.AsyncClient
+
+    def patched_client(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    import httpx as httpx_mod
+    httpx_mod.AsyncClient = patched_client  # type: ignore[assignment]
+    try:
+        p = AlpacaProvider(key_id="PK_TEST", secret="secret_test")
+        summary = await p.quote_summary(ticker="NVDA", trade_date="2026-05-09")
+    finally:
+        httpx_mod.AsyncClient = real_client  # type: ignore[assignment]
+
+    assert summary.period_low == 0.0  # no crash; safe fallback
+    assert summary.last_close == 108.0
+
+
+@pytest.mark.asyncio
+async def test_alpaca_quote_summary_skips_null_lows_but_keeps_valid():
+    """The null-low filter must still work: a mix of null and real lows
+    yields the min of the REAL lows, not 0.0."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"bars": [
+            {"t": "2026-05-08T20:00:00Z", "o": 100.0, "h": 110.0, "l": None, "c": 105.0, "v": 1000},
+            {"t": "2026-05-09T20:00:00Z", "o": 105.0, "h": 112.0, "l": 95.5, "c": 108.0, "v": 1200},
+        ]})
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.AsyncClient
+
+    def patched_client(*args, **kwargs):
+        kwargs["transport"] = transport
+        return real_client(*args, **kwargs)
+
+    import httpx as httpx_mod
+    httpx_mod.AsyncClient = patched_client  # type: ignore[assignment]
+    try:
+        p = AlpacaProvider(key_id="PK_TEST", secret="secret_test")
+        summary = await p.quote_summary(ticker="NVDA", trade_date="2026-05-09")
+    finally:
+        httpx_mod.AsyncClient = real_client  # type: ignore[assignment]
+
+    assert summary.period_low == 95.5
+
+
 # ---- yfinance fallback unchanged when no data_config ----------------------
 
 

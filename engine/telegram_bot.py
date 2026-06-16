@@ -71,6 +71,19 @@ _LONG_POLL_TIMEOUT_S = 25
 _HTTP_TIMEOUT_S = _LONG_POLL_TIMEOUT_S + 10
 _REPLY_MAX_CHARS = 3900  # leave headroom below Telegram's 4096 ceiling
 
+# httpx error strings embed the failing request URL, which for us is
+# https://api.telegram.org/bot<TOKEN>/<method>. last_error is serialized to
+# the renderer via the /telegram/* status endpoints and logged on every
+# poll, so any error text MUST be scrubbed of the bot token first. Telegram
+# tokens look like 123456789:AA...  (numeric id, colon, [A-Za-z0-9_-]).
+_TOKEN_IN_URL_RE = re.compile(r"bot\d+:[\w-]+")
+
+
+def _redact_token(text: str) -> str:
+    """Strip any Telegram bot token embedded in a URL so it never reaches a
+    log line or the renderer-facing status payload."""
+    return _TOKEN_IN_URL_RE.sub("bot<redacted>", text)
+
 # Ticker regex. Accepts bare ticker (uppercase letters, 1-8 chars, optional
 # `-XYZ` suffix for crypto and adrs). Anchored so partial matches in long
 # sentences are not treated as analyze requests; the user must send the
@@ -550,12 +563,14 @@ class TelegramBot:
                 except asyncio.CancelledError:
                     raise
                 except httpx.HTTPError as exc:
-                    self._status.last_error = f"network: {exc}"
+                    self._status.last_error = _redact_token(f"network: {exc}")
                     await asyncio.sleep(backoff)
                     backoff = min(backoff * 2, 60.0)
                     continue
                 except Exception as exc:  # noqa: BLE001 — keep loop alive
-                    self._status.last_error = f"{type(exc).__name__}: {exc}"
+                    self._status.last_error = _redact_token(
+                        f"{type(exc).__name__}: {exc}"
+                    )
                     logger.exception("telegram bot poll error")
                     await asyncio.sleep(backoff)
                     backoff = min(backoff * 2, 60.0)

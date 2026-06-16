@@ -1227,3 +1227,40 @@ def test_bot_provider_config_resolves_for_xai_and_minimax():
         assert cfg is not None, f"bot provider_config should resolve: {raw}"
         assert cfg.auth_kind == "api_key"
         assert isinstance(adapter_for(cfg), adapter_cls)
+
+
+# ---- security: bot token must never leak into status / logs ----------------
+
+
+def test_redact_token_strips_token_from_telegram_url():
+    """Regression: httpx error strings embed the failing request URL, which
+    is https://api.telegram.org/bot<TOKEN>/<method>. That string was stored
+    verbatim in _BotStatus.last_error and returned to the renderer by every
+    /telegram/* status endpoint, leaking the bot token. _redact_token must
+    remove it."""
+    token = "123456789:AAFakeTokenValue_with-dashes123"
+    leaky = (
+        f"network: Client error '403 Forbidden' for url "
+        f"'https://api.telegram.org/bot{token}/getUpdates'"
+    )
+    cleaned = telegram_bot._redact_token(leaky)
+    assert token not in cleaned
+    assert "bot<redacted>" in cleaned
+    assert "403" in cleaned  # the useful part survives
+
+
+def test_redact_token_handles_real_httpx_error_string():
+    """The redaction must work on an actual httpx error object's str(), not
+    just a hand-built string."""
+    token = "987654321:ZZanotherFakeToken-_value"
+    url = f"https://api.telegram.org/bot{token}/getUpdates"
+    request = httpx.Request("GET", url)
+    response = httpx.Response(403, request=request, text="Forbidden")
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        cleaned = telegram_bot._redact_token(f"network: {exc}")
+        assert token not in cleaned
+        assert "bot<redacted>" in cleaned
+    else:  # pragma: no cover - raise_for_status must raise on 403
+        raise AssertionError("expected HTTPStatusError")

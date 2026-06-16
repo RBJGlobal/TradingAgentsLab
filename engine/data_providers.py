@@ -171,6 +171,22 @@ def _yfinance_quote_summary(
     # Drop timezone for cleaner display + ensure we use only complete bars.
     if hist.index.tz is not None:
         hist.index = hist.index.tz_localize(None)
+
+    # Drop incomplete/forming bars. When the requested trade_date is the
+    # current (or an in-progress) session, yfinance returns a trailing row
+    # whose OHLC are NaN — the bar hasn't closed yet. Selecting it
+    # positionally via .iloc[-1] would poison last_close with NaN, which
+    # then surfaces as a fake "$NaN" price in the decision card and, worse,
+    # feeds a fabricated number into the LLM debate context. Keep only rows
+    # with a real close. (Aggregates like high/low/avg_volume already skip
+    # NaN via pandas; only the positional first/last picks need this guard.)
+    hist = hist.dropna(subset=["Open", "High", "Low", "Close"])
+    if hist.empty:
+        raise DataUnavailable(
+            f"yfinance returned only incomplete bars for {spec.display} "
+            f"(yf symbol {spec.yfinance_symbol}) up to {trade_date} — no "
+            f"closed session to summarize yet"
+        )
     hist = hist.tail(lookback_days)
 
     last = hist.iloc[-1]
@@ -364,7 +380,9 @@ class AlpacaProvider:
             else 0.0
         )
         period_high = max(float(b.get("h") or 0.0) for b in bars)
-        period_low = min(float(b.get("l") or 0.0) for b in bars if b.get("l") is not None)
+        period_low = min(
+            (float(b["l"]) for b in bars if b.get("l") is not None), default=0.0
+        )
         avg_volume = sum(float(b.get("v") or 0.0) for b in bars) / max(1, len(bars))
         as_of = (last.get("t") or "")[:10]  # "2026-05-08T20:00:00Z" -> "2026-05-08"
 
@@ -470,7 +488,9 @@ class AlpacaProvider:
             else 0.0
         )
         period_high = max(float(b.get("h") or 0.0) for b in bars)
-        period_low = min(float(b.get("l") or 0.0) for b in bars if b.get("l") is not None)
+        period_low = min(
+            (float(b["l"]) for b in bars if b.get("l") is not None), default=0.0
+        )
         avg_volume = sum(float(b.get("v") or 0.0) for b in bars) / max(1, len(bars))
         as_of = (last.get("t") or "")[:10]
 

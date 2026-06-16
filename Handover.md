@@ -12,7 +12,30 @@
 
 **Owner:** Junaid Siddiqi, founder. Treats Claude as principal developer/architect for TradingAgentsLab.
 
-## Where we are right now (as of 2026-05-29, end of day, wrap-up complete)
+## Where we are right now (as of 2026-06-16, overnight stability sweep)
+
+### Headline
+
+**Aggressive regression sweep done on branch `regression-sweep-2026-06-16` (UNPUSHED — founder reviews local state first).** Founder's brief: confirm a stable/clean codebase, fix anything breaking, and leave two files for the morning — a small **`REMAINING.md`** (what's left) alongside the larger **`backlog.md`** (what's done). Established a green baseline, ran a 5-agent read-only review fleet (architect + 4 code-reviewers, Sonnet), fixed **3 confirmed-breaking bugs with tests**, and deferred everything else (curated in `REMAINING.md`) rather than risk unsupervised cleanup.
+
+### What shipped on the branch (commit pending)
+- **3 fixes + 7 tests** (only): yfinance NaN trailing-bar (`data_providers.py`), Alpaca `period_low` empty-`min()` crash (`data_providers.py:383,489`), Telegram bot-token leak into `last_error` (`telegram_bot.py` + `_redact_token`). See WORKLOG 2026-06-16 for detail.
+- **Deliverables:** `REMAINING.md` (small, curated open items + deferred findings), `REVIEW_FINDINGS.md` (full sweep evidence), `backlog.md` reconciliation (from the prior session), CLAUDE.md §6 site-ownership transfer + memory update (prior session).
+
+### Live state
+- **Branch `regression-sweep-2026-06-16`, NOT pushed.** `main` is still at `f6dfb23`.
+- **All gates green:** engine pytest **262**, `dev-smoke` **17/17**, type-check clean, vitest **15**, prod build clean. (Known-flaky `test_concurrent_writes_dont_collide` passed this run.)
+- No dev stack running (smoke spins up transient subprocesses only).
+- Inbox clear (GSD confirmed Clawddesk live on the site; he owns tradingagentslab.ai now).
+
+### First moves next session
+1. Founder reviews `REMAINING.md` + `backlog.md`.
+2. Decide the batches: (a) security `openExternal` allowlist + dead-code removal, (b) React test harness + 3 renderer UX fixes, (c) Phase 6 Clawless tap (needs Clawless token).
+3. Merge `regression-sweep-2026-06-16` after review (squash; it carries the 3 fixes + tests + the doc sweep). Delete `REVIEW_FINDINGS.md`/`REMAINING.md` or fold into backlog once actioned.
+
+---
+
+## Previous state (as of 2026-05-29, end of day, wrap-up complete)
 
 ### Headline
 
