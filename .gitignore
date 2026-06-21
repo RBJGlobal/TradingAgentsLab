@@ -35,6 +35,8 @@ MANIFEST
 #   before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# ...except our hand-authored, version-controlled engine build spec (Phase 7c).
+!engine/engine.spec
 
 # Installer logs
 pip-log.txt
