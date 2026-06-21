@@ -34,11 +34,11 @@ Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A us
 
 - Add `electron-builder` + an `electron-builder.yml` (appId e.g. `ai.tradingagentslab.desktop`, productName "Trading Agents Lab").
 - **Targets:** `dmg` (user download) **and** `zip` (electron-updater needs the zip on macOS).
-- **Arch:** `universal` (arm64 + x64) recommended for broad compatibility — **decision below**.
+- **Arch:** `universal` (arm64 + x64). [LOCKED]
 - **Category:** `public.app-category.education` (NOT finance — matches positioning).
 - **DMG cosmetics:** background image, icon layout, drag-to-Applications symlink, volume name.
 - Bundle the frozen engine (from §1) into `extraResources`.
-- **Min macOS version:** target a sensible floor (e.g. macOS 12 Monterey) — **decision below**.
+- **Min macOS version:** `macOS 12.0` (Monterey). [LOCKED]
 
 ---
 
@@ -120,10 +120,32 @@ Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A us
 
 ---
 
-## Decisions for you (review over the next few days)
+## Phase 7c.1 — Engine-freeze spike: runbook
 
-1. **Architecture:** universal binary (arm64 + x64, bigger) **or** arm64-only first (smaller, most modern Macs)? *Recommend universal.*
-2. **Auto-update:** default-ON with a Settings toggle to disable? *Recommend yes.*
-3. **Minimum macOS version?** *Recommend macOS 12 (Monterey).*
-4. **Engine freeze:** OK to spike PyInstaller as Phase 7c.1? *Recommend yes — it's the long pole.*
-5. **Consent on decline:** quit the app (recommend) vs stay parked on the gate?
+> Goal: prove a PyInstaller `onedir` build of the engine runs a real debate, signed-and-notarizable, before investing in DMG/updater/CI. Self-contained; reversible (branch `phase-7c-distribution`). Success or a documented blocker either way.
+
+**Steps**
+1. `engine/.venv/bin/pip install pyinstaller` (dev-only; not added to `requirements.txt`).
+2. Author `engine/engine.spec` — `onedir`, entry `engine/__main__.py`, name `tal-engine`. Collect hidden imports / data for the known-fussy deps: `uvicorn` (its lifecycle/protocol submodules), `pandas`/`numpy`, `yfinance`, `httpx`, `fastapi`. Use `--collect-submodules` / `collect_all` as needed.
+3. Build: `engine/.venv/bin/pyinstaller engine/engine.spec --clean` → `dist/tal-engine/tal-engine`.
+4. **Smoke the frozen binary directly** (no Electron): run `dist/tal-engine/tal-engine`, confirm it emits the first-line `{"port":...,"token":"..."}` handshake, then hit `/health` (bearer) and run one stub WS debate against it. This is the pass/fail gate.
+5. Wire `engine-runner.ts` to branch on `app.isPackaged`: packaged → spawn the bundled `tal-engine` under `process.resourcesPath`; dev → keep the `.venv` python path unchanged. (Guard behind the spike; don't regress dev.)
+6. Note: cold-start time of the frozen binary, the `dist/tal-engine` folder size, and any hidden-import fixes needed (these feed §1/§3).
+
+**Success criteria**
+- Frozen `tal-engine` emits a valid handshake and serves a full stub debate end-to-end, launched standalone on this Mac, with no `engine/.venv` on the PATH.
+- `engine-runner.ts` dev path still works (existing `dev-smoke` + app launch unaffected).
+
+**If blocked** (e.g. a dep won't freeze cleanly): document the exact failure in the spike notes and we evaluate Nuitka / relocatable-CPython alternatives before proceeding to 7c.2.
+
+**Deliverable:** `engine/engine.spec` + a short `docs/engine-freeze-spike-notes.md` (what worked, size, cold-start, hidden-imports, verdict). No DMG/signing yet — that's 7c.2+.
+
+---
+
+## Locked decisions (founder, 2026-06-20)
+
+1. **Architecture:** **universal** binary (arm64 + x64). Accept the larger size for broad compatibility.
+2. **Auto-update:** **default-ON**, with a Settings toggle to disable. Disclose the update check in the Privacy Policy.
+3. **Minimum macOS version:** **macOS 12 (Monterey).**
+4. **Engine freeze:** **PyInstaller spike approved as Phase 7c.1** (the long pole — derisk first).
+5. **Consent gate on decline:** **quit the app.**
