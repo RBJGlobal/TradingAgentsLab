@@ -95,7 +95,7 @@
 - 🟢 **Settings → About "Legal & Disclaimers"** — three external links to the site legal pages (`4655110`).
 - ✋ **Cookie Policy** — CLOSED by founder. No cookies, no login, localStorage only → nothing to disclose. Covered by Privacy Policy.
 - ✋ **Pre-launch securities-lawyer review** — CLOSED by founder. Not engaging counsel for a free, non-monetized, analysis-only educational app. Revisit ONLY at the monetization inflection point (per CLAUDE.md §3 + memory `project_monetization_roadmap.md`).
-- 🔴 **DMG distribution build** — signed + notarized via `electron-builder`. Gated on Apple Developer cert. **This is a UX gate (Gatekeeper warning on unsigned apps), not a legal one.** Distribution method is a founder call per CLAUDE.md §10.
+- ⚪ **DMG distribution build** — signed + notarized via `electron-builder`. **Apple Developer Program (RBJ Global) certified 2026-06-20** → unblocked. Now planned as **Phase 7c**: see [`docs/distribution-plan.md`](docs/distribution-plan.md). Implementation starts after founder reviews the plan.
 
 ## Phase 8 — Webhooks for external broker handoff ✅ DONE
 
@@ -148,7 +148,7 @@
 3. **Reviewer pass on model picker** — in progress; read-only, no keys.
 
 **Externally gated (not actionable now):**
-4. **Signed macOS DMG + distribution** — Apple Developer cert (~weeks). UX gate, not legal.
+4. **Signed macOS DMG + OTA auto-update (Phase 7c)** — Apple cert obtained 2026-06-20; full plan in [`docs/distribution-plan.md`](docs/distribution-plan.md). Long pole is freezing the Python engine (PyInstaller). Awaiting founder review of the plan, then implement.
 5. **Phase 8c+ detached Telegram sidecar** — deferred future enhancement.
 
 **Closed by founder decision (not doing):**
