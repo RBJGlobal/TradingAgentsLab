@@ -19,7 +19,8 @@
 
 Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A user's Mac has no `engine/.venv`. We must ship a self-contained engine.
 
-- **Approach (recommended): PyInstaller** freezes `engine/` + deps (FastAPI, uvicorn, httpx, yfinance, pandas, etc.) into a single executable. `engine-runner.ts` then spawns that bundled binary (under `process.resourcesPath`) instead of the venv python, gated on `app.isPackaged`.
+- **Approach (recommended): PyInstaller in `onedir` mode** (NOT `onefile`) freezes `engine/` + deps (FastAPI, uvicorn, httpx, yfinance, pandas, etc.) into a folder of Mach-O binaries + dylibs. `engine-runner.ts` then spawns that bundled binary (under `process.resourcesPath`) instead of the venv python, gated on `app.isPackaged`.
+  - **Why onedir, not onefile:** onefile re-extracts to a temp dir on *every launch* (hurts our cold-start/handshake budget) and is the harder case for notarization (code running from a re-extracted temp location under hardened runtime). onedir drops cleanly into `extraResources` and every Mach-O signs in electron-builder's normal pass.
   - Alternative: Nuitka (faster binaries, more finicky) or shipping a relocatable CPython. PyInstaller is the well-trodden path for Electron+Python.
 - **Risks to spike before committing:** pandas/yfinance pull large native deps (numpy) — PyInstaller hidden-imports + binary size; cold-start time of a frozen binary; the bundled engine must be **code-signed and notarized inside the app bundle** (every Mach-O in the bundle must be signed).
 - **`engine-runner.ts` change:** branch on `app.isPackaged` → packaged uses the bundled engine path; dev keeps the venv. Keep the handshake/kill logic unchanged.
