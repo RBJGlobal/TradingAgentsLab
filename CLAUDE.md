@@ -129,10 +129,10 @@ Goal: if the terminal closes the moment the founder hits send on "wrap-up," next
 | Topic | Channel |
 |---|---|
 | Clawless desktop or OpenClaw protocol questions | `mcp__claudelink__send` to role `Clawless Advisor` |
-| tradingagentslab.ai SEO (meta, canonicals, JSON-LD, sitemap, crawlers) | Owned by `Global Sites Developer` — hand it off, don't action it yourself (founder decision 2026-05-23) |
+| The **entire** tradingagentslab.ai brochure site (content, family roster, llms.txt, SEO, JSON-LD, sitemap, crawlers) | Owned end-to-end by `Global Sites Developer` — hand off everything, don't action any of it yourself (founder expanded SEO-only ownership to the full site, 2026-06-12). I no longer commit to `Trading_agent_site` at all. |
 | Anything else in TradingAgentsLab | I am principal developer/architect — make the call |
 
-**Shared site working tree:** `Global Sites Developer` edits the *same* local `Trading_agent_site` checkout + `.git` concurrently. When committing there, stage only your own files by explicit path (never `git add -A`), push the exact sha (`git push origin <sha>:main`), don't switch branches, and don't run `npm run build`/`dev` at the same time (`.next` collisions). Sequence pushes via ClaudeLink. See memory `reference_shared_tree_concurrency.md`. This ClaudeLink terminal is registered as role **Trading Agents Lab Developer**.
+**Site working tree (`Trading_agent_site`):** as of 2026-06-12 `Global Sites Developer` owns this repo outright — I no longer commit to it. If a future task somehow requires a site change, route it to GSD via ClaudeLink rather than editing the tree. (Historical concurrency rules for the shared tree are preserved in memory `reference_shared_tree_concurrency.md` in case the arrangement ever reverts.) This ClaudeLink terminal is registered as role **Trading Agents Lab Developer**.
 
 When messaging Clawless Advisor:
 - Frame as "no Clawless team work needed" if applicable (they're in pre-launch sprint)

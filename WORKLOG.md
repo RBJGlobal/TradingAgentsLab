@@ -6,6 +6,59 @@
 
 ---
 
+## 2026-06-16 (cont.) — deferred-cleanup pass: cleared the entire REMAINING.md Part 2
+
+**Goal:** Founder reviewed the overnight sweep and authorized working through every deliberately-deferred item so the codebase is clean and we don't repeat the exercise. Re-confirmed each agent-reported finding against source before acting (several turned out to be already-fine — see below). Same branch `regression-sweep-2026-06-16`, unpushed.
+
+**Fixed + tested:**
+- **Security** — `main.ts setWindowOpenHandler`: only http(s) URLs reach `shell.openExternal` (file:/javascript:/other denied).
+- **Alpaca incomplete-bar guard** — drop null-close bars in both equity and crypto summaries (mirrors last night's yfinance NaN fix); +2 tests.
+- **storage init race (the flaky test, fixed at the source)** — `_ensure_initialized` now serializes under an RLock (double-checked); also moved `busy_timeout` to be the first pragma. Root cause was two threads racing the DDL + WAL-mode switch on a fresh DB (busy_timeout doesn't cover the journal_mode change). Stress: **0/20 failures** (was ~8/12). Real prod robustness fix, not just test tolerance.
+- **telegram `stop()` race** — `_reply` guards `_client is None` instead of asserting; +1 test.
+- **webhooks** — catch `httpx.TimeoutException` (the real type), not the unreachable `asyncio.TimeoutError`.
+- **Renderer (new React Testing Library + happy-dom harness)** — Settings Local-LLM manual form now closes on success via `onPickModel` returning a bool (was a stale-closure read of `saveError`); DebateStream elapsed clock resets its refs when events clear so a 2nd run in the same session times fresh. New `debate-stream.test.tsx` (bug-sensitive, fake-timer based) + the harness wired into `vitest.config.ts` via per-file `@vitest-environment`.
+- **Contract/docs** — `HealthInfo` interface matches what the engine emits (`live_providers` + `live_default_models`, dropped phantom `live_default_model`); `engine-runner` handshake error redacts a partial token; `window-state` caps restored size to the display work area; `docs/api.md` CORS description + `asset_class` example corrected.
+
+**Dead code removed / de-exported (all confirmed zero-ref):** `analyze()` + `AnalyzeResponse`, `getCredentials()`, `EncryptionUnavailableError`/`buildMenu` exports, `estimate_cost` re-export.
+
+**Re-confirmed as already-fine (NO change — re-confirmation prevented redundant/incorrect edits):** model-picker vs cost-catalog sync (already guarded by `test_catalog_consistency`, and the flagged models already have cost rows); `AGENTS_PER_PHASE` cross-ref comment (already present); OAuth refresh-token bridge comment (accurate as written); Analyze Cmd+Enter shortcut (the `[ticker, date]` dep set is correct — the agent's "stale onAnalyze" was theoretical; left untouched to avoid churning the critical handler).
+
+**Accepted as-is:** `__main__` port TOCTOU (harmless single-process prod).
+
+**Deferred to a founder decision (not breaking):** `auth_kind` is written to SQLite but never read back — leave as provenance (recommended) / surface in History / remove the write. See REMAINING.md Part 2.
+
+**Two commits this pass:** `812131f` (security + dead code + robustness) and the renderer/harness/docs commit. **Gates green:** engine **265**, type-check clean, vitest **17** (+2 component), build clean, dev-smoke **17/17**.
+
+**Note:** RTL dev-deps added 6 npm-audit advisories (dev-only test tooling, not shipped). `npm audit fix` optional.
+
+**Next session opens with:** founder's `auth_kind` decision; then Phase 6 Clawless (needs token) or watchlist cadence. Branch unpushed — merge after founder review.
+
+---
+
+## 2026-06-16 — overnight stability sweep: aggressive regression review + 3 confirmed-breaking fixes
+
+**Goal:** Founder asked for an aggressive regression/code-review sweep (architect + code-reviewers teamed up) to confirm a stable, clean codebase, fix anything breaking, and leave two review files for the morning: a small "what's remaining" + the existing larger "what's done" (`backlog.md`). Autonomous overnight run on branch `regression-sweep-2026-06-16` (NOT pushed — founder reviews local state).
+
+**Baseline established (all green):** engine pytest 255, type-check clean, vitest 15, prod build clean. `dev-smoke` caught a live bug on the first run (below).
+
+**3 confirmed-breaking bugs fixed + tested (diff = these fixes + 7 tests only):**
+
+- **yfinance NaN trailing-bar** — `engine/data_providers.py` `_yfinance_quote_summary`. Analyzing "today"/an in-progress session made yfinance return a trailing NaN-OHLC row, so `last_close` became `NaN` → fake "$NaN" in the decision card + a fabricated number fed into the LLM debate context. Found via `dev-smoke` (`/data/summary?trade_date=<today>` threw `'>' not supported between NoneType and int`). Fix: `dropna(subset=OHLC)` before `.tail()/.iloc`, raise `DataUnavailable` if nothing complete remains. Verified NVDA-today now resolves to the last complete close (205.19 / as_of prior session). Tests: new `engine/tests/test_yfinance_summary.py` (3 cases).
+- **Alpaca `period_low` empty-`min()` crash** — `engine/data_providers.py:383,489`. `min(... if b.get("l") is not None)` raised `ValueError` when ALL Alpaca bars had a null low (incomplete/after-hours), crashing the summary silently (swallowed by `_fetch_summary_safe` → data card just vanished). `period_high` (max) was immune. Fix: `min(..., default=0.0)`, preserving the null-skip intent. Tests: 2 added to `test_alpaca_provider.py` (all-null → 0.0 no-raise; mixed → real min).
+- **Telegram bot-token leak** — `engine/telegram_bot.py`. httpx error strings embed the request URL `https://api.telegram.org/bot<TOKEN>/...`; that landed verbatim in `_BotStatus.last_error`, which every `/telegram/*` status endpoint serializes to the renderer and logs each poll. Violates the zero-data / secret-safety posture. Fix: `_redact_token()` helper (regex `bot\d+:[\w-]+` → `bot<redacted>`) applied at both `last_error` assignment sites. Tests: 2 added to `test_telegram_bot.py` (hand-built + real `HTTPStatusError` str).
+
+**Review fleet:** 5 read-only Sonnet agents (cost discipline) — engine-core, engine-integrations, renderer, Electron-main, architect/cross-cutting. Each returned file:line + confirmed/uncertain tags; high-impact findings adversarially re-verified against source before acting. Full evidence in `REVIEW_FINDINGS.md`.
+
+**Deferred (NOT auto-fixed) → `REMAINING.md` for founder review:** 1 security hardening (`openExternal` protocol allowlist), 3 renderer UX bugs (held pending a React component-test harness), a confirmed dead-code batch, minor robustness items, doc drift, 2 known sync hazards. Held back deliberately: the dominant overnight risk is *introducing* a regression via unsupervised cleanup; founder wanted to review remaining items anyway.
+
+**Final gates (post-fix):** engine pytest **262** (+7), `dev-smoke` **17/17** (the `/data/summary`-today crash now passes), type-check clean, vitest **15**, prod build clean. Known-flaky `test_concurrent_writes_dont_collide` passed this run (intermittent, environmental).
+
+**Architect stability verdict:** "genuinely clean for a feature-complete v0.1 codebase; the WS `/stream` contract is tight; highest residual risk is the model-picker-vs-cost-catalog sync hazard and the `auth_kind` pipeline gap — neither a production blocker."
+
+**Next session opens with:** founder reviews `REMAINING.md` (small) + `backlog.md` (done). Decide: (1) approve the security + dead-code batch, (2) greenlight React test harness + renderer fixes, (3) Phase 6 Clawless when token is handy. Branch `regression-sweep-2026-06-16` is unpushed; merge after founder review. Doc sweep (backlog reconciliation + CLAUDE.md §6 + memory) also still unpushed on this branch.
+
+---
+
 ## 2026-05-29 — v0.1.0 released: full audit + xAI Grok / MiniMax + dev preload-race fix + docs + UI polish
 
 **Goal:** What started as "is upstream stable?" turned into a full v0.1.0 release. Catalog refresh -> native xAI + MiniMax providers -> Telegram parity -> two-reviewer audit pattern -> xAI catalog re-alignment + dev preload-race fix -> v0.1.0 docs + UI polish + canonical marketing screenshot. Eight PRs merged across this session (bridged 2026-05-28 -> 2026-05-29).

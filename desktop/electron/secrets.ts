@@ -49,7 +49,7 @@ export interface CorruptionRecovery {
   recoveredAt: string;
 }
 
-export class EncryptionUnavailableError extends Error {
+class EncryptionUnavailableError extends Error {
   constructor() {
     super(
       'Encryption backend unavailable on this OS — refusing to store secrets ' +

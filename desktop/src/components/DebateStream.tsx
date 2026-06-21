@@ -236,7 +236,15 @@ function DebateStream({ events, isStreaming }: DebateStreamProps) {
   const [now, setNow] = useState<number>(() => Date.now());
 
   useEffect(() => {
-    if (events.length === 0) return;
+    if (events.length === 0) {
+      // A new/cleared run. This component stays mounted across runs (it just
+      // renders null when empty), so the refs survive — reset them or the
+      // next run would reuse the previous run's start/end and the clock would
+      // never tick (endedAt already set) or show a bogus elapsed.
+      startedAtRef.current = null;
+      endedAtRef.current = null;
+      return;
+    }
     if (startedAtRef.current === null && isStreaming) {
       startedAtRef.current = Date.now();
     }

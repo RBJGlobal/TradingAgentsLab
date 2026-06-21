@@ -22,6 +22,7 @@ import os
 import secrets as _secrets
 import sqlite3
 import sys
+import threading
 import time
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
@@ -85,6 +86,13 @@ def _default_db_path() -> Path:
 # calling `_reset_for_tests()`.
 _db_path: Path = _default_db_path()
 _initialized = False
+# Serializes first-time schema init. Two threads first-initializing a fresh DB
+# concurrently (e.g. a debate write + cost finalize + Telegram trigger landing
+# together) would otherwise both run the DDL + WAL-mode switch at once and one
+# would get "database is locked" — busy_timeout does not reliably cover the
+# journal_mode change. RLock (not Lock) because cost_guard.initialize() can
+# re-enter _ensure_initialized() on the same thread.
+_init_lock = threading.RLock()
 
 
 def _reset_for_tests() -> None:
@@ -98,6 +106,16 @@ def _ensure_initialized() -> None:
     global _initialized
     if _initialized:
         return
+    with _init_lock:
+        # Double-checked: another thread may have completed init while we
+        # waited for the lock.
+        if _initialized:
+            return
+        _do_initialize()
+
+
+def _do_initialize() -> None:
+    global _initialized
     _db_path.parent.mkdir(parents=True, exist_ok=True)
     with _connect() as conn:
         conn.executescript(_SCHEMA_DDL)
@@ -147,13 +165,18 @@ def _connect() -> Iterator[sqlite3.Connection]:
     conn = sqlite3.connect(str(_db_path))
     conn.row_factory = sqlite3.Row
     try:
+        # busy_timeout MUST be the first pragma. Switching journal_mode to WAL
+        # itself takes a write lock, and until busy_timeout is set the default
+        # is 0 (raise "database is locked" immediately). Setting it first means
+        # even the WAL-mode switch waits for a competing first-connection
+        # instead of erroring — this was the source of the intermittent
+        # test_concurrent_writes flakiness. A session write and a cost finalize
+        # can also land together at runtime.
+        conn.execute("PRAGMA busy_timeout=5000")
         # Sensible defaults for a single-process embedded DB.
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=NORMAL")
         conn.execute("PRAGMA foreign_keys=ON")
-        # Wait up to 5s for a competing writer rather than raising "database
-        # is locked" — a session write and a cost finalize can land together.
-        conn.execute("PRAGMA busy_timeout=5000")
         yield conn
     finally:
         conn.close()

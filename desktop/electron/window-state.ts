@@ -13,10 +13,12 @@
  * provides; on restore we don't validate that those coordinates are still
  * on a connected display. Electron's BrowserWindow clamps off-screen
  * bounds to the nearest display, so the worst case is the window snapping
- * to a new monitor edge instead of opening behind a vanished one.
+ * to a new monitor edge instead of opening behind a vanished one. We DO cap
+ * width/height to the primary display work area so a corrupt state file
+ * (e.g. width: 99999) can't produce an unusably huge window.
  */
 
-import { app } from 'electron';
+import { app, screen } from 'electron';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
@@ -39,11 +41,15 @@ export async function loadWindowState(): Promise<WindowBounds | null> {
       return null;
     }
     if (parsed.width < 320 || parsed.height < 240) return null;
+    // Cap to the primary display work area so a corrupt/oversized state file
+    // can't open an unusably large window. (screen is available here because
+    // loadWindowState runs after app `whenReady`.)
+    const { width: maxW, height: maxH } = screen.getPrimaryDisplay().workAreaSize;
     return {
       x: typeof parsed.x === 'number' ? parsed.x : undefined,
       y: typeof parsed.y === 'number' ? parsed.y : undefined,
-      width: parsed.width,
-      height: parsed.height,
+      width: Math.min(parsed.width, maxW),
+      height: Math.min(parsed.height, maxH),
     };
   } catch {
     return null;

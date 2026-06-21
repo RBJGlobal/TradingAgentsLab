@@ -71,6 +71,19 @@ _LONG_POLL_TIMEOUT_S = 25
 _HTTP_TIMEOUT_S = _LONG_POLL_TIMEOUT_S + 10
 _REPLY_MAX_CHARS = 3900  # leave headroom below Telegram's 4096 ceiling
 
+# httpx error strings embed the failing request URL, which for us is
+# https://api.telegram.org/bot<TOKEN>/<method>. last_error is serialized to
+# the renderer via the /telegram/* status endpoints and logged on every
+# poll, so any error text MUST be scrubbed of the bot token first. Telegram
+# tokens look like 123456789:AA...  (numeric id, colon, [A-Za-z0-9_-]).
+_TOKEN_IN_URL_RE = re.compile(r"bot\d+:[\w-]+")
+
+
+def _redact_token(text: str) -> str:
+    """Strip any Telegram bot token embedded in a URL so it never reaches a
+    log line or the renderer-facing status payload."""
+    return _TOKEN_IN_URL_RE.sub("bot<redacted>", text)
+
 # Ticker regex. Accepts bare ticker (uppercase letters, 1-8 chars, optional
 # `-XYZ` suffix for crypto and adrs). Anchored so partial matches in long
 # sentences are not treated as analyze requests; the user must send the
@@ -550,12 +563,14 @@ class TelegramBot:
                 except asyncio.CancelledError:
                     raise
                 except httpx.HTTPError as exc:
-                    self._status.last_error = f"network: {exc}"
+                    self._status.last_error = _redact_token(f"network: {exc}")
                     await asyncio.sleep(backoff)
                     backoff = min(backoff * 2, 60.0)
                     continue
                 except Exception as exc:  # noqa: BLE001 — keep loop alive
-                    self._status.last_error = f"{type(exc).__name__}: {exc}"
+                    self._status.last_error = _redact_token(
+                        f"{type(exc).__name__}: {exc}"
+                    )
                     logger.exception("telegram bot poll error")
                     await asyncio.sleep(backoff)
                     backoff = min(backoff * 2, 60.0)
@@ -949,7 +964,11 @@ class TelegramBot:
         """Send a Telegram DM. Pass `with_keyboard=True` to attach the
         persistent reply keyboard (for allowlisted users). Pending users
         get the standard keyboard so they can still type freely."""
-        assert self._client is not None and self._config is not None
+        # stop() cancels the poll loop but not in-flight fire-and-forget
+        # message handlers; one resuming after stop() has nulled _client must
+        # drop its reply gracefully rather than raise from an assert.
+        if self._client is None or self._config is None:
+            return
         # Truncate to Telegram's effective ceiling, preserving headroom for
         # the trailing disclaimer line in the formatter (already accounted
         # for via _REPLY_MAX_CHARS but defensive trim is cheap).
