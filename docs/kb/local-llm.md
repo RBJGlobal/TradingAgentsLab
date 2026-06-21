@@ -1,6 +1,6 @@
 # Local LLM (Ollama / LM Studio)
 
-*Run debates entirely on your machine, no API key, no per-token bill, no data leaves your computer.*
+*Run the multi-agent debate entirely on your own machine with Ollama or LM Studio: no API key, no per-token bill, no data leaves your computer.*
 
 > **For educational research and paper trading. This is not investment advice.**
 
@@ -39,8 +39,10 @@ If nothing is detected, the section shows installation links for [Ollama](https:
    - `ollama pull llama3.2` (~2GB, fast on most machines, baseline quality)
    - `ollama pull qwen2.5:7b` (~5GB, stronger reasoning, slower)
    - `ollama pull llama3.1:8b` (~5GB, the standard mid-tier choice)
-3. Ollama starts as a daemon automatically on macOS / Windows. Verify with `curl http://localhost:11434/v1/models`.
+3. Ollama starts as a daemon automatically on macOS / Windows, on `http://localhost:11434`. TradingAgentsLab expects the OpenAI-compatible base URL `http://localhost:11434/v1`. Verify it is up with `curl http://localhost:11434/v1/models`.
 4. In TradingAgentsLab, open **Settings → LLM Providers**, click **Refresh**, and you should see "Ollama" listed with your pulled models in the dropdown.
+
+> **Ollama vs LM Studio:** Ollama runs as a background daemon and serves *every* model you have pulled, so there is no "start server" step and no need to pre-load a single model the way LM Studio does. The flip side is the model-name gotcha: the id you select must match the `ollama list` tag exactly, and Ollama defaults the tag to `:latest` (so `ollama pull llama3.2` is served as `llama3.2:latest`). When you pick from the **Refresh**-populated dropdown this is handled for you; it only bites if you type a model id by hand in the manual Base URL field.
 
 ---
 
