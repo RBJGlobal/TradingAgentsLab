@@ -25,7 +25,7 @@ If your app is **pure Electron** (no separate runtime), skip Step 1 — everythi
 - **Apple Developer Program** membership (the org's, e.g. RBJ Global). Required to get a distribution certificate. *(TAL: obtained 2026-06-20.)*
 - **Developer ID Application** certificate, installed in the build machine's login keychain. This is the cert for distribution **outside** the Mac App Store. Verify with `security find-identity -v -p codesigning` — you want a line reading `Developer ID Application: <Name> (<TEAMID>)`.
 - **Apple ID app-specific password** (appleid.apple.com -> Sign-In and Security -> App-Specific Passwords) **or** an **App Store Connect API key**. Needed for notarization only. Store as a secret, never in the repo.
-- **Team ID** (the 10-char code in the cert, e.g. `6KR5F3225N`).
+- **Team ID** (the 10-char code in the cert / Membership details). Use the **organization** account's Team ID, not a personal one.
 
 > Gotcha: notarization needs the Apple ID credential; **signing does not**. You can sign + verify locally with just the cert, and defer notarization until you have the password. Don't block local packaging on it.
 
