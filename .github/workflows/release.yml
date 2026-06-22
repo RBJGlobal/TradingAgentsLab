@@ -29,7 +29,9 @@ jobs:
       matrix:
         include:
           - runner: macos-14 # Apple Silicon
-          - runner: macos-13 # Intel
+          # Intel (macos-13) is re-added once the arm64 pipeline is proven green;
+          # adding it back also surfaces the dual-arch latest-mac.yml feed work.
+          # - runner: macos-13 # Intel
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
