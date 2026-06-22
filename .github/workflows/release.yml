@@ -29,8 +29,9 @@ jobs:
       matrix:
         include:
           - runner: macos-14 # Apple Silicon
-          # Intel (macos-13) is re-added once the arm64 pipeline is proven green;
-          # adding it back also surfaces the dual-arch latest-mac.yml feed work.
+          # Intel deferred for v1 (founder decision 2026-06-22): Apple Silicon is
+          # mainstream, the Intel audience is small + aging. Re-add macos-13 when
+          # Intel is prioritized (also surfaces the dual-arch latest-mac.yml feed).
           # - runner: macos-13 # Intel
     runs-on: ${{ matrix.runner }}
     steps:

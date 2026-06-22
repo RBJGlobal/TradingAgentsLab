@@ -190,7 +190,7 @@ Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A us
 
 ## Locked decisions (founder, 2026-06-20)
 
-1. **Architecture:** **universal** binary (arm64 + x64). Accept the larger size for broad compatibility.
+1. **Architecture:** ~~universal (arm64 + x64)~~ -> **arm64-only for v1; Intel deferred** (founder, 2026-06-22). Apple Silicon has been mainstream since late 2020; the Intel audience is small + aging, and it's open-source for the rare Intel user to build from source. NOTE: arm64-only will not run on Intel at all (no Rosetta the other way). Re-add `macos-13` to the release matrix when Intel is prioritized.
 2. **Auto-update:** **default-ON**, with a Settings toggle to disable. Disclose the update check in the Privacy Policy.
 3. **Minimum macOS version:** **macOS 12 (Monterey).**
 4. **Engine freeze:** **PyInstaller spike approved as Phase 7c.1** (the long pole — derisk first).
