@@ -182,7 +182,9 @@ Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A us
 
 - **`.github/workflows/release.yml`** — tag-driven (`v*`). Matrix: macos-14 (arm64) + macos-13 (Intel), `max-parallel: 1`. Each job sets up the engine venv, freezes the engine for its host arch, builds, then `electron-builder --mac --publish always` (signs with the Developer ID via `CSC_LINK`, notarizes via `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID`, publishes to a GitHub Release). `electron-builder.yml` arch lock removed -> each runner builds its native slice (two native DMGs, not universal2+lipo).
 - **`docs/release-setup.md`** — the founder's one-time secret setup (5 GitHub secrets: cert p12 base64 + password, Apple ID, app-specific password, team id). ~10-15 min.
-- **Status: written, not yet run.** Validates on the first real tag once secrets are in. Known first-run items: the dual-arch `latest-mac.yml` update feed (downloads land for both arches regardless), and the `postinstall` Info.plist patch under CI. Option to ship arm64-only first to remove the dual-arch feed risk.
+- **Status: VALIDATED end-to-end on arm64 (2026-06-22).** First run (`v0.1.0-rc.1`, arm64-only) went green in 6m27s: engine freeze -> build -> **sign (new RBJ Global Developer ID) -> notarize (Apple accepted) -> publish**. Produced a **draft** GitHub Release with a signed + notarized `Trading-Agents-Lab-0.1.0-arm64.dmg` + `-mac.zip` + `latest-mac.yml` + blockmap. The `postinstall` Info.plist patch ran fine under CI.
+- **Gotcha found:** the git tag must match `package.json` version. We tagged `v0.1.0-rc.1` while the version was `0.1.0`, so electron-builder created its own `v0.1.0` draft (and a duplicate stray one, deleted). For the GA, bump `package.json` and tag the matching `vX.Y.Z`.
+- **Remaining:** re-add Intel (macos-13) -> validate the dual-arch `latest-mac.yml` feed; founder test-install of the draft DMG; merge `phase-7c-distribution` to main; cut the real v0.1.0 (matching tag); dmg cosmetics.
 
 ---
 

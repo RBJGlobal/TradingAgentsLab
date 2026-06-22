@@ -141,6 +141,9 @@ For a **Python** sidecar, use **PyInstaller**:
 8. **npm script env propagation** can silently drop inline env vars through chained `&&` scripts — verify the env actually reached the tool.
 9. **Always smoke the *packaged* app, not just dev.** Launch `"<App>.app/Contents/MacOS/<App>"` from a terminal and read its stderr; `pgrep` for the sidecar to confirm it spawned. Dev passing tells you nothing about the bundle.
 10. **An unsigned `--dir` build does NOT exercise the hardened runtime** (entitlements only apply once signed) — so it can't fully validate the sidecar-under-hardened-runtime path. Test a signed build for that.
+11. **The git tag must match `package.json` version** for a release. electron-builder publishes to a release named after the app version, so tagging `v0.1.0-rc.1` while the version is `0.1.0` makes it create its own `v0.1.0` draft (and it can create a duplicate stray draft). For a clean release: bump `package.json`, then tag the exact `vX.Y.Z`.
+12. **electron-builder publishes a DRAFT by default** — handy: the first CI run is a safe dry run (nothing public until you promote the draft). Promote it manually once you've test-installed.
+13. **Ship one arch first.** Validate the whole sign/notarize/publish chain on the host arch before adding the second arch + the dual-arch `latest-mac.yml` feed work. Don't debug everything at once.
 
 ---
 
