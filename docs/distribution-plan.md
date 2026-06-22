@@ -164,6 +164,22 @@ Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A us
 
 ---
 
+## Phase 7c.3 + 7c.4 — results (2026-06-21)
+
+**7c.3 first-launch consent gate — done.** Blocking gate (`ConsentGate` wraps `<App/>` in `main.tsx`); App's startup effects don't run behind it. Versioned local persistence (`electron/consent.ts` -> `consent.json`), re-prompts on `CONSENT_VERSION` bump, no account/signup. Decline -> `app.quit()`. Locked disclaimer copy + links to live legal pages. Tested: 4 persistence unit tests + 5 RTL component tests (block / reveal / Agree / Decline / fail-safe).
+
+**7c.4 auto-update — done (wiring; OTA flow gated on first release).**
+- `electron-updater` (GitHub Releases feed from `publish:` config). `electron/updater.ts` wires events -> renderer, packaged-only, respects the user pref. Bundles cleanly into `main.js` (no externalization needed).
+- `electron/prefs.ts`: `autoUpdate` toggle (default on), `preferences.json`. Tested (5 unit tests).
+- Settings -> About -> `UpdatesSection`: toggle + "Check for updates" + live status. Tested (4 RTL tests).
+- **Privacy disclosed** in `docs/kb/security-and-storage.md` (anonymous GET of the public release manifest, no user data, toggleable). The first-launch gate already mentions it. (Site Privacy Policy update is GSD's domain.)
+- Verified: packaged app launches + engine spawns with the updater wired; a missing feed (`app-update.yml`, only generated in the full dmg build) is handled gracefully, no crash.
+- **Not yet validated (needs 7c.5):** the real download/install flow, which requires a published release to update from/to.
+
+**7c remaining:** notarization (Apple ID app-specific password), CI release + universal x64 (7c.5), dmg cosmetics. The first shippable, auto-updating DMG comes out of CI with the cert + Apple ID creds.
+
+---
+
 ## Locked decisions (founder, 2026-06-20)
 
 1. **Architecture:** **universal** binary (arm64 + x64). Accept the larger size for broad compatibility.

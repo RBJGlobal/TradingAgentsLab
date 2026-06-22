@@ -1,0 +1,91 @@
+/**
+ * Auto-update over the air (Phase 7c.4).
+ *
+ * Uses electron-updater against the GitHub Releases feed configured in
+ * electron-builder.yml (`publish: github`). Only active in a packaged app
+ * (electron-updater can't update a dev/unpackaged build) and only auto-checks
+ * when the user's `autoUpdate` preference is on (default on). A manual
+ * "Check for updates" works regardless of the auto setting (still packaged-only).
+ *
+ * Privacy: the only thing this does is an anonymous GET of our public release
+ * manifest on GitHub. No identifiers are sent. Disclosed in the KB + the
+ * first-launch consent gate. The user can disable the automatic check.
+ *
+ * NOTE: the actual update flow can only be exercised once CI publishes the
+ * first release (Phase 7c.5). This module wires + guards it; it is a safe no-op
+ * until a feed with releases exists.
+ */
+import { app, BrowserWindow, ipcMain } from 'electron';
+import electronUpdater from 'electron-updater';
+import { getAutoUpdate, setAutoUpdate } from './prefs';
+
+const { autoUpdater } = electronUpdater;
+
+type UpdateState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'dev';
+
+let getWin: (() => BrowserWindow | null) | null = null;
+
+function send(state: UpdateState, extra: Record<string, unknown> = {}): void {
+  const win = getWin?.();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send('updates:status', { state, ...extra });
+  }
+}
+
+export function registerUpdater(getWindow: () => BrowserWindow | null): void {
+  getWin = getWindow;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('checking-for-update', () => send('checking'));
+  autoUpdater.on('update-available', (info) =>
+    send('available', { version: info.version }),
+  );
+  autoUpdater.on('update-not-available', () => send('not-available'));
+  autoUpdater.on('download-progress', (p) =>
+    send('downloading', { percent: Math.round(p.percent) }),
+  );
+  autoUpdater.on('update-downloaded', (info) =>
+    send('downloaded', { version: info.version }),
+  );
+  autoUpdater.on('error', (err) =>
+    send('error', { message: String(err?.message ?? err) }),
+  );
+
+  ipcMain.handle('updates:get-state', () => ({
+    autoUpdate: getAutoUpdate(),
+    currentVersion: app.getVersion(),
+    supported: app.isPackaged,
+  }));
+  ipcMain.handle('updates:set-auto', (_e, enabled: boolean) =>
+    setAutoUpdate(Boolean(enabled)),
+  );
+  ipcMain.handle('updates:check', async () => {
+    if (!app.isPackaged) {
+      send('dev');
+      return { ok: false, reason: 'dev' };
+    }
+    try {
+      await autoUpdater.checkForUpdates();
+      return { ok: true };
+    } catch (err) {
+      send('error', { message: String(err) });
+      return { ok: false };
+    }
+  });
+
+  // Eager check on launch, only when packaged AND the user hasn't opted out.
+  if (app.isPackaged && getAutoUpdate()) {
+    autoUpdater
+      .checkForUpdates()
+      .catch((err) => send('error', { message: String(err) }));
+  }
+}

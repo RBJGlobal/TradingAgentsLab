@@ -24,6 +24,7 @@ import { checkUpstream, type UpstreamCheckResult } from './upstream-check';
 import { loadWindowState, saveWindowState } from './window-state';
 import { waitForPreload } from './preload-ready';
 import { CONSENT_VERSION, getAcceptedVersion, recordConsent } from './consent';
+import { registerUpdater } from './updater';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -336,6 +337,10 @@ app.whenReady().then(() => {
   registerAppMenu(() => win);
 
   void createWindow();
+
+  // Auto-update (packaged only). Registered after the window exists so its
+  // status events reach the renderer. No-op in dev / until a release feed exists.
+  registerUpdater(() => win);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) void createWindow();

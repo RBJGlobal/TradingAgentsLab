@@ -12,6 +12,30 @@ export interface ConsentStateBridge {
   requiredVersion: number;
 }
 
+export interface UpdatesStateBridge {
+  autoUpdate: boolean;
+  currentVersion: string;
+  /** False in dev/unpackaged — auto-update only works in a packaged app. */
+  supported: boolean;
+}
+
+export type UpdateStatusState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'dev';
+
+export interface UpdatesStatusBridge {
+  state: UpdateStatusState;
+  version?: string;
+  percent?: number;
+  message?: string;
+}
+
 export interface SecretListing {
   key: string;
   hint: string;
@@ -98,6 +122,22 @@ contextBridge.exposeInMainWorld('tradingAgentsLab', {
     get: (): Promise<ConsentStateBridge> => ipcRenderer.invoke('consent:get'),
     accept: (): Promise<boolean> => ipcRenderer.invoke('consent:accept'),
     decline: (): Promise<void> => ipcRenderer.invoke('consent:decline'),
+  },
+  updates: {
+    getState: (): Promise<UpdatesStateBridge> =>
+      ipcRenderer.invoke('updates:get-state'),
+    setAuto: (enabled: boolean): Promise<boolean> =>
+      ipcRenderer.invoke('updates:set-auto', enabled),
+    check: (): Promise<{ ok: boolean; reason?: string }> =>
+      ipcRenderer.invoke('updates:check'),
+    onStatus: (
+      handler: (status: UpdatesStatusBridge) => void,
+    ): (() => void) => {
+      const wrapped = (_evt: Electron.IpcRendererEvent, status: UpdatesStatusBridge) =>
+        handler(status);
+      ipcRenderer.on('updates:status', wrapped);
+      return () => ipcRenderer.removeListener('updates:status', wrapped);
+    },
   },
   secrets: {
     availability: (): Promise<SecretsAvailability> =>
