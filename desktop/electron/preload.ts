@@ -5,6 +5,13 @@ export interface EngineHandshake {
   token: string;
 }
 
+export interface ConsentStateBridge {
+  /** Version the user last accepted, or null if never. */
+  acceptedVersion: number | null;
+  /** Current agreement version the app requires. */
+  requiredVersion: number;
+}
+
 export interface SecretListing {
   key: string;
   hint: string;
@@ -86,6 +93,11 @@ contextBridge.exposeInMainWorld('tradingAgentsLab', {
     const wrapped = () => handler();
     ipcRenderer.on('engine:exited', wrapped);
     return () => ipcRenderer.removeListener('engine:exited', wrapped);
+  },
+  consent: {
+    get: (): Promise<ConsentStateBridge> => ipcRenderer.invoke('consent:get'),
+    accept: (): Promise<boolean> => ipcRenderer.invoke('consent:accept'),
+    decline: (): Promise<void> => ipcRenderer.invoke('consent:decline'),
   },
   secrets: {
     availability: (): Promise<SecretsAvailability> =>

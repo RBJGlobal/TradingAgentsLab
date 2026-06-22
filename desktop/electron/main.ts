@@ -23,6 +23,7 @@ import {
 import { checkUpstream, type UpstreamCheckResult } from './upstream-check';
 import { loadWindowState, saveWindowState } from './window-state';
 import { waitForPreload } from './preload-ready';
+import { CONSENT_VERSION, getAcceptedVersion, recordConsent } from './consent';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -116,6 +117,21 @@ async function createWindow() {
 
 ipcMain.handle('engine:get-handshake', async (): Promise<EngineHandshake> => {
   return startEngine();
+});
+
+// First-launch consent gate (Phase 7c.3). The renderer asks for the accepted
+// vs required version on mount and blocks the UI until they match.
+ipcMain.handle('consent:get', () => ({
+  acceptedVersion: getAcceptedVersion(),
+  requiredVersion: CONSENT_VERSION,
+}));
+ipcMain.handle('consent:accept', () => {
+  recordConsent();
+  return true;
+});
+// Decline = the user does not agree to the educational-use terms, so we quit.
+ipcMain.handle('consent:decline', () => {
+  app.quit();
 });
 
 ipcMain.handle('secrets:availability', () => ({

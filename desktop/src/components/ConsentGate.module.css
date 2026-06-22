@@ -1,0 +1,97 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--tal-space-4);
+  /* Opaque base so nothing behind the gate is visible or reachable. */
+  background: var(--tal-bg-base);
+}
+
+.card {
+  width: 100%;
+  max-width: 560px;
+  background: var(--tal-bg-card);
+  border: 1px solid var(--tal-border-strong);
+  border-radius: var(--tal-radius-lg);
+  box-shadow: var(--tal-shadow-md);
+  padding: var(--tal-space-4);
+}
+
+.title {
+  margin: 0 0 var(--tal-space-3);
+  font-family: var(--tal-font-display);
+  font-size: var(--tal-text-2xl);
+  color: var(--tal-accent);
+}
+
+.body p {
+  margin: 0 0 var(--tal-space-3);
+  font-family: var(--tal-font-sans);
+  font-size: var(--tal-text-sm);
+  line-height: 1.6;
+  color: var(--tal-text-secondary);
+}
+
+.body strong {
+  color: var(--tal-text-primary);
+}
+
+.links a {
+  color: var(--tal-accent);
+  text-decoration: none;
+}
+
+.links a:hover {
+  color: var(--tal-accent-strong);
+  text-decoration: underline;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--tal-space-2);
+  margin-top: var(--tal-space-4);
+}
+
+.agree,
+.decline {
+  font-family: var(--tal-font-sans);
+  font-size: var(--tal-text-sm);
+  padding: var(--tal-space-2) var(--tal-space-4);
+  border-radius: var(--tal-radius-md);
+  cursor: pointer;
+  transition: background var(--tal-duration-fast) var(--tal-ease-out),
+    border-color var(--tal-duration-fast) var(--tal-ease-out);
+}
+
+.agree {
+  background: var(--tal-accent);
+  color: var(--tal-text-inverse);
+  border: 1px solid var(--tal-accent);
+  font-weight: 600;
+}
+
+.agree:hover:not(:disabled) {
+  background: var(--tal-accent-strong);
+  border-color: var(--tal-accent-strong);
+}
+
+.decline {
+  background: transparent;
+  color: var(--tal-text-secondary);
+  border: 1px solid var(--tal-border-default);
+}
+
+.decline:hover:not(:disabled) {
+  border-color: var(--tal-border-strong);
+  color: var(--tal-text-primary);
+}
+
+.agree:disabled,
+.decline:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

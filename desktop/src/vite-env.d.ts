@@ -99,11 +99,23 @@ interface UpstreamCheckResultBridge {
   compareUrl: string;
 }
 
+interface ConsentStateBridge {
+  acceptedVersion: number | null;
+  requiredVersion: number;
+}
+
+interface ConsentBridge {
+  get: () => Promise<ConsentStateBridge>;
+  accept: () => Promise<boolean>;
+  decline: () => Promise<void>;
+}
+
 interface TradingAgentsLabBridge {
   version: string;
   platform: NodeJS.Platform;
   getEngineHandshake: () => Promise<EngineHandshakeBridge>;
   onEngineExited: (handler: () => void) => () => void;
+  consent: ConsentBridge;
   secrets: SecretsBridge;
   oauth: OAuthBridge;
   onMenuCommand: (
