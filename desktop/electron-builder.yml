@@ -32,15 +32,14 @@ extraResources:
 
 mac:
   category: public.app-category.education
+  # No explicit arch: each build targets the runner's HOST arch. Locally that's
+  # arm64; in CI the release matrix runs macos-14 (arm64) + macos-13 (x64) so we
+  # get both native slices (PyInstaller freezes the engine per-arch -> two native
+  # DMGs rather than a fragile universal2 + lipo of the engine). zip is required
+  # for electron-updater on macOS. See .github/workflows/release.yml.
   target:
-    # arm64 only for now. The locked "universal" decision is DEFERRED TO CI:
-    # PyInstaller builds the engine per-arch (numpy/pandas ship arch-specific
-    # binaries), so a universal app needs an x64 engine slice built in an
-    # x64/CI environment. See docs/engine-freeze-spike-notes.md "Carry into 7c.2".
-    - target: dmg
-      arch: [arm64]
-    - target: zip
-      arch: [arm64]
+    - dmg
+    - zip
   minimumSystemVersion: "12.0"
   hardenedRuntime: true
   gatekeeperAssess: false

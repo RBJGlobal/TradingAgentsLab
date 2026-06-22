@@ -171,6 +171,9 @@ For a **Python** sidecar, use **PyInstaller**:
 - Sidecar freeze: `engine/engine.spec`, `engine/freeze_entry.py`, `tools/build-engine.sh`, `docs/engine-freeze-spike-notes.md`
 - Packaging: `desktop/electron-builder.yml`, `desktop/build/entitlements.mac.plist`, `desktop/package.json` (`build:engine` / `dist:dir` / `dist:mac` scripts)
 - Conditional spawn: `desktop/electron/engine-runner.ts` (`app.isPackaged` branch)
+- Auto-update: `desktop/electron/updater.ts` + `desktop/electron/prefs.ts` + `desktop/src/components/UpdatesSection.tsx`
+- CI release: `.github/workflows/release.yml` (tag-driven matrix build/sign/notarize/publish)
+- Credential setup (the one-time founder task): `docs/release-setup.md`
 - The full TAL plan + decisions + phase results: `docs/distribution-plan.md`
 
 > Keep this playbook updated as we learn more (notarization specifics, the CI workflow, universal builds). When the next app ships, fold any new gotchas back here.
