@@ -15,6 +15,9 @@
     "test:unit:watch": "vitest",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:ui": "npm run build && playwright test --ui",
+    "build:engine": "bash ../tools/build-engine.sh",
+    "dist:dir": "npm run build && npm run build:engine && CSC_IDENTITY_AUTODISCOVERY=false electron-builder --mac --dir",
+    "dist:mac": "npm run build && npm run build:engine && electron-builder --mac",
     "postinstall": "bash ../tools/patch-electron-info-plist.sh"
   },
   "dependencies": {
@@ -31,6 +34,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.1",
+    "electron-builder": "^26.15.3",
     "happy-dom": "^20.10.4",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",

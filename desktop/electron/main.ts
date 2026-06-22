@@ -280,7 +280,14 @@ app.whenReady().then(() => {
   // NOTE: `setIcon` accepts PNG-based NativeImage paths only — .icns is
   // for the bundled .app, not for the dynamic dock-icon API. Production
   // electron-builder will still read build/icon.icns for the bundle.
-  app.dock?.setIcon(ICON_PNG_PATH);
+  //
+  // Gated to dev only: in a packaged app ICON_PNG_PATH points inside the
+  // asar and the bundle already carries its own icon, so calling setIcon
+  // there is both unnecessary and a hard failure (a missing-image rejection
+  // here previously broke the whenReady chain before startEngine ran).
+  if (!app.isPackaged) {
+    app.dock?.setIcon(ICON_PNG_PATH);
+  }
 
   // When the engine crashes after a good handshake, the renderer is holding a
   // now-dead port/token. Push an event so it drops its cached handshake; its

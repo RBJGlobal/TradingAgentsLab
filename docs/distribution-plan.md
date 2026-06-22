@@ -142,6 +142,28 @@ Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A us
 
 ---
 
+## Phase 7c.2 — results (2026-06-21)
+
+> Status: **packaging pipeline proven end-to-end on arm64.** A signed, hardened-runtime `.app` packages the frozen engine and spawns it on launch. Remaining gaps are credential- and arch-gated, not unknowns.
+
+**Built:** `desktop/electron-builder.yml`, `desktop/build/entitlements.mac.plist`, `tools/build-engine.sh`, npm scripts (`build:engine`, `dist:dir`, `dist:mac`), and `engine-runner.ts` now spawns `Resources/engine/tal-engine` when `app.isPackaged` (dev path unchanged).
+
+**Verified (`npm run dist:dir`, arm64):**
+- electron-builder bundles the frozen engine into `Contents/Resources/engine/` (431 MB .app).
+- The build **auto-signed with the founder's Developer ID** (cert is in this machine's keychain), with **hardened runtime** on. `codesign --verify --deep --strict` **passes** — electron-builder 26's pass deep-signed the bundled engine binary + dylibs too, so the classic extraResources-not-signed notarization trap did **not** bite here (still verify under real notarization).
+- The signed packaged app **launches and spawns the bundled engine** (`pgrep` confirms `Resources/engine/tal-engine` running under the hardened-runtime app). The hardened-runtime entitlements (`allow-jit`, `disable-library-validation`, etc.) are sufficient for the frozen CPython to run.
+
+**Bug found + fixed:** the dev-only `app.dock.setIcon()` ran in the packaged app too and threw on a missing in-asar icon path, breaking the `whenReady` chain before `startEngine()`. Now gated to `!app.isPackaged`, and `build/icon.png/.icns` added to the electron-builder `files`.
+
+**Still gated (not unknowns):**
+- **Notarization** — needs Apple ID app-specific password / API key (founder). The signature + deep-sign already validate locally, so this should be mechanical.
+- **Universal x64 slice** — still needs an x64 engine build (CI), per 7c.1 notes. This local proof is arm64.
+- **DMG cosmetics** (7c) + **electron-updater wiring** (7c.4) + **CI release** (7c.5) remain.
+
+> Note: passing `CSC_IDENTITY_AUTODISCOVERY=false` did NOT prevent signing on electron-builder 26 (it signed anyway). For an intentionally-unsigned build, set `mac.identity: null` in config. Not a problem here — signed is what we want.
+
+---
+
 ## Locked decisions (founder, 2026-06-20)
 
 1. **Architecture:** **universal** binary (arm64 + x64). Accept the larger size for broad compatibility.
