@@ -1,7 +1,7 @@
 {
   "name": "tradingagentslab-desktop",
   "productName": "Trading Agents Lab",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Trading Agents Lab desktop — standalone trading companion for Clawless",
   "type": "module",

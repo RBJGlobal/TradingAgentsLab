@@ -25,6 +25,7 @@ import { buildTranscriptMarkdown } from '../lib/transcript';
 import { listSecrets } from '../lib/secrets';
 import { consumePendingTicker } from '../lib/handoff';
 import { loadLocalConfig, saveLocalConfig } from '../lib/local-llm';
+import ProviderSetupCallout from '../components/ProviderSetupCallout';
 import { getLocalRuntimes } from '../lib/engine-client';
 import { getOpenAIOAuthStatus } from '../lib/oauth';
 
@@ -762,6 +763,8 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
           )}
         </div>
       </header>
+
+      {activeProvider === null && <ProviderSetupCallout />}
 
       <section className={styles.card}>
         <div className={styles.fieldRow}>

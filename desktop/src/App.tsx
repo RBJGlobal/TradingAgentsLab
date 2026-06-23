@@ -220,7 +220,7 @@ function App() {
       )}
 
       <footer className={styles.footer}>
-        <span>Trading Agents Lab v0.1.3 · AGPL-3.0</span>
+        <span>Trading Agents Lab v0.1.4 · AGPL-3.0</span>
         <span className={styles.footerRight}>
           Educational research only · Not a registered investment advisor · Not investment advice
         </span>
