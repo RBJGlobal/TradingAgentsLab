@@ -1,0 +1,53 @@
+/* Informational, not alarming: amber accent (brand), not red/warning. */
+.callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tal-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--tal-space-6);
+  padding: var(--tal-space-4);
+  background: var(--tal-bg-card);
+  border: 1px solid var(--tal-accent-border);
+  border-left: 3px solid var(--tal-accent);
+  border-radius: var(--tal-radius-lg);
+}
+
+.body {
+  flex: 1;
+  min-width: 280px;
+}
+
+.title {
+  margin: 0 0 var(--tal-space-2);
+  font-family: var(--tal-font-display);
+  font-size: var(--tal-text-lg);
+  color: var(--tal-accent);
+}
+
+.text {
+  margin: 0;
+  font-size: var(--tal-text-sm);
+  line-height: 1.6;
+  color: var(--tal-text-secondary);
+}
+
+.cta {
+  flex-shrink: 0;
+  font-family: var(--tal-font-sans);
+  font-size: var(--tal-text-sm);
+  font-weight: 600;
+  padding: var(--tal-space-2) var(--tal-space-4);
+  border-radius: var(--tal-radius-md);
+  background: var(--tal-accent);
+  color: var(--tal-text-inverse);
+  border: 1px solid var(--tal-accent);
+  cursor: pointer;
+  transition: background var(--tal-duration-fast) var(--tal-ease-out),
+    border-color var(--tal-duration-fast) var(--tal-ease-out);
+}
+
+.cta:hover {
+  background: var(--tal-accent-strong);
+  border-color: var(--tal-accent-strong);
+}

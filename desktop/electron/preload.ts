@@ -106,7 +106,7 @@ export interface OAuthCredentialsBridge {
 }
 
 contextBridge.exposeInMainWorld('tradingAgentsLab', {
-  version: '0.1.3',
+  version: '0.1.4',
   platform: process.platform,
   getEngineHandshake: (): Promise<EngineHandshake> =>
     ipcRenderer.invoke('engine:get-handshake'),
