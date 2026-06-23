@@ -67,6 +67,17 @@ export default function LearnAI() {
           and apps like this one. The free education and the free, open tools
           come from the same mission.
         </p>
+        <p className={styles.connect}>
+          Want to connect with the founder or follow the work?{' '}
+          <a
+            href="https://www.linkedin.com/in/junaidsiddiqi/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Find Jay Siddiqi on LinkedIn
+          </a>
+          .
+        </p>
       </section>
 
       <div className={styles.ctaRow}>

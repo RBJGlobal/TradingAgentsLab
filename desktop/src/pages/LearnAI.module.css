@@ -47,6 +47,20 @@
   font-style: italic;
 }
 
+.card a {
+  color: var(--tal-accent);
+  text-decoration: none;
+}
+
+.card a:hover {
+  color: var(--tal-accent-strong);
+  text-decoration: underline;
+}
+
+.card .connect {
+  margin-top: var(--tal-space-3);
+}
+
 .ctaRow {
   display: flex;
   align-items: center;
