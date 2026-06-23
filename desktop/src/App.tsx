@@ -188,6 +188,23 @@ function App() {
         {navItem('analyze', 'Analyze')}
         {navItem('watchlist', 'Watchlist')}
         {navItem('history', 'History')}
+        {/* External: opens Clawdemy (RBJ Global's free AI education platform)
+            in the browser. Not an in-app route. The http(s) URL is routed to
+            the OS browser by main.ts setWindowOpenHandler. */}
+        <a
+          className={styles.navItem}
+          href="https://clawdemy.org"
+          target="_blank"
+          rel="noreferrer"
+          data-testid="nav-learn"
+          title="Clawdemy: free AI education (opens in your browser)"
+        >
+          <span className={styles.navItemDot} />
+          <span className={styles.navItemBody}>
+            <span>Learn AI ↗</span>
+            <span className={styles.navItemCaption}>Clawdemy · Free AI education</span>
+          </span>
+        </a>
         <div className={styles.navSpacer} />
         {navItem('settings', 'Settings')}
       </nav>
@@ -217,7 +234,7 @@ function App() {
       )}
 
       <footer className={styles.footer}>
-        <span>Trading Agents Lab v0.1.0 · AGPL-3.0</span>
+        <span>Trading Agents Lab v0.1.1 · AGPL-3.0</span>
         <span className={styles.footerRight}>
           Educational research only · Not a registered investment advisor · Not investment advice
         </span>

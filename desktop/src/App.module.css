@@ -250,6 +250,20 @@
   opacity: 0.6;
 }
 
+/* Two-line nav item (label + caption), used by the external "Learn AI" link. */
+.navItemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.navItemCaption {
+  font-size: var(--tal-text-xs);
+  font-weight: 400;
+  color: var(--tal-text-muted);
+}
+
 .navSpacer {
   flex: 1;
 }

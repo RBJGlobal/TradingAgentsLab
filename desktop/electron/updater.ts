@@ -15,7 +15,7 @@
  * first release (Phase 7c.5). This module wires + guards it; it is a safe no-op
  * until a feed with releases exists.
  */
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import electronUpdater from 'electron-updater';
 import { getAutoUpdate, setAutoUpdate } from './prefs';
 
@@ -53,9 +53,30 @@ export function registerUpdater(getWindow: () => BrowserWindow | null): void {
   autoUpdater.on('download-progress', (p) =>
     send('downloading', { percent: Math.round(p.percent) }),
   );
-  autoUpdater.on('update-downloaded', (info) =>
-    send('downloaded', { version: info.version }),
-  );
+  autoUpdater.on('update-downloaded', (info) => {
+    send('downloaded', { version: info.version });
+    // Proactively prompt: an update has finished downloading. Restart now to
+    // install it, otherwise it installs automatically on the next quit
+    // (autoInstallOnAppQuit). The renderer also shows status in Settings.
+    const opts = {
+      type: 'info' as const,
+      buttons: ['Restart now', 'Later'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'Update ready',
+      message: `Trading Agents Lab ${info.version} is ready to install.`,
+      detail:
+        'Restart now to update, or it will install automatically the next time you quit.',
+    };
+    const onChoice = (result: Electron.MessageBoxReturnValue) => {
+      if (result.response === 0) autoUpdater.quitAndInstall();
+    };
+    const win = getWin?.();
+    const prompt = win
+      ? dialog.showMessageBox(win, opts)
+      : dialog.showMessageBox(opts);
+    void prompt.then(onChoice);
+  });
   autoUpdater.on('error', (err) =>
     send('error', { message: String(err?.message ?? err) }),
   );
