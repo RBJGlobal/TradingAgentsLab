@@ -1,0 +1,78 @@
+name: Release (macOS)
+
+# Tag-driven release (Phase 7c.5). To cut a release:
+#   1. bump "version" in desktop/package.json, commit, push to main
+#   2. git tag vX.Y.Z && git push origin vX.Y.Z
+# This builds, signs, notarizes, and publishes a GitHub Release with the DMG(s)
+# and the electron-updater feed. Requires the repo secrets documented in
+# docs/release-setup.md. Until those secrets exist, this workflow will fail at
+# the signing step (by design — no unsigned public artifacts).
+#
+# FIRST-RUN CAVEAT (dual-arch auto-update feed): both arches publish to the same
+# release. electron-builder writes `latest-mac.yml` per build, so the second job
+# can overwrite the first arch's update feed. Downloads for BOTH arches land on
+# the release regardless; the auto-update feed for one arch may need a follow-up
+# (arch-specific yml or a merge step). Verify on the first real tag.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # publish the GitHub Release + assets
+
+jobs:
+  release:
+    strategy:
+      max-parallel: 1 # avoid two arches racing on the shared release assets
+      matrix:
+        include:
+          - runner: macos-14 # Apple Silicon
+          # Intel deferred for v1 (founder decision 2026-06-22): Apple Silicon is
+          # mainstream, the Intel audience is small + aging. Re-add macos-13 when
+          # Intel is prioritized (also surfaces the dual-arch latest-mac.yml feed).
+          # - runner: macos-13 # Intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up engine venv + freeze deps
+        run: |
+          python -m venv engine/.venv
+          engine/.venv/bin/pip install --upgrade pip
+          engine/.venv/bin/pip install -r engine/requirements.txt pyinstaller
+
+      - name: Install desktop deps
+        working-directory: desktop
+        run: npm ci
+
+      - name: Build renderer + main, freeze engine (host arch)
+        working-directory: desktop
+        run: |
+          npm run build
+          npm run build:engine
+
+      - name: Build, sign, notarize, publish
+        working-directory: desktop
+        env:
+          # Code signing (Developer ID Application .p12, base64-encoded).
+          CSC_LINK: ${{ secrets.APPLE_CERT_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+          # Notarization (Apple ID + app-specific password + team).
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Publishing to GitHub Releases.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac --publish always

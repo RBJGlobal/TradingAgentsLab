@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './Settings.module.css';
+import UpdatesSection from '../components/UpdatesSection';
 import {
   deleteSecret,
   getAvailability,
@@ -1102,7 +1103,7 @@ function AboutTab({ availability, secretsCount }: AboutTabProps) {
       <dl className={styles.aboutList}>
         <div className={styles.aboutRow}>
           <dt className={styles.aboutKey}>Version</dt>
-          <dd className={styles.aboutValue}>0.1.0</dd>
+          <dd className={styles.aboutValue}>0.1.3</dd>
         </div>
         <div className={styles.aboutRow}>
           <dt className={styles.aboutKey}>License</dt>
@@ -1212,6 +1213,7 @@ function AboutTab({ availability, secretsCount }: AboutTabProps) {
           </dd>
         </div>
       </dl>
+      <UpdatesSection />
     </div>
   );
 }

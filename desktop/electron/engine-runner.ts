@@ -96,15 +96,30 @@ export function startEngine(): Promise<EngineHandshake> {
   // Clear any orphan from a prior crashed session before we bind a new port.
   reapOrphanEngine();
 
-  // app.getAppPath() in dev points at <repo>/desktop. The Python sidecar lives
-  // at <repo>/engine/.venv/bin/python and the `engine` package is importable
-  // when cwd = repo root (python -m engine resolves the package via sys.path[0]).
-  const repoRoot = path.resolve(app.getAppPath(), '..');
-  const python = path.join(repoRoot, 'engine', '.venv', 'bin', 'python');
+  // Resolve how to launch the engine.
+  //   Packaged: the PyInstaller-frozen onedir engine, staged by electron-builder
+  //     at Contents/Resources/engine/tal-engine (extraResources). Self-contained;
+  //     no venv, no `-m engine`.
+  //   Dev: the venv python running `python -m engine` from the repo root (cwd
+  //     lets `-m engine` resolve the package via sys.path[0]).
+  let engineCmd: string;
+  let engineArgs: string[];
+  let engineCwd: string;
+  if (app.isPackaged) {
+    const engineDir = path.join(process.resourcesPath, 'engine');
+    engineCmd = path.join(engineDir, 'tal-engine');
+    engineArgs = [];
+    engineCwd = engineDir;
+  } else {
+    const repoRoot = path.resolve(app.getAppPath(), '..');
+    engineCmd = path.join(repoRoot, 'engine', '.venv', 'bin', 'python');
+    engineArgs = ['-m', 'engine'];
+    engineCwd = repoRoot;
+  }
 
   stoppingIntentionally = false;
-  child = spawn(python, ['-m', 'engine'], {
-    cwd: repoRoot,
+  child = spawn(engineCmd, engineArgs, {
+    cwd: engineCwd,
     stdio: ['ignore', 'pipe', 'pipe'],
     // Hand the engine the pidfile path so it records its own pid for reaping.
     env: { ...process.env, TAL_ENGINE_PIDFILE: pidfilePath() },

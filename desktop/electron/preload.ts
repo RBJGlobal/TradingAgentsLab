@@ -5,6 +5,37 @@ export interface EngineHandshake {
   token: string;
 }
 
+export interface ConsentStateBridge {
+  /** Version the user last accepted, or null if never. */
+  acceptedVersion: number | null;
+  /** Current agreement version the app requires. */
+  requiredVersion: number;
+}
+
+export interface UpdatesStateBridge {
+  autoUpdate: boolean;
+  currentVersion: string;
+  /** False in dev/unpackaged — auto-update only works in a packaged app. */
+  supported: boolean;
+}
+
+export type UpdateStatusState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'dev';
+
+export interface UpdatesStatusBridge {
+  state: UpdateStatusState;
+  version?: string;
+  percent?: number;
+  message?: string;
+}
+
 export interface SecretListing {
   key: string;
   hint: string;
@@ -75,7 +106,7 @@ export interface OAuthCredentialsBridge {
 }
 
 contextBridge.exposeInMainWorld('tradingAgentsLab', {
-  version: '0.1.0',
+  version: '0.1.3',
   platform: process.platform,
   getEngineHandshake: (): Promise<EngineHandshake> =>
     ipcRenderer.invoke('engine:get-handshake'),
@@ -86,6 +117,28 @@ contextBridge.exposeInMainWorld('tradingAgentsLab', {
     const wrapped = () => handler();
     ipcRenderer.on('engine:exited', wrapped);
     return () => ipcRenderer.removeListener('engine:exited', wrapped);
+  },
+  consent: {
+    get: (): Promise<ConsentStateBridge> => ipcRenderer.invoke('consent:get'),
+    accept: (): Promise<boolean> => ipcRenderer.invoke('consent:accept'),
+    decline: (): Promise<void> => ipcRenderer.invoke('consent:decline'),
+  },
+  updates: {
+    getState: (): Promise<UpdatesStateBridge> =>
+      ipcRenderer.invoke('updates:get-state'),
+    setAuto: (enabled: boolean): Promise<boolean> =>
+      ipcRenderer.invoke('updates:set-auto', enabled),
+    check: (): Promise<{ ok: boolean; reason?: string }> =>
+      ipcRenderer.invoke('updates:check'),
+    install: (): Promise<void> => ipcRenderer.invoke('updates:install'),
+    onStatus: (
+      handler: (status: UpdatesStatusBridge) => void,
+    ): (() => void) => {
+      const wrapped = (_evt: Electron.IpcRendererEvent, status: UpdatesStatusBridge) =>
+        handler(status);
+      ipcRenderer.on('updates:status', wrapped);
+      return () => ipcRenderer.removeListener('updates:status', wrapped);
+    },
   },
   secrets: {
     availability: (): Promise<SecretsAvailability> =>

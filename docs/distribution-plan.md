@@ -142,9 +142,55 @@ Electron ships fine on its own, but our engine is a Python FastAPI sidecar. A us
 
 ---
 
+## Phase 7c.2 — results (2026-06-21)
+
+> Status: **packaging pipeline proven end-to-end on arm64.** A signed, hardened-runtime `.app` packages the frozen engine and spawns it on launch. Remaining gaps are credential- and arch-gated, not unknowns.
+
+**Built:** `desktop/electron-builder.yml`, `desktop/build/entitlements.mac.plist`, `tools/build-engine.sh`, npm scripts (`build:engine`, `dist:dir`, `dist:mac`), and `engine-runner.ts` now spawns `Resources/engine/tal-engine` when `app.isPackaged` (dev path unchanged).
+
+**Verified (`npm run dist:dir`, arm64):**
+- electron-builder bundles the frozen engine into `Contents/Resources/engine/` (431 MB .app).
+- The build **auto-signed with the founder's Developer ID** (cert is in this machine's keychain), with **hardened runtime** on. `codesign --verify --deep --strict` **passes** — electron-builder 26's pass deep-signed the bundled engine binary + dylibs too, so the classic extraResources-not-signed notarization trap did **not** bite here (still verify under real notarization).
+- The signed packaged app **launches and spawns the bundled engine** (`pgrep` confirms `Resources/engine/tal-engine` running under the hardened-runtime app). The hardened-runtime entitlements (`allow-jit`, `disable-library-validation`, etc.) are sufficient for the frozen CPython to run.
+
+**Bug found + fixed:** the dev-only `app.dock.setIcon()` ran in the packaged app too and threw on a missing in-asar icon path, breaking the `whenReady` chain before `startEngine()`. Now gated to `!app.isPackaged`, and `build/icon.png/.icns` added to the electron-builder `files`.
+
+**Still gated (not unknowns):**
+- **Notarization** — needs Apple ID app-specific password / API key (founder). The signature + deep-sign already validate locally, so this should be mechanical.
+- **Universal x64 slice** — still needs an x64 engine build (CI), per 7c.1 notes. This local proof is arm64.
+- **DMG cosmetics** (7c) + **electron-updater wiring** (7c.4) + **CI release** (7c.5) remain.
+
+> Note: passing `CSC_IDENTITY_AUTODISCOVERY=false` did NOT prevent signing on electron-builder 26 (it signed anyway). For an intentionally-unsigned build, set `mac.identity: null` in config. Not a problem here — signed is what we want.
+
+---
+
+## Phase 7c.3 + 7c.4 — results (2026-06-21)
+
+**7c.3 first-launch consent gate — done.** Blocking gate (`ConsentGate` wraps `<App/>` in `main.tsx`); App's startup effects don't run behind it. Versioned local persistence (`electron/consent.ts` -> `consent.json`), re-prompts on `CONSENT_VERSION` bump, no account/signup. Decline -> `app.quit()`. Locked disclaimer copy + links to live legal pages. Tested: 4 persistence unit tests + 5 RTL component tests (block / reveal / Agree / Decline / fail-safe).
+
+**7c.4 auto-update — done (wiring; OTA flow gated on first release).**
+- `electron-updater` (GitHub Releases feed from `publish:` config). `electron/updater.ts` wires events -> renderer, packaged-only, respects the user pref. Bundles cleanly into `main.js` (no externalization needed).
+- `electron/prefs.ts`: `autoUpdate` toggle (default on), `preferences.json`. Tested (5 unit tests).
+- Settings -> About -> `UpdatesSection`: toggle + "Check for updates" + live status. Tested (4 RTL tests).
+- **Privacy disclosed** in `docs/kb/security-and-storage.md` (anonymous GET of the public release manifest, no user data, toggleable). The first-launch gate already mentions it. (Site Privacy Policy update is GSD's domain.)
+- Verified: packaged app launches + engine spawns with the updater wired; a missing feed (`app-update.yml`, only generated in the full dmg build) is handled gracefully, no crash.
+- **Not yet validated (needs 7c.5):** the real download/install flow, which requires a published release to update from/to.
+
+**7c remaining:** notarization (Apple ID app-specific password), CI release + universal x64 (7c.5), dmg cosmetics. The first shippable, auto-updating DMG comes out of CI with the cert + Apple ID creds.
+
+## Phase 7c.5 — CI release pipeline (written 2026-06-22; awaiting credentials)
+
+- **`.github/workflows/release.yml`** — tag-driven (`v*`). Matrix: macos-14 (arm64) + macos-13 (Intel), `max-parallel: 1`. Each job sets up the engine venv, freezes the engine for its host arch, builds, then `electron-builder --mac --publish always` (signs with the Developer ID via `CSC_LINK`, notarizes via `APPLE_ID`/`APPLE_APP_SPECIFIC_PASSWORD`/`APPLE_TEAM_ID`, publishes to a GitHub Release). `electron-builder.yml` arch lock removed -> each runner builds its native slice (two native DMGs, not universal2+lipo).
+- **`docs/release-setup.md`** — the founder's one-time secret setup (5 GitHub secrets: cert p12 base64 + password, Apple ID, app-specific password, team id). ~10-15 min.
+- **Status: VALIDATED end-to-end on arm64 (2026-06-22).** First run (`v0.1.0-rc.1`, arm64-only) went green in 6m27s: engine freeze -> build -> **sign (new RBJ Global Developer ID) -> notarize (Apple accepted) -> publish**. Produced a **draft** GitHub Release with a signed + notarized `Trading-Agents-Lab-0.1.0-arm64.dmg` + `-mac.zip` + `latest-mac.yml` + blockmap. The `postinstall` Info.plist patch ran fine under CI.
+- **Gotcha found:** the git tag must match `package.json` version. We tagged `v0.1.0-rc.1` while the version was `0.1.0`, so electron-builder created its own `v0.1.0` draft (and a duplicate stray one, deleted). For the GA, bump `package.json` and tag the matching `vX.Y.Z`.
+- **Remaining:** re-add Intel (macos-13) -> validate the dual-arch `latest-mac.yml` feed; founder test-install of the draft DMG; merge `phase-7c-distribution` to main; cut the real v0.1.0 (matching tag); dmg cosmetics.
+
+---
+
 ## Locked decisions (founder, 2026-06-20)
 
-1. **Architecture:** **universal** binary (arm64 + x64). Accept the larger size for broad compatibility.
+1. **Architecture:** ~~universal (arm64 + x64)~~ -> **arm64-only for v1; Intel deferred** (founder, 2026-06-22). Apple Silicon has been mainstream since late 2020; the Intel audience is small + aging, and it's open-source for the rare Intel user to build from source. NOTE: arm64-only will not run on Intel at all (no Rosetta the other way). Re-add `macos-13` to the release matrix when Intel is prioritized.
 2. **Auto-update:** **default-ON**, with a Settings toggle to disable. Disclose the update check in the Privacy Policy.
 3. **Minimum macOS version:** **macOS 12 (Monterey).**
 4. **Engine freeze:** **PyInstaller spike approved as Phase 7c.1** (the long pole — derisk first).

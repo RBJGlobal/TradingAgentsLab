@@ -99,11 +99,53 @@ interface UpstreamCheckResultBridge {
   compareUrl: string;
 }
 
+interface ConsentStateBridge {
+  acceptedVersion: number | null;
+  requiredVersion: number;
+}
+
+interface ConsentBridge {
+  get: () => Promise<ConsentStateBridge>;
+  accept: () => Promise<boolean>;
+  decline: () => Promise<void>;
+}
+
+interface UpdatesStateBridge {
+  autoUpdate: boolean;
+  currentVersion: string;
+  supported: boolean;
+}
+
+interface UpdatesStatusBridge {
+  state:
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'not-available'
+    | 'downloading'
+    | 'downloaded'
+    | 'error'
+    | 'dev';
+  version?: string;
+  percent?: number;
+  message?: string;
+}
+
+interface UpdatesBridge {
+  getState: () => Promise<UpdatesStateBridge>;
+  setAuto: (enabled: boolean) => Promise<boolean>;
+  check: () => Promise<{ ok: boolean; reason?: string }>;
+  install: () => Promise<void>;
+  onStatus: (handler: (status: UpdatesStatusBridge) => void) => () => void;
+}
+
 interface TradingAgentsLabBridge {
   version: string;
   platform: NodeJS.Platform;
   getEngineHandshake: () => Promise<EngineHandshakeBridge>;
   onEngineExited: (handler: () => void) => () => void;
+  consent: ConsentBridge;
+  updates: UpdatesBridge;
   secrets: SecretsBridge;
   oauth: OAuthBridge;
   onMenuCommand: (

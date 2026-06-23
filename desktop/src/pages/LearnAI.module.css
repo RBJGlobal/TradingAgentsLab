@@ -1,0 +1,101 @@
+.page {
+  max-width: 720px;
+}
+
+.title {
+  margin: 0 0 var(--tal-space-3);
+  font-family: var(--tal-font-display);
+  font-size: var(--tal-text-4xl);
+  color: var(--tal-text-primary);
+}
+
+.lede {
+  margin: 0 0 var(--tal-space-6);
+  font-size: var(--tal-text-lg);
+  line-height: 1.6;
+  color: var(--tal-text-secondary);
+}
+
+.lede strong {
+  color: var(--tal-accent);
+}
+
+.card {
+  background: var(--tal-bg-card);
+  border: 1px solid var(--tal-border-default);
+  border-radius: var(--tal-radius-lg);
+  padding: var(--tal-space-4);
+  margin-bottom: var(--tal-space-4);
+}
+
+.h2 {
+  margin: 0 0 var(--tal-space-2);
+  font-family: var(--tal-font-display);
+  font-size: var(--tal-text-lg);
+  color: var(--tal-accent);
+}
+
+.card p {
+  margin: 0;
+  font-size: var(--tal-text-sm);
+  line-height: 1.7;
+  color: var(--tal-text-secondary);
+}
+
+.card em {
+  color: var(--tal-text-primary);
+  font-style: italic;
+}
+
+.card a {
+  color: var(--tal-accent);
+  text-decoration: none;
+}
+
+.card a:hover {
+  color: var(--tal-accent-strong);
+  text-decoration: underline;
+}
+
+.card .connect {
+  margin-top: var(--tal-space-3);
+}
+
+.ctaRow {
+  display: flex;
+  align-items: center;
+  gap: var(--tal-space-3);
+  margin: var(--tal-space-6) 0 var(--tal-space-4);
+  flex-wrap: wrap;
+}
+
+.cta {
+  display: inline-block;
+  font-family: var(--tal-font-sans);
+  font-size: var(--tal-text-base);
+  font-weight: 600;
+  padding: var(--tal-space-3) var(--tal-space-5);
+  border-radius: var(--tal-radius-md);
+  background: var(--tal-accent);
+  color: var(--tal-text-inverse);
+  border: 1px solid var(--tal-accent);
+  text-decoration: none;
+  transition: background var(--tal-duration-fast) var(--tal-ease-out),
+    border-color var(--tal-duration-fast) var(--tal-ease-out);
+}
+
+.cta:hover {
+  background: var(--tal-accent-strong);
+  border-color: var(--tal-accent-strong);
+}
+
+.ctaHint {
+  font-size: var(--tal-text-xs);
+  color: var(--tal-text-muted);
+}
+
+.footnote {
+  margin: 0;
+  font-size: var(--tal-text-xs);
+  color: var(--tal-text-muted);
+}

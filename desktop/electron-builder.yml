@@ -1,0 +1,64 @@
+# electron-builder config for the macOS distribution build (Phase 7c.2).
+# Full plan: docs/distribution-plan.md. Build locally (unsigned, host arch):
+#   npm run dist:dir      # fast --dir build for smoke-testing the package
+#   npm run dist:mac      # full dmg + zip (needs signing creds to be shippable)
+appId: ai.tradingagentslab.desktop
+productName: Trading Agents Lab
+copyright: Copyright 2026 RBJ Global
+
+directories:
+  output: release
+  buildResources: build
+
+# Renderer (vite -> desktop/dist) + main/preload (vite-plugin-electron ->
+# desktop/dist-electron). The electron main bundle inlines its deps, so the
+# asar only needs the build outputs + package.json.
+files:
+  - dist/**
+  - dist-electron/**
+  - package.json
+  # Runtime icon assets: main.ts resolves ICON_PNG_PATH = APP_ROOT/build/icon.png
+  # (the BrowserWindow icon option reads it). Without this it isn't in the asar.
+  - build/icon.png
+  - build/icon.icns
+
+# The frozen Python engine (PyInstaller onedir from tools/build-engine.sh) lands
+# at Contents/Resources/engine/. engine-runner.ts spawns Resources/engine/tal-engine
+# when app.isPackaged. It lives OUTSIDE the asar (extraResources) so it is a real
+# on-disk executable that can be spawned.
+extraResources:
+  - from: ../dist/tal-engine
+    to: engine
+
+mac:
+  category: public.app-category.education
+  # No explicit arch: each build targets the runner's HOST arch. Locally that's
+  # arm64; in CI the release matrix runs macos-14 (arm64) + macos-13 (x64) so we
+  # get both native slices (PyInstaller freezes the engine per-arch -> two native
+  # DMGs rather than a fragile universal2 + lipo of the engine). zip is required
+  # for electron-updater on macOS. See .github/workflows/release.yml.
+  target:
+    - dmg
+    - zip
+  minimumSystemVersion: "12.0"
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  # !! 7c.5 NOTARIZATION GOTCHA !!
+  # electron-builder's default signing pass does NOT reliably deep-sign Mach-Os
+  # placed under extraResources (the frozen engine + its dylibs). The app gets
+  # signed but the engine binary is missed -> notarization REJECTS the build.
+  # When the Developer ID cert is available, add an afterSign hook that runs
+  # `codesign --force --options runtime --deep --sign <ID>` over
+  # Contents/Resources/engine BEFORE notarization. Until then we build unsigned.
+
+dmg:
+  title: ${productName} ${version}
+
+# Auto-update feed (electron-updater, wired in 7c.4). Publishing happens from CI
+# on a version tag; left here so the updater can read releases once they exist.
+publish:
+  provider: github
+  owner: RBJGlobal
+  repo: TradingAgentsLab

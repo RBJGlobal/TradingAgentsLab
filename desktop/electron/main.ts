@@ -23,6 +23,8 @@ import {
 import { checkUpstream, type UpstreamCheckResult } from './upstream-check';
 import { loadWindowState, saveWindowState } from './window-state';
 import { waitForPreload } from './preload-ready';
+import { CONSENT_VERSION, getAcceptedVersion, recordConsent } from './consent';
+import { registerUpdater } from './updater';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -116,6 +118,21 @@ async function createWindow() {
 
 ipcMain.handle('engine:get-handshake', async (): Promise<EngineHandshake> => {
   return startEngine();
+});
+
+// First-launch consent gate (Phase 7c.3). The renderer asks for the accepted
+// vs required version on mount and blocks the UI until they match.
+ipcMain.handle('consent:get', () => ({
+  acceptedVersion: getAcceptedVersion(),
+  requiredVersion: CONSENT_VERSION,
+}));
+ipcMain.handle('consent:accept', () => {
+  recordConsent();
+  return true;
+});
+// Decline = the user does not agree to the educational-use terms, so we quit.
+ipcMain.handle('consent:decline', () => {
+  app.quit();
 });
 
 ipcMain.handle('secrets:availability', () => ({
@@ -280,7 +297,14 @@ app.whenReady().then(() => {
   // NOTE: `setIcon` accepts PNG-based NativeImage paths only — .icns is
   // for the bundled .app, not for the dynamic dock-icon API. Production
   // electron-builder will still read build/icon.icns for the bundle.
-  app.dock?.setIcon(ICON_PNG_PATH);
+  //
+  // Gated to dev only: in a packaged app ICON_PNG_PATH points inside the
+  // asar and the bundle already carries its own icon, so calling setIcon
+  // there is both unnecessary and a hard failure (a missing-image rejection
+  // here previously broke the whenReady chain before startEngine ran).
+  if (!app.isPackaged) {
+    app.dock?.setIcon(ICON_PNG_PATH);
+  }
 
   // When the engine crashes after a good handshake, the renderer is holding a
   // now-dead port/token. Push an event so it drops its cached handshake; its
@@ -313,6 +337,10 @@ app.whenReady().then(() => {
   registerAppMenu(() => win);
 
   void createWindow();
+
+  // Auto-update (packaged only). Registered after the window exists so its
+  // status events reach the renderer. No-op in dev / until a release feed exists.
+  registerUpdater(() => win);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) void createWindow();

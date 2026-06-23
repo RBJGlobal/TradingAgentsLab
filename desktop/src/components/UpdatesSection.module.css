@@ -1,0 +1,73 @@
+.section {
+  margin-top: var(--tal-space-3);
+  padding-top: var(--tal-space-3);
+  border-top: 1px solid var(--tal-border-subtle);
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--tal-space-2);
+  font-family: var(--tal-font-sans);
+  font-size: var(--tal-text-sm);
+  color: var(--tal-text-primary);
+  cursor: pointer;
+}
+
+.hint {
+  margin: var(--tal-space-2) 0 0;
+  font-size: var(--tal-text-xs);
+  line-height: 1.5;
+  color: var(--tal-text-muted);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--tal-space-3);
+  margin-top: var(--tal-space-3);
+}
+
+.checkBtn {
+  font-family: var(--tal-font-sans);
+  font-size: var(--tal-text-sm);
+  padding: var(--tal-space-1) var(--tal-space-3);
+  border-radius: var(--tal-radius-md);
+  background: transparent;
+  color: var(--tal-text-secondary);
+  border: 1px solid var(--tal-border-default);
+  cursor: pointer;
+}
+
+.checkBtn:hover:not(:disabled) {
+  border-color: var(--tal-border-strong);
+  color: var(--tal-text-primary);
+}
+
+.checkBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.status {
+  font-size: var(--tal-text-xs);
+  color: var(--tal-text-secondary);
+}
+
+/* Prominent because applying the update is the action we want the user to take. */
+.installBtn {
+  font-family: var(--tal-font-sans);
+  font-size: var(--tal-text-sm);
+  font-weight: 600;
+  padding: var(--tal-space-1) var(--tal-space-3);
+  border-radius: var(--tal-radius-md);
+  background: var(--tal-accent);
+  color: var(--tal-text-inverse);
+  border: 1px solid var(--tal-accent);
+  cursor: pointer;
+}
+
+.installBtn:hover {
+  background: var(--tal-accent-strong);
+  border-color: var(--tal-accent-strong);
+}
