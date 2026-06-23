@@ -106,7 +106,7 @@ export interface OAuthCredentialsBridge {
 }
 
 contextBridge.exposeInMainWorld('tradingAgentsLab', {
-  version: '0.1.1',
+  version: '0.1.2',
   platform: process.platform,
   getEngineHandshake: (): Promise<EngineHandshake> =>
     ipcRenderer.invoke('engine:get-handshake'),
@@ -130,6 +130,7 @@ contextBridge.exposeInMainWorld('tradingAgentsLab', {
       ipcRenderer.invoke('updates:set-auto', enabled),
     check: (): Promise<{ ok: boolean; reason?: string }> =>
       ipcRenderer.invoke('updates:check'),
+    install: (): Promise<void> => ipcRenderer.invoke('updates:install'),
     onStatus: (
       handler: (status: UpdatesStatusBridge) => void,
     ): (() => void) => {

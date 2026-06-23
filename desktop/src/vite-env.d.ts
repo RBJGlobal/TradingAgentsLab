@@ -135,6 +135,7 @@ interface UpdatesBridge {
   getState: () => Promise<UpdatesStateBridge>;
   setAuto: (enabled: boolean) => Promise<boolean>;
   check: () => Promise<{ ok: boolean; reason?: string }>;
+  install: () => Promise<void>;
   onStatus: (handler: (status: UpdatesStatusBridge) => void) => () => void;
 }
 

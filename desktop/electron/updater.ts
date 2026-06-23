@@ -102,11 +102,25 @@ export function registerUpdater(getWindow: () => BrowserWindow | null): void {
       return { ok: false };
     }
   });
+  ipcMain.handle('updates:install', () => {
+    // The reliable install path: quitAndInstall quits the app, applies the
+    // downloaded update, and relaunches. The generic in-app Restart / Shut down
+    // do NOT apply an update (only a true quit triggers autoInstallOnAppQuit),
+    // which is confusing — so the UI offers an explicit "Restart & install".
+    autoUpdater.quitAndInstall();
+  });
 
-  // Eager check on launch, only when packaged AND the user hasn't opted out.
-  if (app.isPackaged && getAutoUpdate()) {
-    autoUpdater
-      .checkForUpdates()
-      .catch((err) => send('error', { message: String(err) }));
+  // Auto-check on launch AND periodically, when packaged and not opted out.
+  // (Checking only at launch means a long-running app never notices updates.)
+  // autoDownload pulls it in the background; update-downloaded pops the prompt.
+  if (app.isPackaged) {
+    const check = () => {
+      if (!getAutoUpdate()) return;
+      autoUpdater
+        .checkForUpdates()
+        .catch((err) => send('error', { message: String(err) }));
+    };
+    check();
+    setInterval(check, 4 * 60 * 60 * 1000); // re-check every 4 hours
   }
 }

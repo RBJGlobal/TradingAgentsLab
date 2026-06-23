@@ -92,7 +92,14 @@ export default function UpdatesSection() {
     }
   }, []);
 
+  const onInstall = useCallback(() => {
+    // Explicit, reliable install. The in-app Restart / Shut down do NOT apply an
+    // update; this calls quitAndInstall in main.
+    void window.tradingAgentsLab.updates.install();
+  }, []);
+
   const supported = state?.supported ?? false;
+  const downloaded = status?.state === 'downloaded';
   const label = statusLabel(status, supported);
 
   return (
@@ -112,14 +119,20 @@ export default function UpdatesSection() {
         can turn it off here.
       </p>
       <div className={styles.actions}>
-        <button
-          type="button"
-          onClick={onCheck}
-          disabled={busy || !supported}
-          className={styles.checkBtn}
-        >
-          {busy ? 'Checking…' : 'Check for updates'}
-        </button>
+        {downloaded ? (
+          <button type="button" onClick={onInstall} className={styles.installBtn}>
+            Restart &amp; install{status?.version ? ` v${status.version}` : ''}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onCheck}
+            disabled={busy || !supported}
+            className={styles.checkBtn}
+          >
+            {busy ? 'Checking…' : 'Check for updates'}
+          </button>
+        )}
         {label && <span className={styles.status}>{label}</span>}
       </div>
     </div>
