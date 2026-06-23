@@ -3,14 +3,15 @@ import Analyze from './pages/Analyze';
 import Settings from './pages/Settings';
 import History from './pages/History';
 import Watchlist from './pages/Watchlist';
+import LearnAI from './pages/LearnAI';
 import StatusStrip from './components/StatusStrip';
 import { UpstreamCheckModal } from './components/UpstreamCheckModal';
 import { checkUpstream, type UpstreamCheckResult } from './lib/upstream';
 import styles from './App.module.css';
 
-type Route = 'analyze' | 'watchlist' | 'history' | 'settings';
+type Route = 'analyze' | 'watchlist' | 'history' | 'learn' | 'settings';
 
-const ROUTES: Route[] = ['analyze', 'watchlist', 'history', 'settings'];
+const ROUTES: Route[] = ['analyze', 'watchlist', 'history', 'learn', 'settings'];
 
 function parseHash(hash: string): Route {
   const cleaned = hash.replace(/^#/, '') as Route;
@@ -188,23 +189,7 @@ function App() {
         {navItem('analyze', 'Analyze')}
         {navItem('watchlist', 'Watchlist')}
         {navItem('history', 'History')}
-        {/* External: opens Clawdemy (RBJ Global's free AI education platform)
-            in the browser. Not an in-app route. The http(s) URL is routed to
-            the OS browser by main.ts setWindowOpenHandler. */}
-        <a
-          className={styles.navItem}
-          href="https://clawdemy.org"
-          target="_blank"
-          rel="noreferrer"
-          data-testid="nav-learn"
-          title="Clawdemy: free AI education (opens in your browser)"
-        >
-          <span className={styles.navItemDot} />
-          <span className={styles.navItemBody}>
-            <span>Learn AI ↗</span>
-            <span className={styles.navItemCaption}>Clawdemy · Free AI education</span>
-          </span>
-        </a>
+        {navItem('learn', 'Learn AI')}
         <div className={styles.navSpacer} />
         {navItem('settings', 'Settings')}
       </nav>
@@ -223,6 +208,7 @@ function App() {
         </div>
         {route === 'watchlist' && <Watchlist />}
         {route === 'history' && <History />}
+        {route === 'learn' && <LearnAI />}
         {route === 'settings' && <Settings />}
       </main>
 
