@@ -257,3 +257,16 @@ playwright-report/
 desktop/test-results/
 desktop/playwright-report/
 desktop/playwright/.cache/
+
+# Internal-governance / cross-product internals — kept LOCAL, never published
+# (founder directive 2026-06-24; see private memory project-public-repo-governance-purge).
+/CLAUDE.md
+/Handover.md
+/WORKLOG.md
+/backlog.md
+/REMAINING.md
+/tools/clawless-probe.mjs
+/docs/release-setup.md
+/docs/distribution-plan.md
+/docs/engine-freeze-spike-notes.md
+/docs/desktop-distribution-playbook.md
