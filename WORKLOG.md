@@ -6,6 +6,37 @@
 
 ---
 
+## 2026-06-20 -> 2026-06-23 — Phase 7c: macOS distribution end-to-end (signed, notarized, auto-updating) + Learn AI + onboarding
+
+**Goal:** take the app from dev-only to a distributable, self-updating macOS product. Done and merged to main; only the public GA launch remains.
+
+**Phase 7c (merged via PR #14, onboarding via PR #15):**
+- **7c.1 engine freeze** — PyInstaller `onedir` (`engine/engine.spec`, `freeze_entry.py`, `tools/build-engine.sh`). Spike proved the frozen engine runs standalone (handshake + real yfinance) with no venv. onedir not onefile (cold-start + notarization).
+- **7c.2 packaging** — `electron-builder.yml` + `build/entitlements.mac.plist`; engine staged via `extraResources`; `engine-runner.ts` spawns `Resources/engine/tal-engine` when `app.isPackaged`. First packaged build auto-signed (Developer ID in keychain), hardened runtime, `codesign --verify --deep --strict` passed (engine deep-signed too). Fixed a real bug: dev-only `app.dock.setIcon()` ran packaged and broke `whenReady` before `startEngine` (gated to `!app.isPackaged`).
+- **7c.3 consent gate** — blocking first-launch educational-use agreement (`consent.ts` + `ConsentGate`), versioned local persistence, decline = quit. +9 tests.
+- **7c.4 auto-update** — electron-updater + GitHub Releases; `updater.ts` + `prefs.ts` + Settings `UpdatesSection` (toggle default-on, manual check, live status). +9 tests.
+- **7c.5 CI release** — `.github/workflows/release.yml` (tag-driven, arm64-only matrix, sign/notarize/publish) + `docs/release-setup.md`.
+
+**Identity:** switched signing from the founder's personal account to the **RBJ Global org** Developer ID (old `6KR5F3225N` retired). Founder created the org cert + set 5 GitHub secrets.
+
+**Decisions:** **arm64-only for v1** (Intel deferred, 2026-06-22). `auth_kind` left as provenance.
+
+**OTA validated live** on the founder's Mac v0.1.0 -> v0.1.4: clean install (no Gatekeeper warning), keychain-authorized safeStorage, full auto-detect -> download -> proactive "Restart now" popup -> one-click install. Feedback-driven additions: explicit "Restart & install" button + proactive dialog (in-app Restart/Shut down do NOT apply updates, only quitAndInstall) + 4h periodic re-check.
+
+**Learn AI page** (PR #14): external Clawdemy link -> in-app route (`src/pages/LearnAI.tsx`): mission, read/listen, founder bio + LinkedIn, one "Open Clawdemy (free)" button. Copy pulled factually from clawdemy.org + rbjglobal.com.
+
+**Provider onboarding callout** (PR #15): fresh install with no provider -> Analyze shows `ProviderSetupCallout.tsx` (demo-state explanation + "Set up a provider" button -> Settings); auto-hides once a provider is added.
+
+**Gotchas logged in the playbook:** onedir-not-onefile; deep-sign extraResources; dev-only-code-in-packaged-app trap; runtime assets must be in `files`; `CSC_IDENTITY_AUTODISCOVERY=false` ignored by EB26; release tags collide with upstream's `v*` tags (verify `git tag -l`); electron-builder makes a duplicate stray draft per run; GitHub release feed has a few-minutes propagation lag.
+
+**Reusable artifact:** `docs/desktop-distribution-playbook.md` (app-agnostic, for the next RBJ app) + memory pointer.
+
+**State at end:** `main` at `71d99f3`; gates green (engine 265, vitest 37, type-check, build). Published test releases v0.1.1-v0.1.4 (latest); `main` == v0.1.4.
+
+**Next session opens with:** cut the GA release from main (confirm version) -> CI -> publish; hand the download link to GSD for tradingagentslab.ai; to production.
+
+---
+
 ## 2026-06-16 (cont.) — deferred-cleanup pass: cleared the entire REMAINING.md Part 2
 
 **Goal:** Founder reviewed the overnight sweep and authorized working through every deliberately-deferred item so the codebase is clean and we don't repeat the exercise. Re-confirmed each agent-reported finding against source before acting (several turned out to be already-fine — see below). Same branch `regression-sweep-2026-06-16`, unpushed.

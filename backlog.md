@@ -82,7 +82,7 @@
 - 🟢 **Detail-fetch timeout** — 8s AbortController on `getSession` (`56864a8`).
 - 🟢 **Settings persistence (window size)** — `desktop/electron/window-state.ts`, persists bounds to `<userData>/window-state.json` (`e0fe81d`).
 - ⚪ **Watchlist daily re-analyze cadence** — minor unstarted feature (auto-reanalyze tracked tickers on a schedule). Buildable autonomously; needs a small design call (in-app scheduler vs. on-launch sweep).
-- ⚪ **Distribution: signed macOS DMG + Windows installer** — 🔴 gated on Apple Developer cert (~weeks out). Auto-update mechanism deferred. See Phase 7b.
+- 🟢 **Distribution: signed + notarized macOS DMG + OTA auto-update (Phase 7c)** — DONE, merged 2026-06-23 (arm64; Intel/Windows deferred). Signed/notarized via electron-builder, CI-published, electron-updater OTA. See [`docs/distribution-plan.md`](docs/distribution-plan.md).
 
 ## Phase 7b — Launch prep ✅ MOSTLY DONE / RELAXED (founder decision 2026-06-10)
 
@@ -95,7 +95,7 @@
 - 🟢 **Settings → About "Legal & Disclaimers"** — three external links to the site legal pages (`4655110`).
 - ✋ **Cookie Policy** — CLOSED by founder. No cookies, no login, localStorage only → nothing to disclose. Covered by Privacy Policy.
 - ✋ **Pre-launch securities-lawyer review** — CLOSED by founder. Not engaging counsel for a free, non-monetized, analysis-only educational app. Revisit ONLY at the monetization inflection point (per CLAUDE.md §3 + memory `project_monetization_roadmap.md`).
-- ⚪ **DMG distribution build** — signed + notarized via `electron-builder`. **Apple Developer Program (RBJ Global) certified 2026-06-20** → unblocked. Now planned as **Phase 7c**: see [`docs/distribution-plan.md`](docs/distribution-plan.md). Implementation starts after founder reviews the plan.
+- 🟢 **DMG distribution build (Phase 7c)** — DONE, merged 2026-06-23. Signed + notarized, CI-published, OTA auto-update, first-launch consent gate, provider onboarding callout. arm64-only for v1. Ships under the RBJ Global org Developer ID. Validated live (v0.1.0 → v0.1.4). Remaining: cut the public GA release.
 
 ## Phase 8 — Webhooks for external broker handoff ✅ DONE
 
@@ -148,7 +148,7 @@
 3. **Reviewer pass on model picker** — in progress; read-only, no keys.
 
 **Externally gated (not actionable now):**
-4. **Signed macOS DMG + OTA auto-update (Phase 7c)** — Apple cert obtained 2026-06-20; full plan in [`docs/distribution-plan.md`](docs/distribution-plan.md). Long pole is freezing the Python engine (PyInstaller). Awaiting founder review of the plan, then implement.
+4. 🟢 **Phase 7c distribution — DONE (merged 2026-06-23).** Signed/notarized DMG + OTA auto-update + consent gate + Learn AI page + provider onboarding callout + tag-driven CI release, all on `main`, validated live across v0.1.0 → v0.1.4. **Remaining for launch:** cut the public GA release (pick version, e.g. v1.0.0) + point tradingagentslab.ai download at it (GSD owns the site). Intel build + DMG cosmetics deferred.
 5. **Phase 8c+ detached Telegram sidecar** — deferred future enhancement.
 
 **Closed by founder decision (not doing):**
