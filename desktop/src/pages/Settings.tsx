@@ -1103,7 +1103,7 @@ function AboutTab({ availability, secretsCount }: AboutTabProps) {
       <dl className={styles.aboutList}>
         <div className={styles.aboutRow}>
           <dt className={styles.aboutKey}>Version</dt>
-          <dd className={styles.aboutValue}>0.1.4</dd>
+          <dd className={styles.aboutValue}>1.0.0</dd>
         </div>
         <div className={styles.aboutRow}>
           <dt className={styles.aboutKey}>License</dt>
