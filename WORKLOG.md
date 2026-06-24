@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-06-24 — v1.0.0 GA launch + LinkedIn + governance-purge directive
+
+- **v1.0.0 GA shipped.** First RBJ product to a real public release. Tag-driven CI built/signed/notarized; published as latest. main at v1.0.0.
+- **Site download LIVE.** Handed the release to GSD; he wired tradingagentslab.ai/download to a one-click direct arm64 .dmg (build-time-resolved), Intel/Linux/Windows → build-from-source. Verified end-to-end. NOTE: future releases need a GSD site redeploy to refresh the direct link. (GSD house rule learned: founder authorizes each site's prod push directly.)
+- **LinkedIn assets:** square logo from the app icon (`assets/linkedin/`, committed) + About/launch-post copy (`founder/linkedin/`, gitignored). LinkedIn company page live.
+- **Governance-purge directive** (relayed via Founder Advisor): move internal-governance files out of the public repo + scrub history. Ran the read-only AUDIT (no creds leaked; cross-product internals exposed, esp. CLAUDE.md). The ClaudeLink reply to Advisor was BLOCKED by the safety classifier (don't broadcast the sensitive digest); surfaced to founder. Audit + plan captured in PRIVATE memory `project-public-repo-governance-purge`. Pending founder's morning go.
+- **Memory swept:** added `project-tal-ga-shipped`, `project-public-repo-governance-purge`; updated `project-founder-bio-deferred` (bio now public, deferral ended).
+
+**Next session opens with:** the public-repo governance purge (founder go) → optional prune of v0.1.x test releases → Phase 6 / watchlist / Intel.
+
+---
+
 ## 2026-06-20 -> 2026-06-23 — Phase 7c: macOS distribution end-to-end (signed, notarized, auto-updating) + Learn AI + onboarding
 
 **Goal:** take the app from dev-only to a distributable, self-updating macOS product. Done and merged to main; only the public GA launch remains.

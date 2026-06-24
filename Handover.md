@@ -18,10 +18,11 @@
 
 **Trading Agents Lab v1.0.0 is GA / in production.** Published 2026-06-24 as the first public release: https://github.com/RBJGlobal/TradingAgentsLab/releases/tag/v1.0.0 (signed + notarized macOS Apple Silicon DMG, latest). `main` at `3e19f9e` (= v1.0.0 tag). Phase 7c (macOS distribution) is done and merged, plus the Learn AI page and a first-run provider onboarding callout. The whole pipeline is validated end-to-end on real CI and the founder's own Mac: signed + notarized DMG, tag-driven GitHub Actions release, and over-the-air auto-update (tested across 0.1.0 -> 0.1.4 -> 1.0.0, including the proactive "Restart now" one-click install).
 
-### Post-GA status
-- **Download link handed to Global Sites Developer** (ClaudeLink) to wire the tradingagentslab.ai download button. Recommended he link the stable `/releases/latest` page. Platform note given: Apple Silicon only, auto-updates, free/AGPL.
-- **Test releases v0.1.0-v0.1.4** still on the releases page (pruning offered to founder; may be cleaned up).
-- Founder's installed app will auto-update 0.1.4 -> 1.0.0 on next relaunch.
+### Post-GA status (launch complete)
+- **Site download is LIVE + verified.** GSD wired tradingagentslab.ai/download → a **one-click direct arm64 `.dmg`** (resolved at the site's build time; GitHub serves it as an attachment). Secondary "Other builds / checksums / source" link → the releases page. Intel/Linux/Windows routed to build-from-source. Verified end-to-end (page 200, direct .dmg 200 attachment ~165MB). **Future releases need a GSD site redeploy to refresh the direct link** (see release steps above).
+- **LinkedIn assets done:** square logo in `assets/linkedin/` (400px/1024px PNG + 400px JPG, committed); the About + launch-post copy in `founder/linkedin/trading-agents-lab-linkedin.md` (gitignored, founder-local). The LinkedIn company page is live (logo + banner).
+- **Test releases v0.1.0-v0.1.4** still on the releases page (pruning was OFFERED to founder, not yet actioned — confirm before deleting public releases).
+- GSD's house rule (learned this launch): **the founder authorizes each site's prod push directly**; GSD won't deploy on a relayed signal.
 
 ### What's on main (all merged, all green)
 - **Phase 7c.1-7c.5:** PyInstaller engine freeze (`engine/engine.spec`, `engine/freeze_entry.py`, `tools/build-engine.sh`); electron-builder signed/notarized packaging (`desktop/electron-builder.yml`, `desktop/build/entitlements.mac.plist`); `engine-runner.ts` spawns the bundled engine when `app.isPackaged`; first-launch consent gate (`electron/consent.ts` + `components/ConsentGate.tsx`); auto-update (`electron/updater.ts` + `electron/prefs.ts` + `components/UpdatesSection.tsx`: electron-updater + GitHub Releases, toggle + proactive "Restart now" dialog + "Restart & install" button + 4h periodic re-check); CI release (`.github/workflows/release.yml`).
@@ -39,12 +40,13 @@
 engine pytest **265**, type-check clean, vitest **37**, prod build clean.
 
 ### Open (post-GA)
-- **GSD wiring the site download** on tradingagentslab.ai (handed off; awaiting his confirmation it's live, then verify the link).
+- **TOP MORNING ACTION — public-repo internal-governance purge (needs founder go).** Founder directive (relayed via Founder Advisor 2026-06-24): move internal-governance files (this file, CLAUDE.md, WORKLOG, backlog, planning docs, dev scripts) out of THIS public repo to a private home + scrub history. **Audit done (read-only); details + classification + plan are in PRIVATE memory `project-public-repo-governance-purge`** (deliberately NOT duplicated here, since this file is public + itself a purge target). No credentials leaked. The Advisor reply was BLOCKED by the safety classifier (do not broadcast the sensitive audit over ClaudeLink) — founder decides how the Advisor gets the report. Execute on founder's explicit go.
+- **CLAUDE.md update deferred:** founder asked to update it during wrap-up, but it is the top purge target, so no new content was added (it is moving private).
 - **Prune test releases** v0.1.0-v0.1.4 (offered to founder; pending his go).
 - **Backlog (not launch-gating):** Phase 6 Clawless tap (needs token), watchlist daily cadence, Intel build (re-add `macos-13` to the release matrix), DMG cosmetics.
 
 ### First moves next session
-1. Confirm GSD wired the tradingagentslab.ai download (verify the link end to end).
+1. **Public-repo governance purge** — see PRIVATE memory `project-public-repo-governance-purge` for the audit + plan; execute on founder go.
 2. Prune the v0.1.x test releases if founder approved.
 3. Then optionally Phase 6 Clawless tap / watchlist cadence / Intel build.
 
