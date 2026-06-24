@@ -148,7 +148,7 @@
 3. **Reviewer pass on model picker** — in progress; read-only, no keys.
 
 **Externally gated (not actionable now):**
-4. 🟢 **Phase 7c distribution — DONE (merged 2026-06-23).** Signed/notarized DMG + OTA auto-update + consent gate + Learn AI page + provider onboarding callout + tag-driven CI release, all on `main`, validated live across v0.1.0 → v0.1.4. **Remaining for launch:** cut the public GA release (pick version, e.g. v1.0.0) + point tradingagentslab.ai download at it (GSD owns the site). Intel build + DMG cosmetics deferred.
+4. 🟢 **Phase 7c distribution + GA — SHIPPED.** Signed/notarized DMG + OTA auto-update + consent gate + Learn AI page + provider onboarding callout + tag-driven CI release. **v1.0.0 GA released 2026-06-24** (https://github.com/RBJGlobal/TradingAgentsLab/releases/tag/v1.0.0). Remaining: GSD wires the tradingagentslab.ai download; optional prune of v0.1.x test releases; Intel build + DMG cosmetics deferred.
 5. **Phase 8c+ detached Telegram sidecar** — deferred future enhancement.
 
 **Closed by founder decision (not doing):**

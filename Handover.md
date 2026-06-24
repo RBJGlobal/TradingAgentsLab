@@ -12,11 +12,16 @@
 
 **Owner:** Junaid Siddiqi, founder. Treats Claude as principal developer/architect for TradingAgentsLab.
 
-## Where we are right now (as of 2026-06-23, Phase 7c distribution COMPLETE + onboarding)
+## Where we are right now (as of 2026-06-24, v1.0.0 GA SHIPPED)
 
 ### Headline
 
-**The app is a finished, distributable product on `main` (HEAD `71d99f3`).** Phase 7c (macOS distribution) is done and merged, plus the Learn AI page and a first-run provider onboarding callout. The whole pipeline is validated end-to-end on real CI and the founder's own Mac: signed + notarized DMG, tag-driven GitHub Actions release, and over-the-air auto-update (tested across 0.1.0 -> 0.1.4, including the proactive "Restart now" one-click install). Only the public GA launch remains.
+**Trading Agents Lab v1.0.0 is GA / in production.** Published 2026-06-24 as the first public release: https://github.com/RBJGlobal/TradingAgentsLab/releases/tag/v1.0.0 (signed + notarized macOS Apple Silicon DMG, latest). `main` at `3e19f9e` (= v1.0.0 tag). Phase 7c (macOS distribution) is done and merged, plus the Learn AI page and a first-run provider onboarding callout. The whole pipeline is validated end-to-end on real CI and the founder's own Mac: signed + notarized DMG, tag-driven GitHub Actions release, and over-the-air auto-update (tested across 0.1.0 -> 0.1.4 -> 1.0.0, including the proactive "Restart now" one-click install).
+
+### Post-GA status
+- **Download link handed to Global Sites Developer** (ClaudeLink) to wire the tradingagentslab.ai download button. Recommended he link the stable `/releases/latest` page. Platform note given: Apple Silicon only, auto-updates, free/AGPL.
+- **Test releases v0.1.0-v0.1.4** still on the releases page (pruning offered to founder; may be cleaned up).
+- Founder's installed app will auto-update 0.1.4 -> 1.0.0 on next relaunch.
 
 ### What's on main (all merged, all green)
 - **Phase 7c.1-7c.5:** PyInstaller engine freeze (`engine/engine.spec`, `engine/freeze_entry.py`, `tools/build-engine.sh`); electron-builder signed/notarized packaging (`desktop/electron-builder.yml`, `desktop/build/entitlements.mac.plist`); `engine-runner.ts` spawns the bundled engine when `app.isPackaged`; first-launch consent gate (`electron/consent.ts` + `components/ConsentGate.tsx`); auto-update (`electron/updater.ts` + `electron/prefs.ts` + `components/UpdatesSection.tsx`: electron-updater + GitHub Releases, toggle + proactive "Restart now" dialog + "Restart & install" button + 4h periodic re-check); CI release (`.github/workflows/release.yml`).
@@ -33,16 +38,15 @@
 ### Gates (all green on main)
 engine pytest **265**, type-check clean, vitest **37**, prod build clean.
 
-### Open — only the GA launch + standing backlog
-- **GA release:** cut the public launch release from main (pick version, e.g. v1.0.0 or v0.1.5). Founder authorized the GA sequence 2026-06-23.
-- **Site download link:** point tradingagentslab.ai at the release. Owned by **Global Sites Developer** (hand off, do not edit the site tree).
-- **Tidy test releases** (v0.1.0-v0.1.4) if desired.
-- **Backlog (not launch-gating):** Phase 6 Clawless tap (needs token), watchlist daily cadence, Intel build, DMG cosmetics.
+### Open (post-GA)
+- **GSD wiring the site download** on tradingagentslab.ai (handed off; awaiting his confirmation it's live, then verify the link).
+- **Prune test releases** v0.1.0-v0.1.4 (offered to founder; pending his go).
+- **Backlog (not launch-gating):** Phase 6 Clawless tap (needs token), watchlist daily cadence, Intel build (re-add `macos-13` to the release matrix), DMG cosmetics.
 
 ### First moves next session
-1. Cut the GA release (confirm version) -> CI -> publish.
-2. Hand the download link to GSD for tradingagentslab.ai.
-3. Then optionally Phase 6 / watchlist cadence.
+1. Confirm GSD wired the tradingagentslab.ai download (verify the link end to end).
+2. Prune the v0.1.x test releases if founder approved.
+3. Then optionally Phase 6 Clawless tap / watchlist cadence / Intel build.
 
 ---
 
