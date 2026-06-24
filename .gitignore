@@ -237,6 +237,9 @@ engine/__pycache__/
 # Local-only persisted state — never commit user session data.
 data/
 
+# Founder-only marketing / personal notes (LinkedIn copy, etc.) — local, not committed.
+/founder/
+
 
 # The Python `lib/` rule above (line ~17) was inherited from upstream
 # TradingAgents and shadows desktop application source under desktop/src/lib/.
