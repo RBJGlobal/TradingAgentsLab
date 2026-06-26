@@ -109,3 +109,81 @@ async def test_clean_frame_unaffected(monkeypatch):
     assert summary.last_close == 105.5
     assert summary.sessions == 2
     assert summary.as_of == "2026-06-12"
+
+
+# --- Stale-frame guard (port of upstream #1021) -----------------------------
+#
+# yfinance intermittently returns a year-old partial frame that still has
+# complete bars and a real Close, so it clears the empty + incomplete-bar
+# checks and would otherwise feed a wrong "current" price into the debate.
+# The guard rejects a frame whose newest bar is far older than trade_date,
+# comparing against trade_date (not today) so backtest dates stay valid.
+
+
+@pytest.mark.asyncio
+async def test_stale_frame_raises_data_unavailable(monkeypatch):
+    """A year-old frame (complete bars, real Close) requested for a current
+    date must be rejected, not reported as the live price."""
+    frame = _frame(
+        {
+            "Open": [100.0, 101.0],
+            "High": [105.0, 106.0],
+            "Low": [99.0, 100.0],
+            "Close": [104.0, 105.5],
+            "Volume": [1000.0, 1100.0],
+        },
+        ["2025-06-11", "2025-06-12"],  # ~1 year before the requested date
+    )
+    _fake_yfinance(monkeypatch, frame)
+
+    with pytest.raises(DataUnavailable, match="stale"):
+        await default_provider.quote_summary(ticker="NVDA", trade_date="2026-06-25")
+
+
+@pytest.mark.asyncio
+async def test_backtest_date_not_flagged_stale(monkeypatch):
+    """A historical/backtest trade_date whose newest bar sits on the requested
+    date must NOT trip the staleness guard (it compares against trade_date,
+    not today)."""
+    frame = _frame(
+        {
+            "Open": [100.0, 101.0],
+            "High": [105.0, 106.0],
+            "Low": [99.0, 100.0],
+            "Close": [104.0, 105.5],
+            "Volume": [1000.0, 1100.0],
+        },
+        ["2024-06-03", "2024-06-04"],
+    )
+    _fake_yfinance(monkeypatch, frame)
+
+    summary = await default_provider.quote_summary(
+        ticker="NVDA", trade_date="2024-06-04"
+    )
+
+    assert summary.last_close == 105.5
+    assert summary.as_of == "2024-06-04"
+
+
+@pytest.mark.asyncio
+async def test_stale_boundary_within_window_is_kept(monkeypatch):
+    """A newest bar exactly at the staleness threshold (10 calendar days,
+    e.g. a long-holiday gap) is still usable, not rejected."""
+    frame = _frame(
+        {
+            "Open": [100.0, 101.0],
+            "High": [105.0, 106.0],
+            "Low": [99.0, 100.0],
+            "Close": [104.0, 105.5],
+            "Volume": [1000.0, 1100.0],
+        },
+        ["2026-06-14", "2026-06-15"],  # newest bar 10 days before 2026-06-25
+    )
+    _fake_yfinance(monkeypatch, frame)
+
+    summary = await default_provider.quote_summary(
+        ticker="NVDA", trade_date="2026-06-25"
+    )
+
+    assert summary.last_close == 105.5
+    assert summary.as_of == "2026-06-15"

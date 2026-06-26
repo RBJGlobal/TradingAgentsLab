@@ -148,6 +148,12 @@ class YFinanceProvider:
         return headlines
 
 
+# A retained bar this many calendar days before the requested trade_date is
+# treated as stale. Generous enough to span long holiday weekends, tight enough
+# to catch the year-old frames yfinance occasionally returns (upstream #1021).
+MAX_QUOTE_STALE_DAYS = 10
+
+
 def _yfinance_quote_summary(
     spec: TickerSpec, trade_date: str, lookback_days: int
 ) -> QuoteSummary:
@@ -188,6 +194,24 @@ def _yfinance_quote_summary(
             f"closed session to summarize yet"
         )
     hist = hist.tail(lookback_days)
+
+    # Freshness guard. yfinance intermittently returns a stale frame (e.g. a
+    # year-old partial response) that still has complete bars and a real Close,
+    # so it clears the empty + incomplete-bar checks above and would feed a
+    # wrong "current" price into the debate context and the decision card
+    # (upstream #1021). Reject a frame whose newest retained bar is far older
+    # than the requested trade_date. Comparing against trade_date (not today)
+    # keeps historical/backtest dates valid: there the newest bar legitimately
+    # sits on or near the requested date, so stale_days stays small.
+    latest_bar = hist.index[-1].date()
+    stale_days = (_parse_date(trade_date) - latest_bar).days
+    if stale_days > MAX_QUOTE_STALE_DAYS:
+        raise DataUnavailable(
+            f"yfinance returned stale data for {spec.display} (yf symbol "
+            f"{spec.yfinance_symbol}): newest bar is {latest_bar.isoformat()}, "
+            f"{stale_days} days before the requested {trade_date}. Refusing to "
+            f"report a stale price."
+        )
 
     last = hist.iloc[-1]
     first = hist.iloc[0]
