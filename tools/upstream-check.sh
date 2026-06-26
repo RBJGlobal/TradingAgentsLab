@@ -32,7 +32,11 @@ fi
 
 if [[ "${1:-}" != "--offline" ]]; then
   echo "Fetching upstream + tags…"
-  git fetch upstream --tags --quiet
+  # --force: upstream occasionally re-points an existing tag (e.g. v0.1.1),
+  # which a plain --tags fetch refuses to clobber, killing the script under
+  # set -e before it can report. Forcing the tag update is safe here: this
+  # script only reads refs, never merges.
+  git fetch upstream --tags --force --quiet
 fi
 
 LATEST_UPSTREAM_TAG="$(git tag -l --sort=-version:refname --merged upstream/main | head -1)"
