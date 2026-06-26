@@ -61,27 +61,43 @@ fi
 
 echo
 echo "=== Upstream check (TauricResearch/TradingAgents) ==="
-echo "Latest tagged release : $LATEST_UPSTREAM_TAG"
-echo "upstream/main HEAD    : $UPSTREAM_HEAD"
-echo "our main HEAD         : $OUR_HEAD"
-echo "We are BEHIND by      : $BEHIND_COUNT commits"
-echo "We are AHEAD by       : $AHEAD_COUNT commits (our additions)"
-echo "Unreleased on upstream: $PAST_TAG_COUNT commits past $LATEST_UPSTREAM_TAG"
+echo "Latest tagged release   : $LATEST_UPSTREAM_TAG"
+echo "upstream/main HEAD      : $UPSTREAM_HEAD"
+echo "our main HEAD           : $OUR_HEAD"
+echo "Raw commit divergence   : $BEHIND_COUNT upstream commits not in our history"
+echo "Our additions on top    : $AHEAD_COUNT commits"
+echo "Unreleased on upstream  : $PAST_TAG_COUNT commits past $LATEST_UPSTREAM_TAG"
 
 if [[ "$BEHIND_COUNT" -gt 0 ]]; then
   echo
-  echo "Upstream commits NOT yet in our main:"
+  echo "┌─────────────────────────────────────────────────────────────────────┐"
+  echo "│ DO NOT report this as \"we are $BEHIND_COUNT commits behind.\"          "
+  echo "│ We are a SELECTIVE-PORTING fork: we cherry-pick features by hand and"
+  echo "│ NEVER merge upstream/main wholesale. So this raw count counts work"
+  echo "│ we have ALREADY absorbed (e.g. the sentiment_analyst rename = our"
+  echo "│ own commit 6d514e8). The number overstates real drift, often hugely."
+  echo "│"
+  echo "│ The ONLY meaningful surface is the latest-release delta, and within"
+  echo "│ it only the commits whose SUBSTANCE we have not yet ported. To assess:"
+  echo "│   1. git log <our-last-ported-tag>..$LATEST_UPSTREAM_TAG --oneline"
+  echo "│   2. For each candidate, grep our history/code to see if it is already"
+  echo "│      ported (git log --grep=, or read the relevant source)."
+  echo "│   3. Most upstream commits do not apply to us (CLI flows, lint/CI,"
+  echo "│      i18n, providers we don't surface). Port only what helps OUR"
+  echo "│      analysis-only engine; ADAPT to our code, don't blind-merge."
+  echo "└─────────────────────────────────────────────────────────────────────┘"
+  echo
+  echo "Full raw list (for reference only, NOT a to-do list):"
   git log "main..upstream/main" --oneline | sed 's/^/  /'
   echo
-  echo "Review needed. After deciding to merge:"
-  echo "  git fetch upstream"
-  echo "  git merge upstream/main      # or: git rebase upstream/main"
-  echo "  bash tools/dev-smoke.sh      # rule out engine regressions"
-  echo "  engine/.venv/bin/python -m pytest engine/tests/  # CostGuard + storage tests"
+  echo "If you decide to port something, after adapting it:"
+  echo "  bash tools/dev-smoke.sh                            # engine HTTP/WS contract"
+  echo "  engine/.venv/bin/python -m pytest engine/tests/    # full engine gate"
   echo
-  echo "Note: upstream changes may touch agent prompts (engine/live_debate.py"
-  echo "wraps the upstream agent role definitions). Spot-check for any"
-  echo "renames or signature changes before merging."
+  echo "Note: our engine wraps upstream agent roles (engine/live_debate.py) and"
+  echo "uses its OWN data path (engine/data_providers.py), not tradingagents/"
+  echo "dataflows. A fix to upstream dataflows may be dormant in our product;"
+  echo "port the INTENT to where our code actually runs it."
   exit 1
 fi
 
