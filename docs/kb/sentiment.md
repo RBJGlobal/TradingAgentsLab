@@ -84,7 +84,7 @@ If you want to expose the raw blocks to other agents, the parameter is `_format_
 The only data leaving your machine for sentiment purposes is **the ticker symbol**, same as for any other data fetch. StockTwits and Reddit see:
 
 - An HTTP GET with the ticker in the URL
-- A polite User-Agent identifying TradingAgentsLab
+- A polite User-Agent identifying Trading Agents Lab
 
 No user identifier, no auth token, no account ID. The fetchers don't collect or persist anything from the responses beyond the formatted plaintext that goes into the prompt.
 

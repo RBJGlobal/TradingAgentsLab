@@ -295,11 +295,14 @@ _AGENTS: list[_Agent] = [
         name="trader",
         phase="trader",
         system_prompt=(
-            "You are the trader. Given the analyst and researcher views, "
-            "produce a concrete trade plan in 3-5 sentences: whether to enter, "
-            "size posture (small / standard / sized up), and a defined-risk "
-            "stop level if you would enter. If you would not enter, say HOLD "
-            "and explain why."
+            "You are the trader seat on this simulated research desk. Given "
+            "the analyst and researcher views, describe in 3-5 sentences how "
+            "a hypothetical practitioner might structure this idea: whether "
+            "the setup looks actionable, what size posture it would merit "
+            "(small / standard / sized up), and what invalidation level would "
+            "break the thesis. If the setup does not look actionable, say so "
+            "and explain why. This is an analytical exercise, not an "
+            "instruction to trade."
         ),
     ),
     _Agent(
@@ -333,11 +336,19 @@ _AGENTS: list[_Agent] = [
         name="portfolio_manager",
         phase="risk",
         system_prompt=(
-            "You are the portfolio manager. Make the final decision: BUY, "
-            "SELL, or HOLD. Output exactly two lines:\n"
-            "Line 1: one of: ACTION=BUY | ACTION=SELL | ACTION=HOLD\n"
-            "Line 2: CONFIDENCE=<float between 0 and 1>\n"
-            "Then 2-3 sentences of reasoning. Be decisive."
+            "You are the portfolio manager chairing a research committee. "
+            "Summarize the committee's analytical stance. You do NOT issue "
+            "trade instructions; you assess how the evidence balances. "
+            "Output exactly five lines:\n"
+            "Line 1: one of: STANCE=BULLISH | STANCE=MODERATELY_BULLISH | "
+            "STANCE=NEUTRAL | STANCE=MODERATELY_BEARISH | STANCE=BEARISH\n"
+            "Line 2: CONVICTION=<float between 0 and 1>\n"
+            "Line 3: BULL_STRENGTH=<integer 0-100, how strong the bull case "
+            "argued in this debate is>\n"
+            "Line 4: BEAR_STRENGTH=<integer 0-100, how strong the bear case "
+            "argued in this debate is>\n"
+            "Line 5: RISK=LOW | RISK=MODERATE | RISK=ELEVATED\n"
+            "Then 2-3 sentences of reasoning. Be decisive in your assessment."
         ),
     ),
 ]
@@ -411,39 +422,85 @@ def _format_context(
     return "\n".join(lines)
 
 
-def _parse_decision(content: str) -> dict:
-    """Extract ACTION / CONFIDENCE from the portfolio_manager output.
+# The five analytical stances the committee can land on, from most to least
+# constructive. These are ANALYTICAL assessments, deliberately not trade
+# directives (no buy/sell/hold): the app summarizes how the evidence balances
+# and the user makes any investment decision themselves.
+STANCES = (
+    "bullish",
+    "moderately_bullish",
+    "neutral",
+    "moderately_bearish",
+    "bearish",
+)
 
-    Tolerant of formatting drift — if the lines aren't found, falls back to
-    HOLD / 0.5 with the raw content as reasoning.
+RISK_LEVELS = ("low", "moderate", "elevated")
+
+
+def _parse_decision(content: str) -> dict:
+    """Extract the committee assessment from the portfolio_manager output.
+
+    Tolerant of formatting drift — any line that isn't found falls back to a
+    neutral default (NEUTRAL / 0.5 conviction / 50-50 strengths / moderate
+    risk) with the raw content as reasoning.
     """
     import re
 
-    action = "HOLD"
-    confidence = 0.5
-    m = re.search(r"ACTION\s*=\s*(BUY|SELL|HOLD)", content, re.IGNORECASE)
+    stance = "neutral"
+    conviction = 0.5
+    bull_strength = 50
+    bear_strength = 50
+    risk_level = "moderate"
+
+    m = re.search(
+        r"STANCE\s*=\s*(BULLISH|MODERATELY_BULLISH|NEUTRAL|MODERATELY_BEARISH|BEARISH)",
+        content,
+        re.IGNORECASE,
+    )
     if m:
-        action = m.group(1).upper()
-    m = re.search(r"CONFIDENCE\s*=\s*([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
+        stance = m.group(1).lower()
+    m = re.search(r"CONVICTION\s*=\s*([0-9]*\.?[0-9]+)", content, re.IGNORECASE)
     if m:
         try:
             v = float(m.group(1))
             if 0 <= v <= 1:
-                confidence = v
+                conviction = v
             elif 0 <= v <= 100:
-                confidence = v / 100
+                conviction = v / 100
         except ValueError:
             pass
+    for key in ("BULL_STRENGTH", "BEAR_STRENGTH"):
+        m = re.search(rf"{key}\s*=\s*([0-9]+)", content, re.IGNORECASE)
+        if m:
+            try:
+                v = int(m.group(1))
+                if 0 <= v <= 100:
+                    if key == "BULL_STRENGTH":
+                        bull_strength = v
+                    else:
+                        bear_strength = v
+            except ValueError:
+                pass
+    m = re.search(r"RISK\s*=\s*(LOW|MODERATE|ELEVATED)", content, re.IGNORECASE)
+    if m:
+        risk_level = m.group(1).lower()
     # Strip the directives from the reasoning so it reads naturally.
     reasoning = re.sub(
-        r"^\s*(ACTION|CONFIDENCE)\s*=.*$",
+        r"^\s*(STANCE|CONVICTION|BULL_STRENGTH|BEAR_STRENGTH|RISK)\s*=.*$",
         "",
         content,
         flags=re.IGNORECASE | re.MULTILINE,
     ).strip()
     if not reasoning:
         reasoning = content.strip()
-    return {"action": action, "confidence": confidence, "reasoning": reasoning}
+    return {
+        "stance": stance,
+        "conviction": conviction,
+        "bull_strength": bull_strength,
+        "bear_strength": bear_strength,
+        "risk_level": risk_level,
+        "reasoning": reasoning,
+    }
 
 
 # Imported lazily inside finalize so cost_guard's import chain (which pulls
@@ -482,8 +539,11 @@ async def live_debate(
             "ticker": ticker,
             "trade_date": trade_date,
             "decision": {
-                "action": "HOLD",
-                "confidence": 0.0,
+                "stance": "neutral",
+                "conviction": 0.0,
+                "bull_strength": 0,
+                "bear_strength": 0,
+                "risk_level": "moderate",
                 "reasoning": (
                     f"Live debate aborted: {exc}. Configure a supported "
                     "provider in Settings, or leave the LLM unconfigured "
@@ -558,8 +618,11 @@ async def live_debate(
                 # If the very first agent fails, abort early — no point continuing.
                 if not state.transcript:
                     final_decision = {
-                        "action": "HOLD",
-                        "confidence": 0.0,
+                        "stance": "neutral",
+                        "conviction": 0.0,
+                        "bull_strength": 0,
+                        "bear_strength": 0,
+                        "risk_level": "moderate",
                         "reasoning": (
                             f"Live debate aborted: {type(exc).__name__}. "
                             f"Check the configured {config.provider} key and model availability."
@@ -615,11 +678,14 @@ async def live_debate(
 
         if final_decision is None:
             final_decision = {
-                "action": "HOLD",
-                "confidence": 0.5,
+                "stance": "neutral",
+                "conviction": 0.5,
+                "bull_strength": 50,
+                "bear_strength": 50,
+                "risk_level": "moderate",
                 "reasoning": (
-                    "Live debate finished without an explicit portfolio decision. "
-                    "Defaulting to HOLD."
+                    "Live debate finished without an explicit committee "
+                    "assessment. Defaulting to a neutral stance."
                 ),
             }
 

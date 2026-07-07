@@ -1,0 +1,48 @@
+%% TradingAgents canonical LangGraph (bundled tradingagents/, pin 7e9e7b8 = upstream @ 2026-05-01)
+%% Source of truth: tradingagents/graph/setup.py (topology) + conditional_logic.py (termination)
+%% Shown with all four analysts selected. DEEP-model nodes = the two judges; everyone else = quick model.
+flowchart TD
+    START([START]) --> MA[Market Analyst]
+
+    %% ----- Analyst phase: each analyst runs a ReAct tool loop, then a Msg Clear node, then the next analyst -----
+    MA -->|tool calls| TM[tools_market]
+    TM --> MA
+    MA -->|no tool calls| CM[Msg Clear Market]
+    CM --> SA[Social Analyst]
+
+    SA -->|tool calls| TS[tools_social]
+    TS --> SA
+    SA -->|no tool calls| CS[Msg Clear Social]
+    CS --> NA[News Analyst]
+
+    NA -->|tool calls| TN[tools_news]
+    TN --> NA
+    NA -->|no tool calls| CN[Msg Clear News]
+    CN --> FA[Fundamentals Analyst]
+
+    FA -->|tool calls| TF[tools_fundamentals]
+    TF --> FA
+    FA -->|no tool calls| CF[Msg Clear Fundamentals]
+    CF --> BULL[Bull Researcher]
+
+    %% ----- Investment debate: alternates Bull/Bear until count >= 2 * max_debate_rounds, then the judge -----
+    BULL -->|"count < 2*max_debate_rounds"| BEAR[Bear Researcher]
+    BEAR -->|"count < 2*max_debate_rounds"| BULL
+    BULL -->|"count >= 2*max_debate_rounds"| RM[["Research Manager (DEEP model, judge)"]]
+    BEAR -->|"count >= 2*max_debate_rounds"| RM
+
+    RM --> TR[Trader]
+    TR --> AGG[Aggressive Analyst]
+
+    %% ----- Risk debate: rotates Aggressive -> Conservative -> Neutral until count >= 3 * max_risk_discuss_rounds -----
+    AGG -->|"count < 3*max_risk_discuss_rounds"| CON[Conservative Analyst]
+    CON -->|"count < 3*max_risk_discuss_rounds"| NEU[Neutral Analyst]
+    NEU -->|"count < 3*max_risk_discuss_rounds"| AGG
+    AGG -->|"count >= limit"| PM[["Portfolio Manager (DEEP model, gate)"]]
+    CON -->|"count >= limit"| PM
+    NEU -->|"count >= limit"| PM
+
+    PM --> FIN([END])
+
+    classDef judge fill:#2b2b2b,stroke:#e0a000,stroke-width:2px,color:#fff;
+    class RM,PM judge;

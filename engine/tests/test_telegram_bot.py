@@ -137,7 +137,7 @@ def isolate_spend_file(tmp_path, monkeypatch):
     yield spend_target
 
 
-async def _stub_live_debate_factory(cost_usd: float = 0.01, action: str = "HOLD"):
+async def _stub_live_debate_factory(cost_usd: float = 0.01):
     """Return an async generator that produces a single session.complete event.
 
     The bot's _run_debate iterates the generator until it sees the complete
@@ -151,8 +151,11 @@ async def _stub_live_debate_factory(cost_usd: float = 0.01, action: str = "HOLD"
             "ticker": "NVDA",
             "trade_date": "2026-05-18",
             "decision": {
-                "action": action,
-                "confidence": 0.55,
+                "stance": "neutral",
+                "conviction": 0.55,
+                "bull_strength": 50,
+                "bear_strength": 50,
+                "risk_level": "moderate",
                 "reasoning": "Synthetic test reasoning.",
             },
             "live": True,
@@ -176,8 +179,11 @@ async def _stub_live_debate_with_phases(cost_usd: float = 0.01):
             "ticker": "NVDA",
             "trade_date": "2026-05-18",
             "decision": {
-                "action": "HOLD",
-                "confidence": 0.55,
+                "stance": "neutral",
+                "conviction": 0.55,
+                "bull_strength": 50,
+                "bear_strength": 50,
+                "risk_level": "moderate",
                 "reasoning": "Synthetic test reasoning.",
             },
             "live": True,
@@ -231,6 +237,8 @@ class TestParseTicker:
 
 class TestFormatReply:
     def test_includes_disclaimer(self):
+        # Legacy dict (action/confidence keys) is accepted via stance.py helpers;
+        # BUY maps to the "Bullish" label in the new stance model.
         text = _format_decision_reply(
             ticker="NVDA",
             trade_date="2026-05-18",
@@ -241,7 +249,7 @@ class TestFormatReply:
             spent_today=0.012,
         )
         assert "Not investment advice" in text
-        assert "*BUY*" in text
+        assert "Bullish" in text
         assert "NVDA" in text
         assert "$0.012" in text or "$0.0120" in text
 
@@ -250,7 +258,7 @@ class TestFormatReply:
         text = _format_decision_reply(
             ticker="NVDA",
             trade_date="2026-05-18",
-            decision={"action": "HOLD", "confidence": 0.5, "reasoning": long_reasoning},
+            decision={"stance": "neutral", "conviction": 0.5, "reasoning": long_reasoning},
             cost_usd=0.01,
             live=True,
             cap_usd=5.0,
@@ -320,7 +328,7 @@ async def test_allowlisted_ticker_triggers_debate(patch_httpx_client):
             # which means we need to yield the event loop multiple times.
             for _ in range(20):
                 await asyncio.sleep(0.05)
-                if any("HOLD" in m.get("text", "") for m in transport.sent_messages):
+                if any("Neutral" in m.get("text", "") for m in transport.sent_messages):
                     break
         finally:
             await bot.stop()
@@ -328,7 +336,7 @@ async def test_allowlisted_ticker_triggers_debate(patch_httpx_client):
     # We expect at least the "Running Diligence" ack plus the decision reply.
     assert len(transport.sent_messages) >= 2
     decision_text = transport.sent_messages[-1]["text"]
-    assert "*HOLD*" in decision_text
+    assert "*Neutral*" in decision_text
     assert "$0.0123" in decision_text
     # Spend persisted.
     assert bot._spend["42"] == pytest.approx(0.0123)
@@ -364,7 +372,7 @@ async def test_run_debate_persists_via_helper(patch_httpx_client):
             transport.enqueue_updates([_msg(chat_id=42, text="NVDA", update_id=1)])
             for _ in range(20):
                 await asyncio.sleep(0.05)
-                if any("HOLD" in m.get("text", "") for m in transport.sent_messages):
+                if any("Neutral" in m.get("text", "") for m in transport.sent_messages):
                     break
         finally:
             await bot.stop()
@@ -741,7 +749,7 @@ async def test_per_agent_streaming_sends_progress_per_phase(patch_httpx_client):
             # message), then take the snapshot.
             for _ in range(40):
                 await asyncio.sleep(0.05)
-                if any("*HOLD*" in m.get("text", "") for m in transport.sent_messages):
+                if any("*Neutral*" in m.get("text", "") for m in transport.sent_messages):
                     break
         finally:
             await bot.stop()
@@ -754,7 +762,7 @@ async def test_per_agent_streaming_sends_progress_per_phase(patch_httpx_client):
     assert any("Researchers debating" in t for t in texts)
     assert any("Trader synthesizing" in t for t in texts)
     assert any("Risk committee reviewing" in t for t in texts)
-    assert any("*HOLD*" in t for t in texts)
+    assert any("*Neutral*" in t for t in texts)
 
 
 # ---- Reply mode (v1.2 /full /summary) -------------------------------------
@@ -837,7 +845,7 @@ async def test_full_mode_streams_agent_messages(patch_httpx_client):
             "type": "session.complete",
             "ticker": "NVDA",
             "trade_date": "2026-05-20",
-            "decision": {"action": "HOLD", "confidence": 0.5, "reasoning": "x"},
+            "decision": {"stance": "neutral", "conviction": 0.5, "reasoning": "x"},
             "live": True,
             "estimated_cost_usd": 0.001,
         }
@@ -860,7 +868,7 @@ async def test_full_mode_streams_agent_messages(patch_httpx_client):
             transport.enqueue_updates([_msg(chat_id=42, text="NVDA", update_id=1)])
             for _ in range(40):
                 await asyncio.sleep(0.05)
-                if any("*HOLD*" in m.get("text", "") for m in transport.sent_messages):
+                if any("*Neutral*" in m.get("text", "") for m in transport.sent_messages):
                     break
         finally:
             await bot.stop()
@@ -870,7 +878,7 @@ async def test_full_mode_streams_agent_messages(patch_httpx_client):
     assert any("[Bull Researcher]" in t and "fundamentals look strong" in t for t in texts)
     assert any("[Bear Researcher]" in t and "multiple is stretched" in t for t in texts)
     # Decision card still arrives last.
-    assert any("*HOLD*" in t for t in texts)
+    assert any("*Neutral*" in t for t in texts)
 
 
 @pytest.mark.asyncio
@@ -889,7 +897,7 @@ async def test_summary_mode_does_not_stream_agent_messages(patch_httpx_client):
             "type": "session.complete",
             "ticker": "NVDA",
             "trade_date": "2026-05-20",
-            "decision": {"action": "HOLD", "confidence": 0.5, "reasoning": "x"},
+            "decision": {"stance": "neutral", "conviction": 0.5, "reasoning": "x"},
             "live": True,
             "estimated_cost_usd": 0.001,
         }
@@ -912,14 +920,14 @@ async def test_summary_mode_does_not_stream_agent_messages(patch_httpx_client):
             transport.enqueue_updates([_msg(chat_id=42, text="NVDA", update_id=1)])
             for _ in range(40):
                 await asyncio.sleep(0.05)
-                if any("*HOLD*" in m.get("text", "") for m in transport.sent_messages):
+                if any("*Neutral*" in m.get("text", "") for m in transport.sent_messages):
                     break
         finally:
             await bot.stop()
 
     texts = [m["text"] for m in transport.sent_messages]
     assert not any("should NOT be forwarded" in t for t in texts)
-    assert any("*HOLD*" in t for t in texts)
+    assert any("*Neutral*" in t for t in texts)
 
 
 # ---- Persistent reply keyboard (v1.3) -------------------------------------
@@ -1139,8 +1147,8 @@ async def test_per_agent_streaming_ignores_unknown_phase(patch_httpx_client):
             "ticker": "NVDA",
             "trade_date": "2026-05-18",
             "decision": {
-                "action": "HOLD",
-                "confidence": 0.5,
+                "stance": "neutral",
+                "conviction": 0.5,
                 "reasoning": "x",
             },
             "live": True,
@@ -1168,7 +1176,7 @@ async def test_per_agent_streaming_ignores_unknown_phase(patch_httpx_client):
             transport.enqueue_updates([_msg(chat_id=42, text="NVDA", update_id=1)])
             for _ in range(40):
                 await asyncio.sleep(0.05)
-                if any("*HOLD*" in m.get("text", "") for m in transport.sent_messages):
+                if any("*Neutral*" in m.get("text", "") for m in transport.sent_messages):
                     break
         finally:
             await bot.stop()

@@ -1,6 +1,6 @@
 # ChatGPT OAuth
 
-*Use your paid ChatGPT subscription to power TradingAgentsLab debates, no API key, no per-token billing.*
+*Use your paid ChatGPT subscription to power Trading Agents Lab debates, no API key, no per-token billing.*
 
 > **For educational research and paper trading. This is not investment advice.**
 
@@ -10,7 +10,7 @@
 
 The standard OpenAI API charges per token. A power user running 50 debates per day on `gpt-4o-mini` spends pennies; the same user running 50 debates per day on `gpt-4o` or `gpt-5.4-pro` can rack up real money.
 
-If you already pay $20-$200/month for a **ChatGPT** account (Plus, Pro, Team, Enterprise), you've already paid for substantial daily LLM usage, but that quota lives behind a different endpoint family than `api.openai.com`. TradingAgentsLab's OAuth flow lets you route debates through that subscription endpoint instead.
+If you already pay $20-$200/month for a **ChatGPT** account (Plus, Pro, Team, Enterprise), you've already paid for substantial daily LLM usage, but that quota lives behind a different endpoint family than `api.openai.com`. Trading Agents Lab's OAuth flow lets you route debates through that subscription endpoint instead.
 
 The result: $0 per debate (within your subscription's rate limits), with the deeper reasoning of GPT-5.4-class models available for free at point of use.
 
@@ -33,7 +33,7 @@ To disconnect, click **Disconnect** on the same row. Both access and refresh tok
 
 ## Plan-tier detection
 
-When the OAuth flow completes, TradingAgentsLab decodes the access JWT and reads the `chatgpt_plan_type` claim from the `https://api.openai.com/auth` namespace. The detected tier is shown next to your email, *"plus plan"*, *"pro plan"*, *"team plan"*, etc.
+When the OAuth flow completes, Trading Agents Lab decodes the access JWT and reads the `chatgpt_plan_type` claim from the `https://api.openai.com/auth` namespace. The detected tier is shown next to your email, *"plus plan"*, *"pro plan"*, *"team plan"*, etc.
 
 If the tier comes back as **`free`**, a banner appears in Settings warning that Codex routing is unreliable on free-tier accounts. Free-tier debates may fail with quota errors or fall back to lower-quality models. **Paste an API key instead** if you're on the free tier.
 
@@ -59,7 +59,7 @@ https://chatgpt.com/backend-api/codex/responses
 
 This is the **Codex backend**, the same family that powers the ChatGPT web app and the Codex CLI, with billing handled via your ChatGPT subscription rate limits rather than per-token charges.
 
-TradingAgentsLab's OAuth path uses the Codex backend, sending requests with:
+Trading Agents Lab's OAuth path uses the Codex backend, sending requests with:
 
 - `Authorization: Bearer <access_token>`
 - `chatgpt-account-id: <account_id>` (also extracted from the JWT)
@@ -87,7 +87,7 @@ This integration is built on `@earendil-works/pi-ai` (MIT-licensed npm package) 
 
 ## Models available via OAuth
 
-The Codex backend supports a different (smaller) model list than the standard API. The TradingAgentsLab model dropdown for the OAuth path lists exactly the models that work with Codex:
+The Codex backend supports a different (smaller) model list than the standard API. The Trading Agents Lab model dropdown for the OAuth path lists exactly the models that work with Codex:
 
 - `gpt-5.4` (default, recommended)
 - `gpt-5.4-mini`
@@ -102,7 +102,7 @@ Unlike the API-key path, you cannot pick `gpt-4o`, `gpt-4o-mini`, or older model
 
 ## Anthropic and others
 
-OAuth is **OpenAI only**. Anthropic explicitly bans OAuth flows in their Terms of Service, TradingAgentsLab respects this and only offers API-key auth for Anthropic. OpenRouter and Gemini are also API-key only (neither has a comparable subscription-routing mechanism today).
+OAuth is **OpenAI only**. Anthropic explicitly bans OAuth flows in their Terms of Service, Trading Agents Lab respects this and only offers API-key auth for Anthropic. OpenRouter and Gemini are also API-key only (neither has a comparable subscription-routing mechanism today).
 
 ---
 
@@ -118,7 +118,7 @@ That makes the choice between an API key and OAuth a real decision in Pro, so he
 
 - The engine, the agent roster, the debate structure, and the tool calls.
 - The market data. Both paths fetch from the same sources for the same ticker and date.
-- The decision contract: action, confidence, rating, price target, time horizon, thesis.
+- The committee assessment fields: stance, conviction, bull strength, bear strength, risk level, reasoning (plus Pro's modeled scenario range, time horizon, and written thesis).
 - CostGuard, history, transcripts, and webhooks.
 
 ### What differs
@@ -131,7 +131,7 @@ That makes the choice between an API key and OAuth a real decision in Pro, so he
 | Endpoint | Official, versioned API | The Codex backend, an unofficial surface that OpenAI can change without notice |
 | Provider style | You can pick a provider whose output style you prefer | OpenAI models only |
 
-The "provider style" row deserves a plain explanation. We ran the same ticker on the same date through Pro twice, once over OAuth (OpenAI models) and once over an Anthropic API key, and compared the transcripts end to end. Both runs reached the **same decision** at the same confidence, grounded in the same market data with no numeric discrepancies. The differences were stylistic and structural: one run leaned harder on multi-year financial framing and produced more prescriptive risk parameters (specific allocation sizes, stop levels, hedge structures), the other was tighter, more hedged, and more explicit about the limits of its own sourcing. Neither style is objectively better; which one you prefer is a genuine matter of taste and workflow.
+The "provider style" row deserves a plain explanation. We ran the same ticker on the same date through Pro twice, once over OAuth (OpenAI models) and once over an Anthropic API key, and compared the transcripts end to end. Both runs reached the **same committee assessment** at the same conviction level, grounded in the same market data with no numeric discrepancies. The differences were stylistic and structural: one run leaned harder on multi-year financial framing and produced more prescriptive risk parameters (specific allocation sizes, stop levels, hedge structures), the other was tighter, more hedged, and more explicit about the limits of its own sourcing. Neither style is objectively better; which one you prefer is a genuine matter of taste and workflow.
 
 ### Choosing, in practice
 

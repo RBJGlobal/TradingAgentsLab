@@ -1,6 +1,6 @@
 # Security and Storage
 
-*Where TradingAgentsLab stores data on disk, how secrets are protected, and what to do when you change machines.*
+*Where Trading Agents Lab stores data on disk, how secrets are protected, and what to do when you change machines.*
 
 ---
 
@@ -32,7 +32,7 @@ You can find the exact path in **Settings → About → Secrets file**. The path
 
 ### Encryption model
 
-TradingAgentsLab uses Electron's `safeStorage` API, which delegates encryption to the OS:
+Trading Agents Lab uses Electron's `safeStorage` API, which delegates encryption to the OS:
 
 - **macOS:** Keychain Services. The encryption key is bound to your macOS user account.
 - **Windows:** DPAPI (Data Protection API). The encryption key is bound to your Windows user session.
@@ -87,7 +87,7 @@ What's stored per session:
 - Ticker + trade date
 - Provider, model, auth mode (api_key / oauth)
 - Full agent transcript (all 12 messages)
-- Decision (action, confidence, reasoning)
+- Committee assessment (stance, conviction, bull strength, bear strength, risk level, reasoning)
 - Token counts and estimated cost
 - Created timestamp
 - yfinance summary and headlines snapshot
@@ -127,7 +127,7 @@ Because `safeStorage` encryption is machine- and user-bound, you cannot copy `se
 
 ### Recovery procedure
 
-1. On your new machine, install TradingAgentsLab from scratch (see [getting-started.md](getting-started.md)).
+1. On your new machine, install Trading Agents Lab from scratch (see [getting-started.md](getting-started.md)).
 2. Open Settings and re-paste each API key from your password manager or the provider's dashboard.
 3. Re-connect OpenAI OAuth via the Connect button.
 4. Optionally, copy `data/sessions.db` from the old machine to preserve history.
@@ -141,7 +141,7 @@ There is no automated secrets export/import feature today. Manual re-entry is th
 - Plaintext API keys, never written anywhere.
 - Engine bearer tokens, generated at runtime, held in memory only.
 - Plaintext OAuth tokens, only the encrypted blob hits disk; in-memory access tokens are dropped between debate sessions.
-- Telemetry, TradingAgentsLab sends no analytics, no error reports, no usage data anywhere.
+- Telemetry, Trading Agents Lab sends no analytics, no error reports, no usage data anywhere.
 
 ---
 

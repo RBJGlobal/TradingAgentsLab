@@ -60,16 +60,22 @@ class WebhookFilter:
     """Per-webhook filter — both clauses AND together. Empty filter = fire
     on every session.complete (the sensible default for first-time users)."""
 
-    actions: list[str] = field(default_factory=list)
-    """Allowlist of action strings ('BUY' | 'SELL' | 'HOLD'). Empty = all."""
+    stances: list[str] = field(default_factory=list)
+    """Allowlist of stance strings ('bullish' | 'moderately_bullish' |
+    'neutral' | 'moderately_bearish' | 'bearish'). Legacy BUY/SELL/HOLD
+    values are normalized on read. Empty = all."""
 
-    min_confidence: float = 0.0
+    min_conviction: float = 0.0
     """Inclusive floor. 0.0 = no floor."""
 
-    def passes(self, *, action: str, confidence: float) -> bool:
-        if self.actions and action.upper() not in {a.upper() for a in self.actions}:
-            return False
-        if confidence < self.min_confidence:
+    def passes(self, *, stance: str, conviction: float) -> bool:
+        from .stance import normalize_stance
+
+        if self.stances:
+            allowed = {normalize_stance(s) for s in self.stances}
+            if normalize_stance(stance) not in allowed:
+                return False
+        if conviction < self.min_conviction:
             return False
         return True
 
@@ -99,9 +105,13 @@ class WebhookConfig:
                 url=str(d["url"]),
                 kind=kind,  # type: ignore[arg-type]
                 secret=(str(d["secret"]) if d.get("secret") else None),
+                # Legacy config keys (actions / min_confidence) from
+                # pre-stance installs are accepted and normalized.
                 filter=WebhookFilter(
-                    actions=list(f.get("actions") or []),
-                    min_confidence=float(f.get("min_confidence") or 0.0),
+                    stances=list(f.get("stances") or f.get("actions") or []),
+                    min_conviction=float(
+                        f.get("min_conviction") or f.get("min_confidence") or 0.0
+                    ),
                 ),
             )
         except (KeyError, ValueError, TypeError):
@@ -137,15 +147,34 @@ def _truncate(text: str, n: int = _MAX_REASONING_CHARS) -> str:
 
 
 def _summary_text(
-    *, ticker: str, trade_date: str, action: str, confidence: float, reasoning: str
+    *, ticker: str, trade_date: str, decision: dict[str, Any]
 ) -> str:
     """Shared human-readable summary used by all notification kinds. Stays
     under the strictest platform limit (Telegram 4096) by design."""
-    pct = f"{round(confidence * 100)}%"
+    from .stance import decision_conviction, decision_stance, stance_label
+
+    stance = stance_label(decision_stance(decision))
+    pct = f"{round(decision_conviction(decision) * 100)}%"
+    strengths = ""
+    if (
+        decision.get("bull_strength") is not None
+        and decision.get("bear_strength") is not None
+    ):
+        strengths = (
+            f"Bull thesis {decision['bull_strength']}/100 · "
+            f"Bear thesis {decision['bear_strength']}/100"
+        )
+        risk = str(decision.get("risk_level", "")).strip()
+        if risk:
+            strengths += f" · Risk {risk}"
+        strengths += "\n"
     return (
-        f"📊 *{ticker}* — *{action}* @ {pct}\n"
-        f"As-of {trade_date}\n\n"
-        f"{_truncate(reasoning)}"
+        f"📊 *{ticker}* — *{stance}* (conviction {pct})\n"
+        f"As-of {trade_date}\n"
+        f"{strengths}\n"
+        f"{_truncate(str(decision.get('reasoning', '')))}\n\n"
+        f"_Analytical stance, not a recommendation. Any investment "
+        f"decision is yours alone._"
     )
 
 
@@ -163,14 +192,22 @@ def _generic_payload(
 ) -> dict[str, Any]:
     """Generic JSON payload — full decision shape. Receivers (Cloudflare
     Workers, Lambdas, custom scripts) consume this directly."""
+    from .stance import decision_conviction, decision_stance
+
+    # v2: the decision block carries the analytical stance model. The app
+    # does not emit trade directives; receivers that automate on this feed
+    # own any mapping from stance to action on their side.
     return {
-        "schema": "tradingagentslab.webhook.v1",
+        "schema": "tradingagentslab.webhook.v2",
         "event": "session.complete",
         "ticker": ticker,
         "trade_date": trade_date,
         "decision": {
-            "action": decision.get("action", "HOLD"),
-            "confidence": decision.get("confidence", 0.0),
+            "stance": decision_stance(decision),
+            "conviction": decision_conviction(decision),
+            "bull_strength": decision.get("bull_strength"),
+            "bear_strength": decision.get("bear_strength"),
+            "risk_level": decision.get("risk_level"),
             "reasoning": decision.get("reasoning", ""),
         },
         "session_id": session_id,
@@ -186,13 +223,7 @@ def _slack_payload(
 ) -> dict[str, Any]:
     """Slack incoming-webhook shape. `text` is the fallback for clients that
     don't render Block Kit."""
-    text = _summary_text(
-        ticker=ticker,
-        trade_date=trade_date,
-        action=str(decision.get("action", "HOLD")),
-        confidence=float(decision.get("confidence", 0.0)),
-        reasoning=str(decision.get("reasoning", "")),
-    )
+    text = _summary_text(ticker=ticker, trade_date=trade_date, decision=decision)
     return {"text": text}
 
 
@@ -201,13 +232,7 @@ def _discord_payload(
 ) -> dict[str, Any]:
     """Discord webhook shape. Discord accepts markdown in `content` — same
     summary text as Slack."""
-    text = _summary_text(
-        ticker=ticker,
-        trade_date=trade_date,
-        action=str(decision.get("action", "HOLD")),
-        confidence=float(decision.get("confidence", 0.0)),
-        reasoning=str(decision.get("reasoning", "")),
-    )
+    text = _summary_text(ticker=ticker, trade_date=trade_date, decision=decision)
     return {"content": text}
 
 
@@ -224,13 +249,7 @@ def _telegram_payload(
     use the legacy `Markdown` mode for forgiveness on ticker symbols with
     underscores etc.
     """
-    text = _summary_text(
-        ticker=ticker,
-        trade_date=trade_date,
-        action=str(decision.get("action", "HOLD")),
-        confidence=float(decision.get("confidence", 0.0)),
-        reasoning=str(decision.get("reasoning", "")),
-    )
+    text = _summary_text(ticker=ticker, trade_date=trade_date, decision=decision)
     payload: dict[str, Any] = {"text": text, "parse_mode": "Markdown"}
     if chat_id:
         payload["chat_id"] = chat_id
@@ -354,14 +373,16 @@ async def dispatch_all(
     if not configs:
         return []
 
-    action = str(decision.get("action", "HOLD"))
-    confidence = float(decision.get("confidence", 0.0))
+    from .stance import decision_conviction, decision_stance
+
+    stance = decision_stance(decision)
+    conviction = decision_conviction(decision)
 
     # Filter first — filtered receivers don't open httpx connections.
     to_fire: list[WebhookConfig] = []
     results: list[WebhookResult] = []
     for c in configs:
-        if not c.filter.passes(action=action, confidence=confidence):
+        if not c.filter.passes(stance=stance, conviction=conviction):
             results.append(
                 WebhookResult(id=c.id, name=c.name, status="filtered")
             )

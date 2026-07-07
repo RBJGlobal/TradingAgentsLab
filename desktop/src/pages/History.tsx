@@ -8,6 +8,7 @@ import {
   type SessionDetail,
   type SessionSummary,
 } from '../lib/engine-client';
+import { stanceLabel, stanceLean } from '../lib/stance';
 import { buildTranscriptMarkdown } from '../lib/transcript';
 
 type View = 'list' | 'detail';
@@ -37,11 +38,13 @@ function formatRelative(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-function actionPillClass(action: string): string {
-  const key = action.toUpperCase();
-  if (key === 'BUY') return styles.pill_buy;
-  if (key === 'SELL') return styles.pill_sell;
-  return styles.pill_hold;
+// decision_action holds the stance string for new rows and BUY/SELL/HOLD
+// for rows persisted before the stance relabel — stanceLean normalizes both.
+function stancePillClass(value: string): string {
+  const lean = stanceLean(value);
+  if (lean === 'bullish') return styles.pill_bullish;
+  if (lean === 'bearish') return styles.pill_bearish;
+  return styles.pill_neutral;
 }
 
 function History() {
@@ -338,8 +341,8 @@ function History() {
               >
                 <div className={styles.rowHeadline}>
                   <span className={styles.rowTicker}>{s.ticker}</span>
-                  <span className={`${styles.actionPill} ${actionPillClass(s.decision_action)}`}>
-                    {s.decision_action}
+                  <span className={`${styles.actionPill} ${stancePillClass(s.decision_action)}`}>
+                    {stanceLabel(s.decision_action)}
                     <span className={styles.actionConfidence}>
                       {Math.round(s.decision_confidence * 100)}%
                     </span>

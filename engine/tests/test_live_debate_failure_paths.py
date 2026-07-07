@@ -121,7 +121,7 @@ async def test_unsupported_provider_yields_graceful_complete():
     assert types == ["session.start", "session.complete"]
     complete = events[-1]
     assert complete["live"] is False
-    assert complete["decision"]["action"] == "HOLD"
+    assert complete["decision"]["stance"] == "neutral"
     assert "unsupported provider" in complete["decision"]["reasoning"]
 
 
@@ -150,7 +150,7 @@ async def test_first_agent_failure_aborts_with_hold(monkeypatch):
     )
 
     types = [e["type"] for e in events]
-    # session.start → agent.message (error) → session.complete (HOLD)
+    # session.start → agent.message (error) → session.complete (neutral)
     assert types[0] == "session.start"
     assert "agent.message" in types
     assert types[-1] == "session.complete"
@@ -160,8 +160,8 @@ async def test_first_agent_failure_aborts_with_hold(monkeypatch):
     assert "RuntimeError" in err_msg["content"]
 
     complete = events[-1]
-    assert complete["decision"]["action"] == "HOLD"
-    assert complete["decision"]["confidence"] == 0.0
+    assert complete["decision"]["stance"] == "neutral"
+    assert complete["decision"]["conviction"] == 0.0
     assert "aborted" in complete["decision"]["reasoning"].lower()
 
     # Adapter lifecycle: open + close both ran exactly once.
@@ -260,7 +260,7 @@ async def test_reservation_finalized_on_successful_completion(monkeypatch, tmp_d
     fake = _FakeAdapter(
         script=[
             ("Trend is bullish.", 100, 50),
-            ("ACTION=BUY\nCONFIDENCE=70%\nGo for it.", 200, 80),
+            ("STANCE=BULLISH\nCONVICTION=0.70\nBULL_STRENGTH=70\nBEAR_STRENGTH=30\nRISK=MODERATE\nGo for it.", 200, 80),
         ],
     )
     monkeypatch.setattr(live_debate, "_AGENTS", _two_agents())
@@ -346,7 +346,7 @@ async def test_reservation_finalized_at_zero_on_oauth(monkeypatch, tmp_db):
 @pytest.mark.asyncio
 async def test_session_complete_carries_provider_metadata(monkeypatch):
     fake = _FakeAdapter(
-        script=[("ACTION=HOLD\nCONFIDENCE=60%\nReasoning here.", 100, 50)],
+        script=[("STANCE=NEUTRAL\nCONVICTION=0.60\nBULL_STRENGTH=50\nBEAR_STRENGTH=50\nRISK=MODERATE\nReasoning here.", 100, 50)],
     )
     monkeypatch.setattr(
         live_debate,
@@ -373,7 +373,7 @@ async def test_session_complete_carries_provider_metadata(monkeypatch):
     assert complete["model"] == "gpt-4o-mini"
     assert complete["input_tokens"] == 100
     assert complete["output_tokens"] == 50
-    assert complete["decision"]["action"] == "HOLD"
+    assert complete["decision"]["stance"] == "neutral"
 
 
 @pytest.mark.asyncio

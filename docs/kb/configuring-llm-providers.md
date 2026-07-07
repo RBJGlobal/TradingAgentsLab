@@ -8,7 +8,7 @@
 
 ## What ships today
 
-TradingAgentsLab supports seven LLM provider families. All seven can drive a real-LLM debate end-to-end:
+Trading Agents Lab supports seven LLM provider families. All seven can drive a real-LLM debate end-to-end:
 
 | Provider | Auth options | Default model | Notes |
 |---|---|---|---|
@@ -82,7 +82,7 @@ The default-active provider when you have multiple keys: first in the priority l
 
 ## How keys are stored
 
-TradingAgentsLab uses Electron's `safeStorage` API, which wraps:
+Trading Agents Lab uses Electron's `safeStorage` API, which wraps:
 
 - **macOS:** Keychain Services
 - **Windows:** DPAPI (Data Protection API)

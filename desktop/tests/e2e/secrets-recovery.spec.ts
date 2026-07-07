@@ -50,6 +50,13 @@ test('Settings renders recovery banner when secrets.json is corrupt at launch', 
   mkdirSync(userDataDir, { recursive: true });
   const secretsPath = path.join(userDataDir, 'secrets.json');
   writeFileSync(secretsPath, '{this is not valid json', 'utf-8');
+  // Pre-seed the first-launch consent gate — same as fixtures.ts; the
+  // blocking dialog would otherwise hide the status pill this test waits on.
+  writeFileSync(
+    path.join(userDataDir, 'consent.json'),
+    JSON.stringify({ acceptedVersion: 1, timestamp: new Date().toISOString() }),
+    'utf-8',
+  );
 
   // 2. Launch Electron against this sandbox
   const app = await electron.launch({

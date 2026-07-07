@@ -267,8 +267,12 @@ def write_session(
                     sid,
                     ticker,
                     trade_date,
-                    str(decision.get("action", "HOLD")),
-                    float(decision.get("confidence", 0.0)),
+                    # Column names predate the stance model (kept to avoid a
+                    # SQLite migration): decision_action now stores the stance
+                    # string, decision_confidence the conviction. Legacy rows
+                    # holding BUY/SELL/HOLD are display-mapped in the UI.
+                    str(decision.get("stance", decision.get("action", "neutral"))),
+                    float(decision.get("conviction", decision.get("confidence", 0.0))),
                     str(decision.get("reasoning", "")),
                     1 if live else 0,
                     provider,
@@ -310,9 +314,9 @@ def write_session_from_events(
         return None
     raw_decision = complete.get("decision")
     decision = raw_decision if isinstance(raw_decision, dict) else {
-        "action": "HOLD",
-        "confidence": 0.0,
-        "reasoning": "Session ended without a well-formed decision payload.",
+        "stance": "neutral",
+        "conviction": 0.0,
+        "reasoning": "Session ended without a well-formed assessment payload.",
     }
     return write_session(
         ticker=ticker,

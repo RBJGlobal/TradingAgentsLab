@@ -1,0 +1,244 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - region "Disclaimer" [ref=e3]: For educational and research purposes only, not investment advice.
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "Trading Agents Lab, home" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e7]
+        - generic [ref=e12]: Trading Agents Lab
+      - navigation "Primary" [ref=e13]:
+        - link "The flow" [ref=e14] [cursor=pointer]:
+          - /url: /flow/
+        - link "See it running" [ref=e15] [cursor=pointer]:
+          - /url: /tour/
+        - link "How it works" [ref=e16] [cursor=pointer]:
+          - /url: /how-it-works/
+        - link "Docs" [ref=e17] [cursor=pointer]:
+          - /url: /docs/
+        - link "About" [ref=e18] [cursor=pointer]:
+          - /url: /about/
+        - link "Security" [ref=e19] [cursor=pointer]:
+          - /url: /security/
+        - link "Download" [ref=e20] [cursor=pointer]:
+          - /url: /download/
+  - main [ref=e21]:
+    - article [ref=e22]:
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]: the flow
+          - heading "Twelve agents. Four phases. One transcript." [level=1] [ref=e27]:
+            - text: Twelve agents. Four phases.
+            - text: One transcript.
+          - paragraph [ref=e28]: The same pipeline a research desk runs informally, codified and made visible. Each next agent reads the full prior transcript before adding its own view, so the final decision is built on every prior step. Click any node to see what it reads and what it adds, or press Play to watch the debate stream through.
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: streaming · 0 / 12 agents
+            - button "Pause the flow" [ref=e33]: Pause
+          - generic [ref=e34]:
+            - generic:
+              - img
+            - generic:
+              - img
+              - generic: Trading Agents Lab
+            - application [ref=e35]:
+              - generic [ref=e37]:
+                - generic:
+                  - generic:
+                    - img
+                    - img:
+                      - group "Edge from technical_analyst to bull_researcher" [ref=e38] [cursor=pointer]
+                    - img:
+                      - group "Edge from technical_analyst to bear_researcher" [ref=e41] [cursor=pointer]
+                    - img:
+                      - group "Edge from technical_analyst to research_manager" [ref=e44] [cursor=pointer]
+                    - img:
+                      - group "Edge from fundamental_analyst to bull_researcher" [ref=e47] [cursor=pointer]
+                    - img:
+                      - group "Edge from fundamental_analyst to bear_researcher" [ref=e50] [cursor=pointer]
+                    - img:
+                      - group "Edge from fundamental_analyst to research_manager" [ref=e53] [cursor=pointer]
+                    - img:
+                      - group "Edge from news_analyst to bull_researcher" [ref=e56] [cursor=pointer]
+                    - img:
+                      - group "Edge from news_analyst to bear_researcher" [ref=e59] [cursor=pointer]
+                    - img:
+                      - group "Edge from news_analyst to research_manager" [ref=e62] [cursor=pointer]
+                    - img:
+                      - group "Edge from sentiment_analyst to bull_researcher" [ref=e65] [cursor=pointer]
+                    - img:
+                      - group "Edge from sentiment_analyst to bear_researcher" [ref=e68] [cursor=pointer]
+                    - img:
+                      - group "Edge from sentiment_analyst to research_manager" [ref=e71] [cursor=pointer]
+                    - img:
+                      - group "Edge from bull_researcher to trader" [ref=e74] [cursor=pointer]
+                    - img:
+                      - group "Edge from bear_researcher to trader"
+                    - img:
+                      - group "Edge from research_manager to trader" [ref=e77] [cursor=pointer]
+                    - img:
+                      - group "Edge from trader to risk_aggressive" [ref=e80] [cursor=pointer]
+                    - img:
+                      - group "Edge from trader to risk_conservative" [ref=e83] [cursor=pointer]
+                    - img:
+                      - group "Edge from trader to risk_neutral" [ref=e86] [cursor=pointer]
+                    - img:
+                      - group "Edge from trader to portfolio_manager" [ref=e89] [cursor=pointer]
+                  - generic:
+                    - group:
+                      - generic:
+                        - generic: phase_01
+                        - generic: Analysts
+                        - generic: Four perspectives, in parallel.
+                    - group:
+                      - generic:
+                        - generic: phase_02
+                        - generic: Researchers
+                        - generic: Argue both sides. A manager picks a lean.
+                    - group:
+                      - generic:
+                        - generic: phase_03
+                        - generic: Trader
+                        - generic: Concrete plan or HOLD.
+                    - group:
+                      - generic:
+                        - generic: phase_04
+                        - generic: Risk + Decision
+                        - generic: Three risk seats weigh in. PM closes.
+                    - group [ref=e92] [cursor=pointer]:
+                      - generic [ref=e93]:
+                        - generic [ref=e95]: technical_analyst
+                        - generic [ref=e96]: Technical Analyst
+                        - generic [ref=e97]: Price action, momentum, support and resistance
+                    - group [ref=e99] [cursor=pointer]:
+                      - generic [ref=e100]:
+                        - generic [ref=e102]: fundamental_analyst
+                        - generic [ref=e103]: Fundamental Analyst
+                        - generic [ref=e104]: Earnings, balance sheet, valuation, moat
+                    - group [ref=e106] [cursor=pointer]:
+                      - generic [ref=e107]:
+                        - generic [ref=e109]: news_analyst
+                        - generic [ref=e110]: News Analyst
+                        - generic [ref=e111]: Catalysts vs noise in the recent headlines
+                    - group [ref=e113] [cursor=pointer]:
+                      - generic [ref=e114]:
+                        - generic [ref=e116]: sentiment_analyst
+                        - generic [ref=e117]: Sentiment Analyst
+                        - generic [ref=e118]: Social positioning, StockTwits and Reddit
+                    - group [ref=e120] [cursor=pointer]:
+                      - generic [ref=e121]:
+                        - generic [ref=e123]: bull_researcher
+                        - generic [ref=e124]: Bull Researcher
+                        - generic [ref=e125]: Strongest long case
+                    - group [ref=e127] [cursor=pointer]:
+                      - generic [ref=e128]:
+                        - generic [ref=e130]: bear_researcher
+                        - generic [ref=e131]: Bear Researcher
+                        - generic [ref=e132]: Strongest short or avoid case
+                    - group [ref=e134] [cursor=pointer]:
+                      - generic [ref=e135]:
+                        - generic [ref=e137]: research_manager
+                        - generic [ref=e138]: Research Manager
+                        - generic [ref=e139]: Weigh asymmetry, set a lean
+                    - group [ref=e141] [cursor=pointer]:
+                      - generic [ref=e142]:
+                        - generic [ref=e144]: trader
+                        - generic [ref=e145]: Trader
+                        - generic [ref=e146]: Concrete plan or HOLD
+                    - group [ref=e148] [cursor=pointer]:
+                      - generic [ref=e149]:
+                        - generic [ref=e151]: risk_aggressive
+                        - generic [ref=e152]: Risk (Aggressive)
+                        - generic [ref=e153]: What is the team risking by being too cautious?
+                    - group [ref=e155] [cursor=pointer]:
+                      - generic [ref=e156]:
+                        - generic [ref=e158]: risk_conservative
+                        - generic [ref=e159]: Risk (Conservative)
+                        - generic [ref=e160]: What is the team risking by being too aggressive?
+                    - group [ref=e162] [cursor=pointer]:
+                      - generic [ref=e163]:
+                        - generic [ref=e165]: risk_neutral
+                        - generic [ref=e166]: Risk (Neutral)
+                        - generic [ref=e167]: The middle path. What is the lowest-regret action?
+                    - group [ref=e169] [cursor=pointer]:
+                      - generic [ref=e170]:
+                        - generic [ref=e172]: portfolio_manager
+                        - generic [ref=e173]: Portfolio Manager
+                        - generic [ref=e174]: "Final decision: action, confidence, reasoning"
+              - link "React Flow attribution" [ref=e177] [cursor=pointer]:
+                - /url: https://reactflow.dev
+                - text: React Flow
+          - paragraph [ref=e179]: Each next agent reads the full prior transcript. Same shape as the engine's live debate orchestrator. Illustrative, not advice.
+      - paragraph [ref=e182]: "Mirrors `engine/live_debate.py` in the open-source codebase. The visualization is illustrative; what the engine actually does is run real LLM calls through these agents and stream the transcript into the app or your Telegram bot. Output is educational only. Not investment advice."
+  - contentinfo [ref=e183]:
+    - generic [ref=e184]:
+      - generic [ref=e185]:
+        - generic [ref=e186]:
+          - heading "Product" [level=3] [ref=e187]
+          - list [ref=e188]:
+            - listitem [ref=e189]:
+              - link "Overview" [ref=e190] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e191]:
+              - link "How it works" [ref=e192] [cursor=pointer]:
+                - /url: /how-it-works/
+            - listitem [ref=e193]:
+              - link "Download" [ref=e194] [cursor=pointer]:
+                - /url: /download/
+            - listitem [ref=e195]:
+              - link "GitHub" [ref=e196] [cursor=pointer]:
+                - /url: https://github.com/RBJGlobal/TradingAgentsLab
+                - generic [ref=e197]: GitHub
+        - generic [ref=e198]:
+          - heading "Learn" [level=3] [ref=e199]
+          - list [ref=e200]:
+            - listitem [ref=e201]:
+              - link "Documentation" [ref=e202] [cursor=pointer]:
+                - /url: /docs/
+            - listitem [ref=e203]:
+              - link "Getting started" [ref=e204] [cursor=pointer]:
+                - /url: /docs/getting-started/
+            - listitem [ref=e205]:
+              - link "How it works (deep dive)" [ref=e206] [cursor=pointer]:
+                - /url: /docs/how-it-works/
+            - listitem [ref=e207]:
+              - link "Reading a Diligence run" [ref=e208] [cursor=pointer]:
+                - /url: /docs/reading-the-debate/
+        - generic [ref=e209]:
+          - heading "Trust" [level=3] [ref=e210]
+          - list [ref=e211]:
+            - listitem [ref=e212]:
+              - link "Security & privacy" [ref=e213] [cursor=pointer]:
+                - /url: /security/
+            - listitem [ref=e214]:
+              - link "About" [ref=e215] [cursor=pointer]:
+                - /url: /about/
+            - listitem [ref=e216]:
+              - link "Disclaimer" [ref=e217] [cursor=pointer]:
+                - /url: /legal/disclaimer/
+            - listitem [ref=e218]:
+              - link "Privacy policy" [ref=e219] [cursor=pointer]:
+                - /url: /legal/privacy/
+            - listitem [ref=e220]:
+              - link "Terms of use" [ref=e221] [cursor=pointer]:
+                - /url: /legal/terms/
+        - generic [ref=e222]:
+          - heading "Family" [level=3] [ref=e223]
+          - list [ref=e224]:
+            - listitem [ref=e225]:
+              - link "Part of the RBJ Global family →" [ref=e226] [cursor=pointer]:
+                - /url: /family/
+      - generic [ref=e228]:
+        - paragraph [ref=e229]:
+          - text: © 2026 Trading Agents Lab. AGPL-3.0 licensed. Forked from
+          - link "Tauric Research/TradingAgents" [ref=e230] [cursor=pointer]:
+            - /url: https://github.com/TauricResearch/TradingAgents
+          - text: (Apache-2.0).
+        - generic [ref=e231]:
+          - link "Follow on LinkedIn. Opens LinkedIn in a new tab." [ref=e232] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/117584287/
+            - img [ref=e233]
+            - generic [ref=e235]: LinkedIn
+          - paragraph [ref=e236]: No analytics · No tracking · No accounts
+  - alert [ref=e237]

@@ -1,6 +1,6 @@
 # Getting Started
 
-*How to clone the repo, set up the engine, install the desktop, and run TradingAgentsLab for the first time.*
+*How to clone the repo, set up the engine, install the desktop, and run Trading Agents Lab for the first time.*
 
 > **For educational research and paper trading. This is not investment advice.**
 
@@ -97,7 +97,7 @@ When the app opens, the Analyze page loads. The **Engine** status card in the mi
 
 1. The Analyze page defaults to ticker `NVDA` and today's date.
 2. Click **Analyze** (or press `Cmd+Enter`).
-3. The debate streams in over about 7 seconds, analysts, then researchers, then the trader, then the risk panel, then a final decision card.
+3. The debate streams in over about 7 seconds, analysts, then researchers, then the trader, then the risk panel, then a final committee assessment.
 
 By default, with no LLM provider configured, the debate is a **stub**: agent messages reference real Yahoo Finance data but the reasoning is canned. To activate real LLM reasoning, connect at least one provider (OpenAI, Anthropic, OpenRouter, Google Gemini, xAI Grok, or MiniMax, by API key or, for OpenAI, ChatGPT OAuth, or point it at a local runtime). See [configuring-llm-providers.md](configuring-llm-providers.md) and [oauth.md](oauth.md).
 

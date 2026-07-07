@@ -25,7 +25,7 @@ Concretely, a Pro analysis runs:
 - **Tool-using analysts.** The market, sentiment, news, and fundamentals analysts call real data tools mid-run (price history, indicator series, fundamentals, news) and iterate on the results, rather than working from a single pre-fetched summary.
 - **Multi-round researcher debate.** A bull researcher and a bear researcher argue the case in turns, and a research manager rules on the debate with an explicit rationale.
 - **A trader and a three-voice risk debate.** Aggressive, conservative, and neutral risk analysts stress-test the trader's plan before anything is finalized.
-- **A portfolio manager verdict.** The final decision carries a five-tier rating (Buy, Overweight, Hold, Underweight, Sell), a price target, a time horizon, and a written investment thesis, alongside the familiar BUY / SELL / HOLD action and confidence.
+- **A portfolio manager verdict.** The final assessment lands on one of five analytical stances (Bullish, Moderately bullish, Neutral, Moderately bearish, Bearish), a modeled scenario range, a time horizon, and a written investment thesis.
 - **A deep/quick model split.** Reasoning-heavy roles run on a stronger model while high-volume roles run on a faster one, configurable per run.
 - **Cross-run memory.** Past decisions on the same ticker are surfaced to the agents as context for the next run.
 
@@ -42,7 +42,7 @@ A full Pro run typically takes 8 to 15 minutes depending on provider, models, de
 | Analysts | Pre-fetched data summary | Tool-using, iterate mid-run |
 | Researcher debate | Single exchange | Multi-round with a ruling research manager |
 | Risk phase | Single pass | Aggressive / conservative / neutral debate |
-| Decision | Action + confidence + reasoning | Adds rating, price target, time horizon, investment thesis |
+| Decision | Committee assessment: stance + conviction + strengths + reasoning | Adds the full five-stance scale, modeled scenario range, time horizon, investment thesis |
 | Typical runtime | Under a minute | 8 to 15 minutes |
 | Transcript export | Copy as Markdown | Copy as Markdown, plus a full-page HTML reading view |
 | Cost controls | CostGuard caps | Same CostGuard caps |

@@ -1,0 +1,119 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: Trading Agents Lab Pro · The Diligence
+    - heading "TSLA · 2026-07-06" [level=1] [ref=e5]
+    - generic [ref=e6]: Generated 2026-07-06T06:13:39.099Z
+    - generic [ref=e7]:
+      - strong [ref=e8]: For educational research and paper trading.
+      - text: Trading Agents Lab does not provide investment advice.
+  - heading "Decision" [level=2] [ref=e9]
+  - generic [ref=e10]:
+    - generic [ref=e11]: SELL
+    - generic [ref=e12]: confidence 65% · rating Underweight · price target 337 · horizon 3-6 months
+    - paragraph [ref=e13]: Trim TSLA to 1.0-1.5% of equity allocation from benchmark weight, executing the reduction near current levels. Set a hard stop on residual exposure at a confirmed daily close below $375.
+    - heading "Investment thesis" [level=4] [ref=e14]
+    - paragraph [ref=e15]: "Valuation is the load-bearing pillar of the bear case: ~154x forward earnings against a 4.2% operating margin and 4.9% ROE."
+    - generic [ref=e16]: Not investment advice · LLM output may be inaccurate · Verify independently before any action
+  - heading "Data summary" [level=2] [ref=e17]
+  - list [ref=e18]:
+    - listitem [ref=e19]:
+      - generic [ref=e20]: Last close
+      - strong [ref=e21]: "393.45"
+    - listitem [ref=e22]:
+      - generic [ref=e23]: Period change
+      - text: "-5.92%"
+    - listitem [ref=e24]:
+      - generic [ref=e25]: Range
+      - text: 368.60 to 433.60
+    - listitem [ref=e26]:
+      - generic [ref=e27]: Avg daily volume
+      - text: 48,691,345
+    - listitem [ref=e28]:
+      - generic [ref=e29]: Sessions
+      - text: "22"
+    - listitem [ref=e30]:
+      - generic [ref=e31]: Source
+      - text: yfinance · as of 2026-07-02
+  - heading "News headlines" [level=2] [ref=e32]
+  - list [ref=e33]:
+    - listitem [ref=e34]:
+      - link "Tesla's blowout quarter comes with a warning sign" [ref=e35] [cursor=pointer]:
+        - /url: https://www.thestreet.com/example
+      - text: (TheStreet · 2026-07-06T02:33:00Z)
+  - heading "Analysts" [level=2] [ref=e36]
+  - article [ref=e37]:
+    - generic [ref=e38]: technical_analyst
+    - heading "Price structure overview" [level=2] [ref=e39]
+    - paragraph [ref=e40]:
+      - text: TSLA began 2026 near
+      - strong [ref=e41]: $457
+      - text: and declined toward a multi-month low of ~$337 in early April, a drawdown of approximately
+      - strong [ref=e42]: 26%
+      - text: . The most recent close on
+      - strong [ref=e43]: July 2
+      - text: was
+      - strong [ref=e44]: $393.45
+      - text: ", after a violent intraday swing (high $432, low $389)."
+    - heading "Moving averages" [level=2] [ref=e45]
+    - table [ref=e46]:
+      - rowgroup [ref=e47]:
+        - row "Indicator Latest Value Signal Interpretation" [ref=e48]:
+          - columnheader "Indicator" [ref=e49]
+          - columnheader "Latest Value" [ref=e50]
+          - columnheader "Signal" [ref=e51]
+          - columnheader "Interpretation" [ref=e52]
+      - rowgroup [ref=e53]:
+        - row "Price (Jul 2 close) $393.45 — Below both key moving averages" [ref=e54]:
+          - cell "Price (Jul 2 close)" [ref=e55]
+          - cell "$393.45" [ref=e56]
+          - cell "—" [ref=e57]
+          - cell "Below both key moving averages" [ref=e58]
+        - row "50 SMA $406.42 Bearish Price 3.3% below; near-term resistance" [ref=e59]:
+          - cell "50 SMA" [ref=e60]
+          - cell "$406.42" [ref=e61]
+          - cell "Bearish" [ref=e62]
+          - cell "Price 3.3% below; near-term resistance" [ref=e63]
+        - row "200 SMA $418.61 Bearish Price 6.4% below; long-term trend down" [ref=e64]:
+          - cell "200 SMA" [ref=e65]
+          - cell "$418.61" [ref=e66]
+          - cell "Bearish" [ref=e67]
+          - cell "Price 6.4% below; long-term trend down" [ref=e68]
+        - row "RSI 46.77 Neutral Below 50, recovering from the high-30s" [ref=e69]:
+          - cell "RSI" [ref=e70]
+          - cell "46.77" [ref=e71]
+          - cell "Neutral" [ref=e72]
+          - cell "Below 50, recovering from the high-30s" [ref=e73]
+        - row "ATR $19.62 High risk 60-day high; widen stops, reduce size" [ref=e74]:
+          - cell "ATR" [ref=e75]
+          - cell "$19.62" [ref=e76]
+          - cell "High risk" [ref=e77]
+          - cell "60-day high; widen stops, reduce size" [ref=e78]
+    - blockquote [ref=e79]:
+      - paragraph [ref=e80]: A death cross condition persists (50 SMA below 200 SMA). Rallies should be treated as countertrend until price reclaims $406 with RSI above 50.
+    - paragraph [ref=e81]:
+      - text: "FINAL TRANSACTION PROPOSAL:"
+      - strong [ref=e82]: HOLD
+  - heading "Researchers" [level=2] [ref=e83]
+  - article [ref=e84]:
+    - generic [ref=e85]: bull_researcher
+    - paragraph [ref=e86]:
+      - text: "Bull Analyst: The bear case takes a snapshot of a"
+      - strong [ref=e87]: transitional moment
+      - text: and pretends it is the destination. R&D spending jumped 41% year over year to $6.41B; that spending produced a
+      - emphasis [ref=e88]: commercially operating
+      - text: robotaxi service in Miami this week. Forward EPS of $2.55 implies
+      - strong [ref=e89]: 132% earnings growth
+      - text: .
+  - article [ref=e90]:
+    - generic [ref=e91]: bear_researcher
+    - paragraph [ref=e92]:
+      - text: "Bear Analyst: Tesla is spending more and making less. Operating margins collapsed from ~17% in 2022 to"
+      - strong [ref=e93]: 4.2%
+      - text: in Q1 2026. At 154x forward earnings you are paying a platform multiple for a business with 4.9% ROE.
+  - contentinfo [ref=e94]:
+    - generic [ref=e95]:
+      - strong [ref=e96]: For educational and research purposes only.
+      - text: Trading Agents Lab is
+      - strong [ref=e97]: not a registered investment advisor
+      - text: "and does not provide investment, financial, legal, or tax advice. The multi-agent LLM analyses on this page may be inaccurate, incomplete, or outdated: large language models can and do hallucinate. Nothing produced by this software is a recommendation to buy, sell, or hold any security, cryptocurrency, or other asset. Consult a qualified financial professional before making any investment decision. You assume all risk for any action you take based on this analysis. The maintainers and contributors accept no liability for losses arising from use of this software."
+    - generic [ref=e98]: Educational research only · Not a registered investment advisor · Not investment advice

@@ -1,6 +1,6 @@
 # Reading the Debate
 
-*A guided tour of the Analyze page, every element explained, from the input form to the decision card.*
+*A guided tour of the Analyze page, every element explained, from the input form to the committee assessment.*
 
 ---
 
@@ -11,7 +11,7 @@ The Analyze page has these sections, top to bottom:
 1. **Page header**, title and one-line description
 2. **Input card**, ticker, date, Analyze/Stop button
 3. **Status grid**, four status cards (Engine, Data, LLM, Clawless)
-4. **Debate stream**, session header, data summary strip, news card, phase cards, decision card
+4. **Debate stream**, session header, data summary strip, news card, phase cards, committee assessment
 5. **Disclaimer footer**
 
 ---
@@ -126,15 +126,17 @@ Phases render in order as their first message arrives: Analysts → Researchers 
 | Trader | trader |
 | Risk | risk_aggressive, risk_conservative, risk_neutral, portfolio_manager |
 
-### Decision card
+### Committee Assessment
 
-Appears after `session.complete` arrives. The card is color-coded by action:
+Appears after `session.complete` arrives. The app deliberately scores how the bull and bear cases argued rather than telling you what to do. The card is titled "Committee Assessment" and carries this disclaimer: "This assessment is an analytical output of a simulated research committee, not a recommendation. Any investment decision is yours alone."
 
-- **BUY**, green
-- **SELL**, red
-- **HOLD**, amber
+The card is color-coded by analytical stance:
 
-The card shows the action, confidence percentage, and the portfolio manager's reasoning. In stub mode the reasoning includes "Stub canned debate" and may reference real price data. In live mode the reasoning is the portfolio manager's actual model output.
+- **Bullish / Moderately bullish**, green
+- **Neutral**, amber
+- **Moderately bearish / Bearish**, red
+
+The card shows the stance, conviction percentage, bull and bear thesis strength scores (0-100), risk level, and the portfolio manager's reasoning. In stub mode the reasoning includes "Stub canned debate" and may reference real price data. In live mode the reasoning is the portfolio manager's actual model output.
 
 ---
 
@@ -142,7 +144,7 @@ The card shows the action, confidence percentage, and the portfolio manager's re
 
 The Analyze page ends with:
 
-> **For educational research and paper trading.** TradingAgentsLab does not provide investment advice. Trading decisions and any real-money outcomes are entirely your own.
+> **For educational research and paper trading.** Trading Agents Lab does not provide investment advice. Trading decisions and any real-money outcomes are entirely your own.
 
 This is not decorative. The app is designed for research and paper trading only.
 

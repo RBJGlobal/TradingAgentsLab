@@ -335,17 +335,17 @@ a.newsTitle:hover {
 @media (max-width: 720px) {
   .decisionUsage {
     grid-column: 1;
-    grid-row: 5;
+    grid-row: 6;
   }
 }
 
 /* SEC: disclaimers must be prominent AND close to the relevant content.
-   The decision card is the riskiest piece on the page — a clear
-   "BUY at 75% confidence" reads like a recommendation. Inline disclaimer
-   directly below the decision keeps regulatory positioning explicit. */
+   The assessment card is the riskiest piece on the page — even an
+   analytical stance can be misread as a recommendation. Inline disclaimer
+   directly below it keeps the regulatory positioning explicit. */
 .decisionDisclaimer {
   grid-column: 1 / -1;
-  grid-row: 5;
+  grid-row: 6;
   font-family: var(--tal-font-mono);
   font-size: 11px;
   color: var(--tal-text-muted);
@@ -358,25 +358,102 @@ a.newsTitle:hover {
 }
 
 @media (max-width: 720px) {
+  .decisionOwnership {
+    grid-row: 7;
+  }
   .decisionDisclaimer {
-    grid-row: 6;
+    grid-row: 8;
   }
 }
 
 .decisionAction {
   grid-column: 1;
-  grid-row: 2 / 4;
+  grid-row: 2;
   font-family: var(--tal-font-display);
-  font-size: var(--tal-text-4xl);
+  /* Stance labels run long ("Moderately bullish") — 2xl keeps them on
+     one or two clean lines where the old BUY/SELL/HOLD wore 4xl. */
+  font-size: var(--tal-text-2xl);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--tal-accent);
   align-self: start;
 }
 
-.decision_BUY .decisionAction { color: var(--tal-positive); }
-.decision_SELL .decisionAction { color: var(--tal-negative); }
-.decision_HOLD .decisionAction { color: var(--tal-accent); }
+/* Stance lean buckets (bullish covers moderately_bullish, etc.). These are
+   analytical shades, not go/stop signals — same palette as the market
+   up/down colors used elsewhere in the app. */
+.decision_bullish .decisionAction { color: var(--tal-positive); }
+.decision_bearish .decisionAction { color: var(--tal-negative); }
+.decision_neutral .decisionAction { color: var(--tal-accent); }
+
+.decisionStrengths {
+  grid-column: 1;
+  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--tal-space-2);
+  margin-top: var(--tal-space-2);
+  align-self: start;
+}
+
+.strengthRow {
+  display: grid;
+  grid-template-columns: 72px 1fr 52px;
+  align-items: center;
+  gap: var(--tal-space-2);
+  font-family: var(--tal-font-mono);
+  font-size: var(--tal-text-xs);
+  color: var(--tal-text-muted);
+}
+
+.strengthTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--tal-bg-inset, rgba(255, 255, 255, 0.06));
+  overflow: hidden;
+}
+
+.strengthFillBull,
+.strengthFillBear {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.strengthFillBull { background: var(--tal-positive); }
+.strengthFillBear { background: var(--tal-negative); }
+
+.strengthValue {
+  text-align: right;
+  color: var(--tal-text-secondary);
+}
+
+.riskChip {
+  align-self: flex-start;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--tal-border-subtle);
+  font-family: var(--tal-font-mono);
+  font-size: var(--tal-text-xs);
+  color: var(--tal-text-secondary);
+  margin-top: var(--tal-space-1);
+}
+
+.riskChip[data-risk='elevated'] {
+  color: var(--tal-negative);
+  border-color: var(--tal-negative);
+}
+
+/* The user, not the app, owns any investment decision — say so on the
+   card itself, above the standing disclaimer line. */
+.decisionOwnership {
+  grid-column: 1 / -1;
+  grid-row: 5;
+  font-size: var(--tal-text-xs);
+  color: var(--tal-text-muted);
+  line-height: 1.5;
+  padding-top: var(--tal-space-2);
+  margin-top: var(--tal-space-2);
+}
 
 .decisionConfidence {
   grid-column: 2;
@@ -410,11 +487,11 @@ a.newsTitle:hover {
 @media (max-width: 720px) {
   .decision {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto auto;
   }
   .decisionAction { grid-column: 1; grid-row: 2; }
   .decisionConfidence { grid-column: 1; grid-row: 3; }
-  .decisionReasoning { grid-column: 1; grid-row: 4; }
+  .decisionStrengths { grid-column: 1; grid-row: 4; }
+  .decisionReasoning { grid-column: 1; grid-row: 5; }
 }
 
 /* ----- Progress strip --------------------------------------------------

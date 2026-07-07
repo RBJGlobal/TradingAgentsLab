@@ -53,7 +53,7 @@ The other analysts (technical, news, sentiment) work the same way for crypto as 
 - **Direct USD-pair quotes only.** No DEX prices, no specific exchange (Coinbase vs Kraken vs Binance), you get the consolidated tape from the data provider.
 - **No futures or perpetuals.** Spot pairs only.
 - **No on-chain data feeds.** The fundamental_analyst comments on tokenomics from what the LLM knows, not from live on-chain feeds. That's a possible future addition.
-- **No execution.** Per [project positioning](faq.md), TradingAgentsLab is an analysis tool, not a trading app. Crypto analyses cannot place orders, even to Alpaca's crypto execution endpoints. The system is structurally incapable of it.
+- **No execution.** Per [project positioning](faq.md), Trading Agents Lab is an analysis tool, not a trading app. Crypto analyses cannot place orders, even to Alpaca's crypto execution endpoints. The system is structurally incapable of it.
 
 ---
 

@@ -25,8 +25,8 @@ from engine import storage
 def _make_session(
     ticker: str = "NVDA",
     cost: float = 0.05,
-    action: str = "HOLD",
-    confidence: float = 0.5,
+    stance: str = "neutral",
+    conviction: float = 0.5,
 ) -> str:
     sid = storage.write_session(
         ticker=ticker,
@@ -34,11 +34,11 @@ def _make_session(
         events=[
             {"type": "session.start", "ticker": ticker, "trade_date": "2026-05-24"},
             {"type": "agent.message", "agent": "fundamental_analyst", "content": "..."},
-            {"type": "session.complete", "ticker": ticker, "decision": {"action": action}},
+            {"type": "session.complete", "ticker": ticker, "decision": {"stance": stance}},
         ],
         decision={
-            "action": action,
-            "confidence": confidence,
+            "stance": stance,
+            "conviction": conviction,
             "reasoning": "Synthetic test reasoning.",
         },
         live=True,
@@ -54,12 +54,12 @@ def _make_session(
 
 
 def test_round_trip_write_and_read(tmp_db):
-    sid = _make_session(ticker="AAPL", cost=0.08, action="BUY", confidence=0.72)
+    sid = _make_session(ticker="AAPL", cost=0.08, stance="bullish", conviction=0.72)
     detail = storage.get_session(sid)
     assert detail is not None
     assert detail.id == sid
     assert detail.ticker == "AAPL"
-    assert detail.decision_action == "BUY"
+    assert detail.decision_action == "bullish"
     assert detail.decision_confidence == pytest.approx(0.72)
     assert detail.estimated_cost_usd == pytest.approx(0.08)
     # Events round-tripped from the JSON blob.
@@ -183,7 +183,7 @@ def test_write_session_swallows_errors_and_returns_none(tmp_db, monkeypatch):
         ticker="NVDA",
         trade_date="2026-05-24",
         events=[],
-        decision={"action": "HOLD", "confidence": 0.0, "reasoning": ""},
+        decision={"stance": "neutral", "conviction": 0.0, "reasoning": ""},
         live=True,
     )
     assert sid is None

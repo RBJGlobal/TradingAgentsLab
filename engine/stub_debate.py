@@ -98,7 +98,7 @@ def canned_debate(
         "phase": "researchers",
         "content": (
             f"[STUB] Research judgment: insufficient asymmetry to favor either side. "
-            f"Recommend HOLD with re-evaluation on next earnings or technical break."
+            f"Neutral read; re-evaluate on next earnings or technical break."
         ),
         "_delay": 0.5,
     }
@@ -137,7 +137,7 @@ def canned_debate(
         "type": "agent.message",
         "agent": "risk_conservative",
         "phase": "risk",
-        "content": "[STUB] Conservative view: HOLD until a clean signal emerges.",
+        "content": "[STUB] Conservative view: stay on the sidelines until a clean signal emerges.",
         "_delay": 0.4,
     }
 
@@ -145,7 +145,7 @@ def canned_debate(
         "type": "agent.message",
         "agent": "risk_neutral",
         "phase": "risk",
-        "content": "[STUB] Neutral view: HOLD is the lowest-regret move at this read.",
+        "content": "[STUB] Neutral view: neutrality is the lowest-regret read here.",
         "_delay": 0.4,
     }
 
@@ -154,7 +154,7 @@ def canned_debate(
         "agent": "portfolio_manager",
         "phase": "risk",
         "content": (
-            f"[STUB] Portfolio decision on {ticker}: HOLD. Final."
+            f"[STUB] Committee assessment on {ticker}: NEUTRAL. Final."
         ),
         "_delay": 0.5,
     }
@@ -164,8 +164,11 @@ def canned_debate(
         "ticker": ticker,
         "trade_date": trade_date,
         "decision": {
-            "action": "HOLD",
-            "confidence": 0.55,
+            "stance": "neutral",
+            "conviction": 0.55,
+            "bull_strength": 50,
+            "bear_strength": 50,
+            "risk_level": "moderate",
             "reasoning": (
                 _decision_reasoning(summary) if summary else
                 "Stub canned debate — replaced in Phase 3+ by real agents."
@@ -274,15 +277,17 @@ def _bear_message(ticker: str, summary: Optional[QuoteSummary]) -> str:
 def _trader_message(ticker: str, summary: Optional[QuoteSummary]) -> str:
     if summary is None:
         return (
-            f"[STUB] Trade plan for {ticker}: HOLD existing exposure, no new entry. "
-            f"If forced to act, prefer a small starter with defined stop below the "
-            f"consolidation low."
+            f"[STUB] Hypothetical structure for {ticker}: setup does not look "
+            f"actionable, no new exposure warranted. If the picture improved, a "
+            f"small starter with invalidation below the consolidation low would "
+            f"be the shape."
         )
     return (
-        f"[STUB] Trade plan for {summary.ticker} (ref {summary.last_close:.2f}): "
-        f"HOLD existing exposure, no new entry. Defined-risk starter idea: long "
-        f"above period open {summary.period_open:.2f} with stop on a daily close "
-        f"below the {summary.period_low:.2f} low."
+        f"[STUB] Hypothetical structure for {summary.ticker} (ref "
+        f"{summary.last_close:.2f}): setup does not look actionable, no new "
+        f"exposure warranted. A constructive shape would be strength above the "
+        f"period open {summary.period_open:.2f} with the thesis invalidated on "
+        f"a daily close below the {summary.period_low:.2f} low."
     )
 
 
