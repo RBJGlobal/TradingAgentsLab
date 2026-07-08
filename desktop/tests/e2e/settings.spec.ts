@@ -23,7 +23,6 @@ test('Settings tabs render', async ({ window }) => {
     'LLM Providers',
     'Data Providers',
     'Webhooks',
-    'Clawless',
     'Cost Guard',
     'About',
   ]) {

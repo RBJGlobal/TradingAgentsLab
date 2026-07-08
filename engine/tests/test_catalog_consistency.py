@@ -57,7 +57,7 @@ def test_every_default_model_is_priced_or_policy_zero():
 def test_every_allowed_provider_has_an_adapter():
     """Every provider on the allowlist must dispatch to a real adapter. Guards
     against adding a provider to _DEFAULT_MODELS without an adapter_for branch
-    (e.g. when Phase 6 lands 'clawless')."""
+    (e.g. if a gateway provider lands)."""
     auth_by_provider = {
         "openai": {"type": "api_key", "api_key": "k"},
         "anthropic": {"type": "api_key", "api_key": "k"},

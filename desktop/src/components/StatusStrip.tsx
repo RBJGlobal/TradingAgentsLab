@@ -1,7 +1,7 @@
 /**
  * Compact status strip — always visible at the top of the app shell.
  *
- * Shows 4 pills (Engine / Data / LLM / Clawless) so the user can confirm
+ * Shows 3 pills (Engine / Data / LLM) so the user can confirm
  * at a glance that nothing is failing or disconnected. Replaces the bulky
  * 4-card status grid that previously took up real estate at the top of the
  * Analyze page (founder feedback 2026-05-09).
@@ -12,7 +12,6 @@
  *         "tal:data-provider" dispatched by Analyze on data.summary events
  * - LLM: derived from secrets list — first-configured-wins per
  *        PROVIDER_PRIORITY (OpenAI OAuth wins over OpenAI API key when both)
- * - Clawless: derived from secrets — both gateway URL AND token present
  *             counts as "configured"; today's actual gateway probe is
  *             Phase 6 work so we just show "configured" or "disconnected"
  */
@@ -92,7 +91,6 @@ function StatusStrip() {
   const [dataAssetClass, setDataAssetClass] = useState<'equity' | 'crypto' | null>(null);
   const [llmProvider, setLlmProvider] = useState<LLMProvider | null>(null);
   const [llmIsOauth, setLlmIsOauth] = useState(false);
-  const [clawlessConfigured, setClawlessConfigured] = useState(false);
   // CostGuard spend state — polled from /cost-guard/state and refreshed on
   // session.complete dispatch. `runCost`/`runIsFree` track the in-flight
   // running total from cost.usage events so the pill can tick mid-stream
@@ -273,7 +271,7 @@ function StatusStrip() {
     };
   }, [pollSpend]);
 
-  // ---- LLM + Clawless from secrets ---------------------------------------
+  // ---- LLM from secrets ---------------------------------------------------
 
   const refreshSecrets = useCallback(async () => {
     try {
@@ -312,12 +310,6 @@ function StatusStrip() {
       }
       setLlmProvider(resolved);
       setLlmIsOauth(oauth);
-
-      // Clawless requires BOTH the URL and the token. Today's wiring is
-      // pre-Phase-6 so we don't actually probe — just check storage.
-      const hasUrl = stored.has('clawless:gateway-url');
-      const hasToken = stored.has('clawless:gateway-token');
-      setClawlessConfigured(hasUrl && hasToken);
     } catch {
       // safeStorage offline — leave previous values as-is
     }
@@ -389,20 +381,6 @@ function StatusStrip() {
     />
   );
 
-  // Clawless pill — gray since Phase 6 (real probe) hasn't shipped
-  const clawlessPill = (
-    <Pill
-      label="Clawless"
-      detail={clawlessConfigured ? 'configured' : 'disconnected'}
-      state={clawlessConfigured ? 'warn' : 'off'}
-      title={
-        clawlessConfigured
-          ? 'Clawless gateway credentials stored; Phase 6 will activate the connector'
-          : 'Optional connector, not configured'
-      }
-    />
-  );
-
   // Spend pill — daily $ spent vs cap. Green under 50% / amber 50-90% / red
   // >90% of the daily cap. With cap_daily_usd=0 (cap disabled), shows the
   // bare daily total with neutral colour. During a stream, runCost is shown
@@ -446,7 +424,6 @@ function StatusStrip() {
       {dataPill}
       {llmPill}
       {spendPill}
-      {clawlessPill}
     </div>
   );
 }
