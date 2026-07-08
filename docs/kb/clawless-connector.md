@@ -1,14 +1,14 @@
 # Clawless Connector
 
-*What the optional Clawless gateway tap is, how it fits into TradingAgentsLab, and when it activates.*
+*What the optional Clawless gateway tap is, how it fits into Trading Agents Lab, and when it activates.*
 
 ---
 
 ## What Clawless is in this context
 
-TradingAgentsLab is a **standalone trading companion for Clawless**. It is an independent product, it has its own codebase, its own license (AGPL-3.0), and its own UI. It does not inherit code from Clawless.
+Trading Agents Lab is a **standalone trading companion for Clawless**. It is an independent product, it has its own codebase, its own license (AGPL-3.0), and its own UI. It does not inherit code from Clawless.
 
-Clawless is one of several optional connectors in TradingAgentsLab's architecture, alongside Yahoo Finance, Alpaca, and direct LLM provider keys. Connecting TradingAgentsLab to a running Clawless instance is completely optional. The app works fully without it.
+Clawless is one of several optional connectors in Trading Agents Lab's architecture, alongside Yahoo Finance, Alpaca, and direct LLM provider keys. Connecting Trading Agents Lab to a running Clawless instance is completely optional. The app works fully without it.
 
 ---
 
@@ -54,18 +54,18 @@ When Phase 6 ships, the card will distinguish:
 
 ## Technical background (for the curious)
 
-The OpenClaw gateway runs locally on `ws://127.0.0.1:18789` when Clawless is running. The protocol is version 3/4 (TradingAgentsLab negotiates max=4, falls back to 3). Each call uses a frame envelope of `{type, id, method, params}`, not JSON-RPC.
+The OpenClaw gateway runs locally on `ws://127.0.0.1:18789` when Clawless is running. The protocol is version 3/4 (Trading Agents Lab negotiates max=4, falls back to 3). Each call uses a frame envelope of `{type, id, method, params}`, not JSON-RPC.
 
-Multi-client access to the gateway has been verified: TradingAgentsLab and the Clawless desktop can share the same gateway instance simultaneously without interfering with each other.
+Multi-client access to the gateway has been verified: Trading Agents Lab and the Clawless desktop can share the same gateway instance simultaneously without interfering with each other.
 
-The source of truth for OpenClaw protocol types is the public OpenClaw npm package (MIT-licensed). TradingAgentsLab does not reverse-engineer Clawless internals.
+The source of truth for OpenClaw protocol types is the public OpenClaw npm package (MIT-licensed). Trading Agents Lab does not reverse-engineer Clawless internals.
 
 ---
 
 ## What this connector is not
 
 - It is not a Clawless extension or plugin.
-- TradingAgentsLab does not require Clawless to run.
+- Trading Agents Lab does not require Clawless to run.
 - The Clawless tab in Settings is a connection configuration panel, not an integration point, the same way the Alpaca tab is a connection configuration panel for Alpaca.
 
 ---

@@ -1,0 +1,132 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - generic [ref=e4]: Trading Agents Lab Pro · The Diligence
+    - heading "TSLA · 2026-07-06" [level=1] [ref=e5]
+    - generic [ref=e6]: Generated 2026-07-06T06:06:57.897Z
+    - generic [ref=e7]:
+      - strong [ref=e8]: For educational research and paper trading.
+      - text: Trading Agents Lab does not provide investment advice.
+  - heading "Decision" [level=2] [ref=e9]
+  - generic [ref=e10]:
+    - generic [ref=e11]: SELL
+    - generic [ref=e12]: confidence 65% · rating Underweight · price target 337 · horizon 3-6 months
+    - paragraph [ref=e13]: Trim TSLA to 1.0-1.5% of equity allocation from benchmark weight, executing the reduction near current levels. Set a hard stop on residual exposure at a confirmed daily close below $375. Do not add until price closes above $406 on above-average volume with RSI crossing above 50.
+    - heading "Investment thesis" [level=4] [ref=e14]
+    - paragraph [ref=e15]: "Valuation is the load-bearing pillar of the bear case: ~154x forward earnings against a 4.2% operating margin and 4.9% ROE. The financial deterioration trend is structural, not transitional."
+    - generic [ref=e16]: Not investment advice · LLM output may be inaccurate · Verify independently before any action
+  - heading "Data summary" [level=2] [ref=e17]
+  - list [ref=e18]:
+    - listitem [ref=e19]:
+      - generic [ref=e20]: Last close
+      - strong [ref=e21]: "393.45"
+    - listitem [ref=e22]:
+      - generic [ref=e23]: Period change
+      - text: "-5.92%"
+    - listitem [ref=e24]:
+      - generic [ref=e25]: Range
+      - text: 368.60 to 433.60
+    - listitem [ref=e26]:
+      - generic [ref=e27]: Avg daily volume
+      - text: 48,691,345
+    - listitem [ref=e28]:
+      - generic [ref=e29]: Sessions
+      - text: "22"
+    - listitem [ref=e30]:
+      - generic [ref=e31]: Source
+      - text: yfinance · as of 2026-07-02
+  - heading "News headlines" [level=2] [ref=e32]
+  - list [ref=e33]:
+    - listitem [ref=e34]:
+      - link "Tesla's blowout quarter comes with a warning sign" [ref=e35] [cursor=pointer]:
+        - /url: https://www.thestreet.com/automotive/teslas-blowout-quarter-comes-with-a-warning-sign
+      - text: (TheStreet · 2026-07-06T02:33:00Z)
+    - listitem [ref=e36]:
+      - 'link "TSLA Stock Rises Overnight: Analyst Sees Rebound, Calls Stock Fully-Priced" [ref=e37] [cursor=pointer]':
+        - /url: https://stocktwits.com/news-articles/markets/equity/example
+      - text: (Stocktwits · 2026-07-06T02:22:25Z)
+  - heading "Analysts" [level=2] [ref=e38]
+  - article [ref=e39]:
+    - generic [ref=e40]: technical_analyst
+    - heading "Price structure overview" [level=2] [ref=e41]
+    - paragraph [ref=e42]:
+      - text: TSLA began 2026 near
+      - strong [ref=e43]: $457
+      - text: and declined toward a multi-month low of ~$337 in early April, a drawdown of approximately
+      - strong [ref=e44]: 26%
+      - text: . A fierce recovery followed, rallying to ~$453 by mid-May before reversing sharply. The most recent close on
+      - strong [ref=e45]: July 2
+      - text: was
+      - strong [ref=e46]: $393.45
+      - text: ", after a violent intraday swing (high $432, low $389)."
+    - heading "Moving averages" [level=2] [ref=e47]
+    - table [ref=e48]:
+      - rowgroup [ref=e49]:
+        - row "Indicator Latest Value Signal Interpretation" [ref=e50]:
+          - columnheader "Indicator" [ref=e51]
+          - columnheader "Latest Value" [ref=e52]
+          - columnheader "Signal" [ref=e53]
+          - columnheader "Interpretation" [ref=e54]
+      - rowgroup [ref=e55]:
+        - row "Price (Jul 2 close) $393.45 — Below both key moving averages" [ref=e56]:
+          - cell "Price (Jul 2 close)" [ref=e57]
+          - cell "$393.45" [ref=e58]
+          - cell "—" [ref=e59]
+          - cell "Below both key moving averages" [ref=e60]
+        - row "50 SMA $406.42 Bearish Price 3.3% below; near-term resistance" [ref=e61]:
+          - cell "50 SMA" [ref=e62]
+          - cell "$406.42" [ref=e63]
+          - cell "Bearish" [ref=e64]
+          - cell "Price 3.3% below; near-term resistance" [ref=e65]
+        - row "200 SMA $418.61 Bearish Price 6.4% below; long-term trend down" [ref=e66]:
+          - cell "200 SMA" [ref=e67]
+          - cell "$418.61" [ref=e68]
+          - cell "Bearish" [ref=e69]
+          - cell "Price 6.4% below; long-term trend down" [ref=e70]
+        - row "RSI 46.77 Neutral Below 50, recovering from the high-30s" [ref=e71]:
+          - cell "RSI" [ref=e72]
+          - cell "46.77" [ref=e73]
+          - cell "Neutral" [ref=e74]
+          - cell "Below 50, recovering from the high-30s" [ref=e75]
+        - row "MACD -1.63 Improving Negative but least-negative since the cross" [ref=e76]:
+          - cell "MACD" [ref=e77]
+          - cell "-1.63" [ref=e78]
+          - cell "Improving" [ref=e79]
+          - cell "Negative but least-negative since the cross" [ref=e80]
+        - row "ATR $19.62 High risk 60-day high; widen stops, reduce size" [ref=e81]:
+          - cell "ATR" [ref=e82]
+          - cell "$19.62" [ref=e83]
+          - cell "High risk" [ref=e84]
+          - cell "60-day high; widen stops, reduce size" [ref=e85]
+    - blockquote [ref=e86]:
+      - paragraph [ref=e87]: A death cross condition persists (50 SMA below 200 SMA). Rallies should be treated as countertrend until price reclaims $406 with RSI above 50.
+    - paragraph [ref=e88]:
+      - text: "FINAL TRANSACTION PROPOSAL:"
+      - strong [ref=e89]: HOLD
+  - heading "Researchers" [level=2] [ref=e90]
+  - article [ref=e91]:
+    - generic [ref=e92]: bull_researcher
+    - paragraph [ref=e93]:
+      - text: "Bull Analyst: The bear case takes a snapshot of a"
+      - strong [ref=e94]: transitional moment
+      - text: and pretends it is the destination. R&D spending jumped 41% year over year to $6.41B; that spending produced a
+      - emphasis [ref=e95]: commercially operating
+      - text: robotaxi service in Miami this week. Free cash flow improved to $6.22B, and the company holds
+      - strong [ref=e96]: $44.7B
+      - text: in cash. Forward EPS of $2.55 implies
+      - strong [ref=e97]: 132% earnings growth
+      - text: . This is a company investing aggressively from a position of financial strength.
+  - article [ref=e98]:
+    - generic [ref=e99]: bear_researcher
+    - paragraph [ref=e100]:
+      - text: "Bear Analyst: Tesla is spending more and making less. Operating margins collapsed from ~17% in 2022 to"
+      - strong [ref=e101]: 4.2%
+      - text: in Q1 2026, and revenue
+      - emphasis [ref=e102]: declined
+      - text: 2.9% in FY2025. At 154x forward earnings on full delivery of the $2.55 estimate, you are paying a platform multiple for a business with 4.9% ROE. The July 2 session touched $432 intraday and closed at $393 — the market already had its chance to reclaim resistance and sold it aggressively.
+  - contentinfo [ref=e103]:
+    - generic [ref=e104]:
+      - strong [ref=e105]: For educational and research purposes only.
+      - text: Trading Agents Lab is
+      - strong [ref=e106]: not a registered investment advisor
+      - text: "and does not provide investment, financial, legal, or tax advice. The multi-agent LLM analyses on this page may be inaccurate, incomplete, or outdated: large language models can and do hallucinate. Nothing produced by this software is a recommendation to buy, sell, or hold any security, cryptocurrency, or other asset. Consult a qualified financial professional before making any investment decision. You assume all risk for any action you take based on this analysis. The maintainers and contributors accept no liability for losses arising from use of this software."
+    - generic [ref=e107]: Educational research only · Not a registered investment advisor · Not investment advice

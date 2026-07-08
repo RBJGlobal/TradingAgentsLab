@@ -27,8 +27,11 @@ def _complete_event(cost_usd: float = 0.0123) -> dict:
         "ticker": "NVDA",
         "trade_date": "2026-05-24",
         "decision": {
-            "action": "HOLD",
-            "confidence": 0.55,
+            "stance": "neutral",
+            "conviction": 0.55,
+            "bull_strength": 50,
+            "bear_strength": 50,
+            "risk_level": "moderate",
             "reasoning": "Synthetic test reasoning.",
         },
         "live": True,
@@ -55,7 +58,7 @@ def test_persists_full_session(tmp_db):
     detail = storage.get_session(sid)
     assert detail is not None
     assert detail.ticker == "NVDA"
-    assert detail.decision_action == "HOLD"
+    assert detail.decision_action == "neutral"
     assert detail.estimated_cost_usd == pytest.approx(0.0123)
     assert detail.input_tokens == 1234
     assert detail.output_tokens == 567
@@ -90,7 +93,7 @@ def test_skips_empty_events(tmp_db):
 
 def test_synthesizes_decision_when_malformed(tmp_db):
     # Defensive: a buggy adapter could yield session.complete with no decision
-    # dict. We persist a HOLD placeholder rather than crashing the writer.
+    # dict. We persist a neutral placeholder rather than crashing the writer.
     bad_complete = _complete_event()
     bad_complete["decision"] = "not a dict"
     sid = storage.write_session_from_events(
@@ -99,7 +102,7 @@ def test_synthesizes_decision_when_malformed(tmp_db):
     assert sid is not None
     detail = storage.get_session(sid)
     assert detail is not None
-    assert detail.decision_action == "HOLD"
+    assert detail.decision_action == "neutral"
     assert detail.decision_confidence == 0.0
 
 

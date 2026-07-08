@@ -53,10 +53,10 @@ Common causes:
 The Analyze page should inject your stored credentials automatically. If you still see stub messages:
 
 1. Check that the **"Run with"** dropdown in the Analyze header shows your provider (not "Stub mode"). If only stub is offered, the credentials weren't successfully decrypted, try **Replace** in Settings to re-save the key.
-2. If the dropdown shows your provider but the decision card still says "Stub canned debate", look at engine stderr (visible in the Vite terminal) for messages prefixed `[live_debate]`. A fall-through to stub usually means the provider name in the WS start frame doesn't match the engine's allowlist (`openai`, `anthropic`, `openrouter`, `gemini`).
+2. If the dropdown shows your provider but the assessment card still says "Stub canned debate", look at engine stderr (visible in the Vite terminal) for messages prefixed `[live_debate]`. A fall-through to stub usually means the provider name in the WS start frame doesn't match the engine's allowlist (`openai`, `anthropic`, `openrouter`, `gemini`).
 3. For OAuth specifically, if **Settings → OpenAI account** shows "Connected" but debates run as stub, click **Disconnect** and **Connect** again to refresh the tokens.
 
-The decision card's reasoning text says "Stub canned debate" to make this visible.
+The assessment card's reasoning text says "Stub canned debate" to make this visible.
 
 ### OAuth: 429 rate limit error
 
@@ -110,7 +110,7 @@ This error appears at the top of the Settings page on Linux when no keyring is r
 **Fix on Linux:**
 - Install and start GNOME Keyring: `gnome-keyring-daemon --start`
 - Or install and configure KWallet.
-- Then restart TradingAgentsLab.
+- Then restart Trading Agents Lab.
 
 On macOS and Windows, encryption is always available and this error should not occur.
 

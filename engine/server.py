@@ -415,8 +415,11 @@ def build_app(*, token: str) -> FastAPI:
             "ticker": req.ticker.upper(),
             "trade_date": req.trade_date,
             "decision": {
-                "action": "HOLD",
-                "confidence": 0.5,
+                "stance": "neutral",
+                "conviction": 0.5,
+                "bull_strength": 50,
+                "bear_strength": 50,
+                "risk_level": "moderate",
                 "reasoning": (
                     "Stub response — engine not yet connected to tradingagents core."
                 ),

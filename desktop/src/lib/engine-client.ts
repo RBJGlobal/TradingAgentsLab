@@ -293,9 +293,28 @@ export interface AnalyzeRequest {
   telegram_chat_ids?: Record<string, string>;
 }
 
+/** The five analytical stances, most to least constructive. The app
+ * deliberately does not emit trade directives (no buy/sell/hold): the
+ * committee assessment describes how the evidence balances, and any
+ * investment decision belongs to the user. */
+export type Stance =
+  | 'bullish'
+  | 'moderately_bullish'
+  | 'neutral'
+  | 'moderately_bearish'
+  | 'bearish';
+
+export type RiskLevel = 'low' | 'moderate' | 'elevated';
+
 export interface AnalyzeDecision {
-  action: 'BUY' | 'SELL' | 'HOLD' | string;
-  confidence: number;
+  stance: Stance | string;
+  /** Committee conviction in its own stance, 0..1. */
+  conviction: number;
+  /** How strongly the bull case argued, 0-100. */
+  bull_strength?: number | null;
+  /** How strongly the bear case argued, 0-100. */
+  bear_strength?: number | null;
+  risk_level?: RiskLevel | string | null;
   reasoning: string;
 }
 
@@ -451,7 +470,11 @@ export interface SessionSummary {
   id: string;
   ticker: string;
   trade_date: string;
+  /** Column names predate the stance model (no SQLite migration): this
+   * now holds the stance string; legacy rows hold BUY/SELL/HOLD and are
+   * display-mapped via lib/stance.ts. */
   decision_action: string;
+  /** Conviction 0..1 (legacy rows: confidence). */
   decision_confidence: number;
   decision_reasoning: string;
   live: boolean;

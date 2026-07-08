@@ -239,19 +239,19 @@
   opacity: 0.8;
 }
 
-.pill_buy {
+.pill_bullish {
   color: var(--tal-positive);
   background: rgba(63, 185, 80, 0.1);
   border-color: rgba(63, 185, 80, 0.4);
 }
 
-.pill_sell {
+.pill_bearish {
   color: var(--tal-negative);
   background: rgba(248, 81, 73, 0.1);
   border-color: rgba(248, 81, 73, 0.4);
 }
 
-.pill_hold {
+.pill_neutral {
   color: var(--tal-accent);
   background: var(--tal-accent-muted);
   border-color: var(--tal-accent-border);

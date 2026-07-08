@@ -1017,17 +1017,31 @@ def _format_decision_reply(
     cap_usd: float,
     spent_today: float,
 ) -> str:
-    action = str(decision.get("action", "HOLD")).upper()
-    confidence = float(decision.get("confidence", 0.0))
+    from .stance import decision_conviction, decision_stance, stance_label
+
+    stance = stance_label(decision_stance(decision))
+    conviction = decision_conviction(decision)
     reasoning = str(decision.get("reasoning", "")).strip()
     if len(reasoning) > 600:
         reasoning = reasoning[:597] + "…"
     mode = "live" if live else "stub"
+    strengths = ""
+    if decision.get("bull_strength") is not None and decision.get("bear_strength") is not None:
+        strengths = (
+            f"Bull thesis {decision['bull_strength']}/100 · "
+            f"Bear thesis {decision['bear_strength']}/100"
+        )
+        risk = str(decision.get("risk_level", "")).strip()
+        if risk:
+            strengths += f" · Risk {risk}"
+        strengths += "\n"
     return (
         f"*{ticker}* on {trade_date}\n"
-        f"Decision: *{action}*  ({confidence * 100:.0f}% confidence)\n\n"
+        f"Committee stance: *{stance}*  (conviction {conviction * 100:.0f}%)\n"
+        f"{strengths}\n"
         f"{reasoning}\n\n"
         f"_Run mode: {mode}. Cost: ${cost_usd:.4f}. Today: "
         f"${spent_today:.4f} / ${cap_usd:.2f}._\n"
-        f"_Educational output. Not investment advice. Not a recommendation._"
+        f"_Analytical output for education. Not investment advice. "
+        f"Not a recommendation. Any investment decision is yours alone._"
     )

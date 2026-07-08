@@ -1,0 +1,115 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - region "Disclaimer" [ref=e3]: For educational and research purposes only, not investment advice.
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - link "Trading Agents Lab, home" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - img [ref=e7]
+        - generic [ref=e12]: Trading Agents Lab
+      - generic [ref=e13]:
+        - link "Download" [ref=e14] [cursor=pointer]:
+          - /url: /download/
+        - button "Open menu" [ref=e15]:
+          - img [ref=e16]
+  - main [ref=e18]:
+    - article [ref=e19]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]: the flow
+          - heading "Twelve agents. Four phases. One transcript." [level=1] [ref=e24]:
+            - text: Twelve agents. Four phases.
+            - text: One transcript.
+          - paragraph [ref=e25]: The same pipeline a research desk runs informally, codified and made visible. Each next agent reads the full prior transcript before adding its own view, so the final decision is built on every prior step. Click any node to see what it reads and what it adds, or press Play to watch the debate stream through.
+        - generic [ref=e27]:
+          - generic [ref=e28]:
+            - generic [ref=e29]: streaming · 0 / 12 agents
+            - button "Pause the flow" [ref=e30]: Pause
+          - generic [ref=e31]:
+            - generic:
+              - img
+            - generic:
+              - img
+              - generic: Trading Agents Lab
+            - application [ref=e32]:
+              - generic [ref=e34]:
+                - generic:
+                  - generic:
+                    - img
+              - link "React Flow attribution" [ref=e36] [cursor=pointer]:
+                - /url: https://reactflow.dev
+                - text: React Flow
+          - paragraph [ref=e38]: Each next agent reads the full prior transcript. Same shape as the engine's live debate orchestrator. Illustrative, not advice.
+      - paragraph [ref=e41]: "Mirrors `engine/live_debate.py` in the open-source codebase. The visualization is illustrative; what the engine actually does is run real LLM calls through these agents and stream the transcript into the app or your Telegram bot. Output is educational only. Not investment advice."
+  - contentinfo [ref=e42]:
+    - generic [ref=e43]:
+      - generic [ref=e44]:
+        - generic [ref=e45]:
+          - heading "Product" [level=3] [ref=e46]
+          - list [ref=e47]:
+            - listitem [ref=e48]:
+              - link "Overview" [ref=e49] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e50]:
+              - link "How it works" [ref=e51] [cursor=pointer]:
+                - /url: /how-it-works/
+            - listitem [ref=e52]:
+              - link "Download" [ref=e53] [cursor=pointer]:
+                - /url: /download/
+            - listitem [ref=e54]:
+              - link "GitHub" [ref=e55] [cursor=pointer]:
+                - /url: https://github.com/RBJGlobal/TradingAgentsLab
+                - generic [ref=e56]: GitHub
+        - generic [ref=e57]:
+          - heading "Learn" [level=3] [ref=e58]
+          - list [ref=e59]:
+            - listitem [ref=e60]:
+              - link "Documentation" [ref=e61] [cursor=pointer]:
+                - /url: /docs/
+            - listitem [ref=e62]:
+              - link "Getting started" [ref=e63] [cursor=pointer]:
+                - /url: /docs/getting-started/
+            - listitem [ref=e64]:
+              - link "How it works (deep dive)" [ref=e65] [cursor=pointer]:
+                - /url: /docs/how-it-works/
+            - listitem [ref=e66]:
+              - link "Reading a Diligence run" [ref=e67] [cursor=pointer]:
+                - /url: /docs/reading-the-debate/
+        - generic [ref=e68]:
+          - heading "Trust" [level=3] [ref=e69]
+          - list [ref=e70]:
+            - listitem [ref=e71]:
+              - link "Security & privacy" [ref=e72] [cursor=pointer]:
+                - /url: /security/
+            - listitem [ref=e73]:
+              - link "About" [ref=e74] [cursor=pointer]:
+                - /url: /about/
+            - listitem [ref=e75]:
+              - link "Disclaimer" [ref=e76] [cursor=pointer]:
+                - /url: /legal/disclaimer/
+            - listitem [ref=e77]:
+              - link "Privacy policy" [ref=e78] [cursor=pointer]:
+                - /url: /legal/privacy/
+            - listitem [ref=e79]:
+              - link "Terms of use" [ref=e80] [cursor=pointer]:
+                - /url: /legal/terms/
+        - generic [ref=e81]:
+          - heading "Family" [level=3] [ref=e82]
+          - list [ref=e83]:
+            - listitem [ref=e84]:
+              - link "Part of the RBJ Global family →" [ref=e85] [cursor=pointer]:
+                - /url: /family/
+      - generic [ref=e87]:
+        - paragraph [ref=e88]:
+          - text: © 2026 Trading Agents Lab. AGPL-3.0 licensed. Forked from
+          - link "Tauric Research/TradingAgents" [ref=e89] [cursor=pointer]:
+            - /url: https://github.com/TauricResearch/TradingAgents
+          - text: (Apache-2.0).
+        - generic [ref=e90]:
+          - link "Follow on LinkedIn. Opens LinkedIn in a new tab." [ref=e91] [cursor=pointer]:
+            - /url: https://www.linkedin.com/company/117584287/
+            - img [ref=e92]
+            - generic [ref=e94]: LinkedIn
+          - paragraph [ref=e95]: No analytics · No tracking · No accounts
+  - alert [ref=e96]

@@ -5,7 +5,7 @@ Telegram / Discord / arbitrary localhost ports. Tests cover:
 
 - Payload shape per kind (generic / slack / discord / telegram)
 - HMAC signature on the generic kind, with the right algorithm
-- Filter logic: action allowlist + min_confidence
+- Filter logic: stance allowlist + min_conviction
 - Filtered receivers don't open a connection
 - 200/4xx/timeout/exception map to fired/failed correctly
 - WebhookResult NEVER carries the URL (security: URLs embed tokens)
@@ -33,8 +33,8 @@ def _config(
     *,
     kind: str = "generic",
     secret: str | None = None,
-    actions: list[str] | None = None,
-    min_confidence: float = 0.0,
+    stances: list[str] | None = None,
+    min_conviction: float = 0.0,
     url: str = "https://example.com/hook",
     id_: str = "wh1",
 ) -> WebhookConfig:
@@ -44,11 +44,18 @@ def _config(
         url=url,
         kind=kind,  # type: ignore[arg-type]
         secret=secret,
-        filter=WebhookFilter(actions=actions or [], min_confidence=min_confidence),
+        filter=WebhookFilter(stances=stances or [], min_conviction=min_conviction),
     )
 
 
-_DECISION = {"action": "BUY", "confidence": 0.78, "reasoning": "Solid setup."}
+_DECISION = {
+    "stance": "bullish",
+    "conviction": 0.78,
+    "bull_strength": 78,
+    "bear_strength": 52,
+    "risk_level": "moderate",
+    "reasoning": "Solid setup.",
+}
 
 
 def _mock_client(*, status_code: int = 200) -> tuple[Any, list[dict]]:
@@ -97,12 +104,15 @@ async def test_generic_payload_carries_full_decision_shape():
 
     assert len(captured) == 1
     body = json.loads(captured[0]["content"])
-    assert body["schema"] == "tradingagentslab.webhook.v1"
+    assert body["schema"] == "tradingagentslab.webhook.v2"
     assert body["event"] == "session.complete"
     assert body["ticker"] == "NVDA"
     assert body["trade_date"] == "2026-05-15"
-    assert body["decision"]["action"] == "BUY"
-    assert body["decision"]["confidence"] == 0.78
+    assert body["decision"]["stance"] == "bullish"
+    assert body["decision"]["conviction"] == 0.78
+    assert body["decision"]["bull_strength"] == 78
+    assert body["decision"]["bear_strength"] == 52
+    assert body["decision"]["risk_level"] == "moderate"
     assert body["session_id"] == "sess-1"
     assert body["live"] is True
     assert body["provider"] == "openai"
@@ -127,7 +137,7 @@ async def test_slack_payload_is_just_text():
     body = json.loads(captured[0]["content"])
     assert list(body.keys()) == ["text"]
     assert "NVDA" in body["text"]
-    assert "BUY" in body["text"]
+    assert "Bullish" in body["text"]
     assert "78%" in body["text"]
 
 
@@ -225,28 +235,28 @@ async def test_slack_does_not_sign_body_even_with_secret():
 
 
 @pytest.mark.asyncio
-async def test_filter_actions_allowlist_blocks_hold():
+async def test_filter_stances_allowlist_blocks_neutral():
     cls, captured = _mock_client()
     with patch("engine.webhooks.httpx.AsyncClient", cls):
         results = await dispatch_all(
-            configs=[_config(actions=["BUY", "SELL"])],
+            configs=[_config(stances=["bullish", "bearish"])],
             ticker="NVDA",
             trade_date="2026-05-15",
-            decision={"action": "HOLD", "confidence": 0.9, "reasoning": ""},
+            decision={"stance": "neutral", "conviction": 0.9, "reasoning": ""},
         )
     assert captured == []
     assert results[0].status == "filtered"
 
 
 @pytest.mark.asyncio
-async def test_filter_min_confidence_blocks_low_confidence():
+async def test_filter_min_conviction_blocks_low_conviction():
     cls, captured = _mock_client()
     with patch("engine.webhooks.httpx.AsyncClient", cls):
         results = await dispatch_all(
-            configs=[_config(min_confidence=0.75)],
+            configs=[_config(min_conviction=0.75)],
             ticker="NVDA",
             trade_date="2026-05-15",
-            decision={"action": "BUY", "confidence": 0.5, "reasoning": ""},
+            decision={"stance": "bullish", "conviction": 0.5, "reasoning": ""},
         )
     assert captured == []
     assert results[0].status == "filtered"
@@ -260,7 +270,7 @@ async def test_filter_empty_means_fire_on_everything():
             configs=[_config()],
             ticker="NVDA",
             trade_date="2026-05-15",
-            decision={"action": "HOLD", "confidence": 0.0, "reasoning": ""},
+            decision={"stance": "neutral", "conviction": 0.0, "reasoning": ""},
         )
     assert len(captured) == 1
     assert results[0].status == "fired"
@@ -354,6 +364,8 @@ async def test_no_configs_returns_empty_no_client_created():
 
 
 def test_from_dict_accepts_valid_shape():
+    # from_dict accepts legacy `actions`/`min_confidence` keys (saved-config
+    # compat) and stores them under the current `stances`/`min_conviction` attrs.
     c = WebhookConfig.from_dict(
         {
             "id": "wh1",
@@ -367,8 +379,48 @@ def test_from_dict_accepts_valid_shape():
     assert c is not None
     assert c.id == "wh1"
     assert c.kind == "slack"
-    assert c.filter.actions == ["BUY"]
-    assert c.filter.min_confidence == 0.5
+    assert c.filter.stances == ["BUY"]
+    assert c.filter.min_conviction == 0.5
+
+
+@pytest.mark.asyncio
+async def test_from_dict_legacy_actions_filter_correctly():
+    """A config persisted with old `actions`/`min_confidence` keys must still
+    filter correctly. BUY→bullish, SELL→bearish, HOLD→neutral at passes() time."""
+    cls, captured = _mock_client()
+    legacy_cfg = WebhookConfig.from_dict(
+        {
+            "id": "leg1",
+            "name": "legacy hook",
+            "url": "https://example.com/hook",
+            "kind": "generic",
+            "filter": {"actions": ["BUY", "SELL"], "min_confidence": 0.5},
+        }
+    )
+    assert legacy_cfg is not None
+
+    # neutral (maps from HOLD) does NOT match [BUY,SELL] → filtered
+    with patch("engine.webhooks.httpx.AsyncClient", cls):
+        results = await dispatch_all(
+            configs=[legacy_cfg],
+            ticker="NVDA",
+            trade_date="2026-05-15",
+            decision={"stance": "neutral", "conviction": 0.9, "reasoning": ""},
+        )
+    assert captured == []
+    assert results[0].status == "filtered"
+
+    # bullish (maps from BUY) with conviction ≥ 0.5 → fires
+    cls2, captured2 = _mock_client()
+    with patch("engine.webhooks.httpx.AsyncClient", cls2):
+        results2 = await dispatch_all(
+            configs=[legacy_cfg],
+            ticker="NVDA",
+            trade_date="2026-05-15",
+            decision={"stance": "bullish", "conviction": 0.75, "reasoning": ""},
+        )
+    assert len(captured2) == 1
+    assert results2[0].status == "fired"
 
 
 def test_from_dict_rejects_missing_required():

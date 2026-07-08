@@ -27,9 +27,11 @@ import {
   getRecommendedModel,
   type DebateEvent,
   type LLMProvider,
+  type Stance,
   type StreamHandle,
 } from '../lib/engine-client';
 import { listSecrets } from '../lib/secrets';
+import { normalizeStance, stanceLabel, stanceLean } from '../lib/stance';
 import { getOpenAIOAuthStatus } from '../lib/oauth';
 import { runAnalysis } from '../lib/run-analysis';
 
@@ -44,8 +46,8 @@ type BatchPhase = 'idle' | 'running' | 'complete' | 'cancelled';
 interface PerTickerState {
   ticker: string;
   status: 'pending' | 'running' | 'done' | 'failed' | 'skipped';
-  decisionAction?: 'BUY' | 'SELL' | 'HOLD';
-  decisionConfidence?: number;
+  decisionStance?: Stance;
+  decisionConviction?: number;
   estCostUsd?: number;
   elapsedSec?: number;
   error?: string;
@@ -129,19 +131,16 @@ function BatchRunner({ tickers }: BatchRunnerProps) {
       );
 
       // Per-ticker stream state. We watch session.complete for the
-      // decision summary; that fires before the WS close.
-      let decisionAction: 'BUY' | 'SELL' | 'HOLD' | undefined;
-      let decisionConfidence: number | undefined;
+      // committee assessment; that fires before the WS close.
+      let decisionStance: Stance | undefined;
+      let decisionConviction: number | undefined;
       let estCostUsd: number | undefined;
       let perError: string | undefined;
 
       const onEvent = (event: DebateEvent) => {
         if (event.type === 'session.complete') {
-          const action = event.decision.action.toUpperCase();
-          if (action === 'BUY' || action === 'SELL' || action === 'HOLD') {
-            decisionAction = action;
-          }
-          decisionConfidence = event.decision.confidence;
+          decisionStance = normalizeStance(event.decision.stance);
+          decisionConviction = event.decision.conviction;
           if (typeof event.estimated_cost_usd === 'number') {
             estCostUsd = event.estimated_cost_usd;
           }
@@ -209,8 +208,8 @@ function BatchRunner({ tickers }: BatchRunnerProps) {
                 ? {
                     ...r,
                     status: 'done',
-                    decisionAction,
-                    decisionConfidence,
+                    decisionStance,
+                    decisionConviction,
                     estCostUsd,
                     elapsedSec: elapsed,
                   }
@@ -282,9 +281,9 @@ function BatchRunner({ tickers }: BatchRunnerProps) {
                 {row.status === 'failed' && `failed: ${row.error ?? 'unknown'}`}
                 {row.status === 'skipped' && 'skipped'}
               </span>
-              <span className={`${styles.progressDecision} ${row.decisionAction ? styles[`progressDecision_${row.decisionAction}`] : ''}`}>
-                {row.decisionAction
-                  ? `${row.decisionAction}${typeof row.decisionConfidence === 'number' ? ` ${Math.round(row.decisionConfidence * 100)}%` : ''}`
+              <span className={`${styles.progressDecision} ${row.decisionStance ? styles[`progressDecision_${stanceLean(row.decisionStance)}`] : ''}`}>
+                {row.decisionStance
+                  ? `${stanceLabel(row.decisionStance)}${typeof row.decisionConviction === 'number' ? ` ${Math.round(row.decisionConviction * 100)}%` : ''}`
                   : ''}
               </span>
               <span className={styles.progressMeta}>
@@ -311,9 +310,9 @@ function BatchRunner({ tickers }: BatchRunnerProps) {
           <span>
             {summary.done} of {tickers.length} complete
           </span>
-          {summary.buy > 0 && <span>BUY: {summary.buy}</span>}
-          {summary.sell > 0 && <span>SELL: {summary.sell}</span>}
-          {summary.hold > 0 && <span>HOLD: {summary.hold}</span>}
+          {summary.bullish > 0 && <span>Bullish: {summary.bullish}</span>}
+          {summary.bearish > 0 && <span>Bearish: {summary.bearish}</span>}
+          {summary.neutral > 0 && <span>Neutral: {summary.neutral}</span>}
           {summary.failed > 0 && <span>Failed: {summary.failed}</span>}
           {summary.totalCostUsd > 0 && (
             <span>Cost: {formatUsdShort(summary.totalCostUsd)}</span>
@@ -340,23 +339,27 @@ function statusLine(
 
 function useSummary(rows: PerTickerState[]) {
   let done = 0;
-  let buy = 0;
-  let sell = 0;
-  let hold = 0;
+  // Summary buckets by lean: moderately_bullish counts as bullish, etc.
+  let bullish = 0;
+  let bearish = 0;
+  let neutral = 0;
   let failed = 0;
   let totalCostUsd = 0;
   for (const r of rows) {
     if (r.status === 'done') {
       done += 1;
-      if (r.decisionAction === 'BUY') buy += 1;
-      else if (r.decisionAction === 'SELL') sell += 1;
-      else if (r.decisionAction === 'HOLD') hold += 1;
+      if (r.decisionStance) {
+        const lean = stanceLean(r.decisionStance);
+        if (lean === 'bullish') bullish += 1;
+        else if (lean === 'bearish') bearish += 1;
+        else neutral += 1;
+      }
       if (typeof r.estCostUsd === 'number') totalCostUsd += r.estCostUsd;
     } else if (r.status === 'failed') {
       failed += 1;
     }
   }
-  return { done, buy, sell, hold, failed, totalCostUsd };
+  return { done, bullish, bearish, neutral, failed, totalCostUsd };
 }
 
 function formatUsdShort(value: number): string {

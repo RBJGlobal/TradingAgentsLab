@@ -43,7 +43,7 @@ class _StubAdapter:
     ) -> tuple[str, int, int]:
         self._call += 1
         if self._call == MAX_AGENTS_PER_SESSION:
-            return ("ACTION = HOLD\nCONFIDENCE = 0.5\nReason", 50, 25)
+            return ("STANCE=NEUTRAL\nCONVICTION=0.5\nBULL_STRENGTH=50\nBEAR_STRENGTH=50\nRISK=MODERATE\nReason", 50, 25)
         return (f"agent {self._call} output", 100, 50)
 
 

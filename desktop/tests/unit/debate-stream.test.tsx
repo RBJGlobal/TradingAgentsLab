@@ -27,7 +27,14 @@ const COMPLETE: DebateEvent = {
   type: 'session.complete',
   ticker: 'NVDA',
   trade_date: '2026-06-16',
-  decision: { action: 'HOLD', confidence: 0.55, reasoning: 'steady' },
+  decision: {
+    stance: 'neutral',
+    conviction: 0.55,
+    bull_strength: 50,
+    bear_strength: 50,
+    risk_level: 'moderate',
+    reasoning: 'steady',
+  },
 } as DebateEvent;
 
 describe('DebateStream elapsed clock', () => {

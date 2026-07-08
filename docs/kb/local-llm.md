@@ -8,7 +8,7 @@
 
 ## What it is
 
-TradingAgentsLab can route the multi-agent debate through a local LLM runtime, Ollama, LM Studio, llama.cpp's server, or any OpenAI-compatible server you run on your machine. Cost is $0. Data stays local. Trade-off: model quality depends entirely on what you have installed (a 3-billion-parameter model on a laptop is meaningfully weaker than gpt-5 or Claude Opus 4.7 on a paid API).
+Trading Agents Lab can route the multi-agent debate through a local LLM runtime, Ollama, LM Studio, llama.cpp's server, or any OpenAI-compatible server you run on your machine. Cost is $0. Data stays local. Trade-off: model quality depends entirely on what you have installed (a 3-billion-parameter model on a laptop is meaningfully weaker than gpt-5 or Claude Opus 4.7 on a paid API).
 
 This is fully optional. If you have an OpenAI / Anthropic / OpenRouter / Gemini key configured, the system will prefer it for debate quality. Local appears in the **Run with** dropdown so you can flip to it explicitly whenever you want zero-cost / private runs.
 
@@ -39,8 +39,8 @@ If nothing is detected, the section shows installation links for [Ollama](https:
    - `ollama pull llama3.2` (~2GB, fast on most machines, baseline quality)
    - `ollama pull qwen2.5:7b` (~5GB, stronger reasoning, slower)
    - `ollama pull llama3.1:8b` (~5GB, the standard mid-tier choice)
-3. Ollama starts as a daemon automatically on macOS / Windows, on `http://localhost:11434`. TradingAgentsLab expects the OpenAI-compatible base URL `http://localhost:11434/v1`. Verify it is up with `curl http://localhost:11434/v1/models`.
-4. In TradingAgentsLab, open **Settings → LLM Providers**, click **Refresh**, and you should see "Ollama" listed with your pulled models in the dropdown.
+3. Ollama starts as a daemon automatically on macOS / Windows, on `http://localhost:11434`. Trading Agents Lab expects the OpenAI-compatible base URL `http://localhost:11434/v1`. Verify it is up with `curl http://localhost:11434/v1/models`.
+4. In Trading Agents Lab, open **Settings → LLM Providers**, click **Refresh**, and you should see "Ollama" listed with your pulled models in the dropdown.
 
 > **Ollama vs LM Studio:** Ollama runs as a background daemon and serves *every* model you have pulled, so there is no "start server" step and no need to pre-load a single model the way LM Studio does. The flip side is the model-name gotcha: the id you select must match the `ollama list` tag exactly, and Ollama defaults the tag to `:latest` (so `ollama pull llama3.2` is served as `llama3.2:latest`). When you pick from the **Refresh**-populated dropdown this is handled for you; it only bites if you type a model id by hand in the manual Base URL field.
 
@@ -51,9 +51,9 @@ If nothing is detected, the section shows installation links for [Ollama](https:
 1. Install LM Studio from [lmstudio.ai](https://lmstudio.ai).
 2. Download a model through LM Studio's UI (it has a built-in catalog browser).
 3. Open LM Studio's **Local Server** tab and click **Start Server**. By default it binds to `http://localhost:1234`.
-4. In TradingAgentsLab, click **Refresh** in the Local LLM section. LM Studio appears with the currently-loaded model.
+4. In Trading Agents Lab, click **Refresh** in the Local LLM section. LM Studio appears with the currently-loaded model.
 
-> **Heads-up:** LM Studio only exposes the model that's actively loaded in its UI. If you switch models in LM Studio, click **Refresh** in TradingAgentsLab so the dropdown reflects the new selection.
+> **Heads-up:** LM Studio only exposes the model that's actively loaded in its UI. If you switch models in LM Studio, click **Refresh** in Trading Agents Lab so the dropdown reflects the new selection.
 
 ---
 
@@ -105,13 +105,13 @@ When **local** is the active provider:
 - That's the entire outbound LLM transmission. Nothing routes through OpenAI, Anthropic, OpenRouter, or Gemini.
 - The runtime's models, and any conversations with them, stay on your machine.
 
-TradingAgentsLab itself still makes outbound requests for **data**, yfinance for OHLCV, optionally Alpaca for higher-quality market data, and (when the sentiment_analyst runs) StockTwits + Reddit for social signal. These are unrelated to the LLM provider you've chosen. See [data-providers.md](data-providers.md) and [security-and-storage.md](security-and-storage.md) for the full network-call inventory.
+Trading Agents Lab itself still makes outbound requests for **data**, yfinance for OHLCV, optionally Alpaca for higher-quality market data, and (when the sentiment_analyst runs) StockTwits + Reddit for social signal. These are unrelated to the LLM provider you've chosen. See [data-providers.md](data-providers.md) and [security-and-storage.md](security-and-storage.md) for the full network-call inventory.
 
 ---
 
 ## Troubleshooting
 
-**"No local runtime detected"**, none of Ollama / LM Studio / llama.cpp's server is listening on the expected port. Verify with `curl http://localhost:11434/v1/models` (Ollama) or `curl http://localhost:1234/v1/models` (LM Studio). If they respond but TradingAgentsLab still doesn't detect them, check that the URL you can `curl` is exactly one of those defaults.
+**"No local runtime detected"**, none of Ollama / LM Studio / llama.cpp's server is listening on the expected port. Verify with `curl http://localhost:11434/v1/models` (Ollama) or `curl http://localhost:1234/v1/models` (LM Studio). If they respond but Trading Agents Lab still doesn't detect them, check that the URL you can `curl` is exactly one of those defaults.
 
 **"Detection error: …"**, the engine sidecar couldn't reach its own `/llm/local-runtimes` endpoint. Restart the app and try again. If it persists, check the engine log in **About → Open engine log**.
 

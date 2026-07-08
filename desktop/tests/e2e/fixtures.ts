@@ -21,7 +21,7 @@
  * alongside a live dev stack.
  */
 import { test as base, _electron as electron, expect, type ElectronApplication, type Page } from '@playwright/test';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,6 +74,18 @@ export const test = base.extend<TalFixtures>({
   app: async ({ sandboxDir }, use) => {
     const userDataDir = path.join(sandboxDir, 'userData');
     const sessionsDb = path.join(sandboxDir, 'sessions.db');
+
+    // Pre-seed the first-launch consent gate (7c.3): every fresh sandbox
+    // would otherwise open on the blocking "Before you begin" dialog and
+    // every locator in the suite times out behind it. Version 1 matches
+    // electron/consent.ts CONSENT_VERSION; bump together when the
+    // agreement copy materially changes.
+    mkdirSync(userDataDir, { recursive: true });
+    writeFileSync(
+      path.join(userDataDir, 'consent.json'),
+      JSON.stringify({ acceptedVersion: 1, timestamp: new Date().toISOString() }),
+      'utf8',
+    );
 
     const app = await electron.launch({
       args: [

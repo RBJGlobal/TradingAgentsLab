@@ -102,7 +102,7 @@ echo "── /analyze"
 body="$(curl -s -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -X POST -d "{\"ticker\":\"$TICKER\",\"trade_date\":\"$TRADE_DATE\"}" \
   "$BASE/analyze")"
-echo "$body" | python3 -c 'import json,sys; d=json.loads(sys.stdin.read()); assert d.get("ok") is True and d["decision"]["action"] == "HOLD"' >/dev/null
+echo "$body" | python3 -c 'import json,sys; d=json.loads(sys.stdin.read()); assert d.get("ok") is True and d["decision"]["stance"] == "neutral"' >/dev/null
 check "/analyze returns HOLD stub" $?
 
 # /data/summary real data

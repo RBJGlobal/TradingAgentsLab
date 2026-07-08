@@ -21,17 +21,21 @@
  *   {webhook_id: chat_id} alongside `webhooks` on the start frame.
  */
 
+import type { Stance } from './engine-client';
 import { getSecret, setSecret, deleteSecret } from './secrets';
+import { normalizeStance } from './stance';
 
 const STORAGE_KEY = 'webhooks:configs';
 
 export type WebhookKind = 'generic' | 'slack' | 'discord' | 'telegram';
 
 export interface WebhookFilter {
-  /** Allowed actions. Empty array = fire on every action. */
-  actions: ('BUY' | 'SELL' | 'HOLD')[];
-  /** Inclusive floor on confidence (0..1). 0 = no floor. */
-  min_confidence: number;
+  /** Allowed stances. Empty array = fire on every stance. Configs saved
+   * before the stance relabel carried `actions` (BUY/SELL/HOLD) +
+   * `min_confidence`; loadWebhooks migrates them on read. */
+  stances: Stance[];
+  /** Inclusive floor on conviction (0..1). 0 = no floor. */
+  min_conviction: number;
 }
 
 export interface WebhookConfig {
@@ -79,7 +83,27 @@ export function newWebhookId(): string {
 }
 
 export function newWebhookFilter(): WebhookFilter {
-  return { actions: [], min_confidence: 0 };
+  return { stances: [], min_conviction: 0 };
+}
+
+/** Migrate a filter saved before the stance relabel ({actions,
+ * min_confidence} with BUY/SELL/HOLD values) to the stance shape.
+ * Already-migrated filters pass through unchanged. */
+function migrateFilter(f: Record<string, unknown>): WebhookFilter {
+  const rawList = Array.isArray(f.stances)
+    ? f.stances
+    : Array.isArray(f.actions)
+      ? f.actions
+      : [];
+  const floor = typeof f.min_conviction === 'number'
+    ? f.min_conviction
+    : typeof f.min_confidence === 'number'
+      ? f.min_confidence
+      : 0;
+  return {
+    stances: rawList.map((v) => normalizeStance(v)),
+    min_conviction: floor,
+  };
 }
 
 export async function loadWebhooks(): Promise<WebhookConfig[]> {
@@ -88,7 +112,10 @@ export async function loadWebhooks(): Promise<WebhookConfig[]> {
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isValidConfig);
+    return parsed.filter(isValidConfig).map((c) => ({
+      ...c,
+      filter: migrateFilter(c.filter as unknown as Record<string, unknown>),
+    }));
   } catch {
     return [];
   }

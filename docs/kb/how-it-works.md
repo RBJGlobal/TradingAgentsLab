@@ -8,16 +8,14 @@
 
 ## Overview
 
-When you click **Analyze**, TradingAgentsLab runs a structured debate among a fixed set of AI agents. Each agent plays a specific role. They work in sequence across four phases:
+When you click **Analyze**, Trading Agents Lab runs a structured debate among a fixed set of AI agents. Each agent plays a specific role. They work in sequence across four phases:
 
 1. **Analysts**, gather and interpret data
 2. **Researchers**, argue the bull and bear cases
 3. **Trader**, produce a concrete trade plan
 4. **Risk**, stress-test the plan and make the final call
 
-The output is a **decision card**: BUY, SELL, or HOLD, with a confidence level and a brief reasoning paragraph.
-
-This is educational research. The decision is not a trade instruction. Paper trading only.
+The output is a **committee assessment**: an analytical stance (Bullish through Bearish), a conviction score, bull and bear thesis strength scores, risk level, and a brief reasoning paragraph. The app scores how the evidence was argued, not what action to take. Any investment decision is yours alone.
 
 ---
 
@@ -47,7 +45,7 @@ flowchart TD
     P4 --> RN[risk_neutral]
     RA & RC & RN --> PM[portfolio_manager]
 
-    PM --> Out([BUY / SELL / HOLD<br/>+ confidence + reasoning])
+    PM --> Out([Committee Assessment<br/>stance + conviction + strengths + reasoning])
 ```
 
 Each agent is a single chat-completion call to your selected LLM provider. The full transcript of earlier agents accumulates as later agents run, so the bull researcher reads all four analyst reports, the trader reads the bull/bear/manager debate, and the risk committee reads the trader's plan.
@@ -117,7 +115,7 @@ The research manager produces a directional lean, it is an input to the trader, 
 
 ## Phase 3: Trader
 
-A single trader agent takes all analyst and researcher output and produces a concrete trade plan: whether to enter, suggested size posture (small starter / standard / sized up), a defined-risk stop level, or a HOLD if no entry is warranted.
+A single trader agent takes all analyst and researcher output and describes how a hypothetical practitioner might structure the idea: whether the setup looks actionable, what size posture it would merit (small starter / standard / sized up), and what invalidation level would break the thesis. This is part of the simulated committee's analytical exercise, not an instruction to trade.
 
 ---
 
@@ -130,9 +128,9 @@ Three risk seats stress-test the trader's plan from different angles. The portfo
 | `risk_aggressive` | What does the team risk by being too cautious? |
 | `risk_conservative` | What does the team risk by being too aggressive? |
 | `risk_neutral` | Lowest-regret course of action given both views |
-| `portfolio_manager` | Final decision: ACTION=BUY/SELL/HOLD + CONFIDENCE + reasoning |
+| `portfolio_manager` | Final committee assessment: STANCE + CONVICTION + BULL_STRENGTH + BEAR_STRENGTH + RISK + reasoning |
 
-The portfolio manager emits a structured output that the engine parses to extract the decision and confidence level. The parser is tolerant, if the formatting drifts, it falls back to HOLD / 0.5.
+The portfolio manager emits a structured output that the engine parses to extract the committee assessment fields. The parser is tolerant. If formatting drifts, it falls back to a neutral stance, 0.5 conviction, 50/50 thesis strengths, and moderate risk.
 
 ---
 
@@ -146,8 +144,11 @@ At `session.complete`, the engine sends:
   "ticker": "NVDA",
   "trade_date": "2026-05-08",
   "decision": {
-    "action": "HOLD",
-    "confidence": 0.55,
+    "stance": "neutral",
+    "conviction": 0.55,
+    "bull_strength": 50,
+    "bear_strength": 50,
+    "risk_level": "moderate",
     "reasoning": "..."
   },
   "live": true,
@@ -158,7 +159,7 @@ At `session.complete`, the engine sends:
 }
 ```
 
-The UI renders the decision card with color coding: green for BUY, red for SELL, amber for HOLD.
+The UI renders the committee assessment with color coding: green for bullish stances, red for bearish stances, amber for neutral.
 
 ---
 
@@ -196,7 +197,7 @@ The renderer accumulates events and renders them progressively. You see agent me
 
 ## Upstream relationship
 
-TradingAgentsLab is forked from [Tauric Research's TradingAgents](https://github.com/TauricResearch/TradingAgents), which implements a full LangGraph-based multi-agent pipeline. The current engine borrows the agent roles and phase structure from upstream but uses a simpler sequential orchestration rather than LangGraph. Full upstream-graph integration is a later phase; the sequential approach is easier to debug and keeps costs predictable.
+Trading Agents Lab is forked from [Tauric Research's TradingAgents](https://github.com/TauricResearch/TradingAgents), which implements a full LangGraph-based multi-agent pipeline. The current engine borrows the agent roles and phase structure from upstream but uses a simpler sequential orchestration rather than LangGraph. Full upstream-graph integration is a later phase; the sequential approach is easier to debug and keeps costs predictable.
 
 ---
 

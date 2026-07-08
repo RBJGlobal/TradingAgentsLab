@@ -1,4 +1,4 @@
-# TradingAgentsLab Engine API
+# Trading Agents Lab Engine API
 
 > **Audience:** Claude or human picking up the engine sidecar contract cold. Used by `desktop/src/lib/engine-client.ts` from the renderer; no other clients exist yet.
 
@@ -89,7 +89,7 @@ Empty `headlines` list is a valid 200 response — never 404. 502 on provider er
 
 ### `POST /analyze`
 
-Phase 2/3 stub — returns a deterministic HOLD decision regardless of input.
+Phase 2/3 stub: returns a deterministic neutral committee assessment regardless of input.
 
 ```jsonc
 // Request
@@ -101,9 +101,12 @@ Phase 2/3 stub — returns a deterministic HOLD decision regardless of input.
   "ticker": "NVDA",
   "trade_date": "2026-05-08",
   "decision": {
-    "action": "HOLD",
-    "confidence": 0.5,
-    "reasoning": "Stub response — engine not yet connected to tradingagents core."
+    "stance": "neutral",
+    "conviction": 0.5,
+    "bull_strength": 50,
+    "bear_strength": 50,
+    "risk_level": "moderate",
+    "reasoning": "Stub response. Engine not yet connected to tradingagents core."
   },
   "agents": []
 }
@@ -122,8 +125,8 @@ Lists recently-completed debates, newest first. `limit` defaults to 50 (max 500)
       "id": "019e0a0e95c1-8403736e",     // ULID-like, lexicographically sortable
       "ticker": "NVDA",
       "trade_date": "2026-05-08",
-      "decision_action": "HOLD",
-      "decision_confidence": 0.55,
+      "decision_action": "neutral",      // stance string (bullish | moderately_bullish | neutral | moderately_bearish | bearish); legacy rows hold BUY/SELL/HOLD
+      "decision_confidence": 0.55,       // conviction 0..1; legacy rows hold original confidence value
       "decision_reasoning": "...",
       "live": false,                     // false for stub, true for real-LLM
       "provider": null,                  // populated when live
@@ -146,8 +149,8 @@ Returns the full detail for a single session, including the inflated `events` ar
   "id": "019e0a0e95c1-8403736e",
   "ticker": "NVDA",
   "trade_date": "2026-05-08",
-  "decision_action": "HOLD",
-  "decision_confidence": 0.55,
+  "decision_action": "neutral",      // stance string; legacy rows hold BUY/SELL/HOLD
+  "decision_confidence": 0.55,       // conviction 0..1; legacy rows hold original confidence value
   "decision_reasoning": "...",
   "live": true,
   "model": "gpt-4o-mini",
@@ -280,8 +283,8 @@ Backwards-compat: the legacy shape `{api_key: "..."}` at the top level (no `auth
     "kind": "telegram",        // "telegram" | "slack" | "discord" | "generic"
     "secret": "shh",           // optional — only used for kind=generic (HMAC-SHA256)
     "filter": {                // optional, defaults to fire-on-everything
-      "actions": ["BUY", "SELL"],     // empty array = all
-      "min_confidence": 0.7            // 0..1, inclusive floor
+      "stances": ["bullish", "moderately_bullish"],   // empty array = all; legacy "actions" key still accepted
+      "min_conviction": 0.7                            // 0..1, inclusive floor; legacy "min_confidence" key still accepted
     }
   }
   ```
@@ -362,7 +365,7 @@ Emitted immediately after every `agent.message` during a live debate so the rend
 }
 ```
 
-Emitted ONCE after `session.complete`, only when the start frame carried a non-empty `webhooks` list. Each result has `status: 'fired' | 'filtered' | 'failed'`. `fired` includes `http_status` (2xx); `failed` includes `http_status` (non-2xx) OR `error` (network/timeout/exception). `filtered` means the receiver's action/confidence filter excluded this decision — not a failure.
+Emitted ONCE after `session.complete`, only when the start frame carried a non-empty `webhooks` list. Each result has `status: 'fired' | 'filtered' | 'failed'`. `fired` includes `http_status` (2xx); `failed` includes `http_status` (non-2xx) OR `error` (network/timeout/exception). `filtered` means the receiver's stance/conviction filter excluded this assessment. Not a failure.
 
 **Security**: results NEVER carry the webhook URL. Telegram/Discord URLs embed bot tokens. Receivers are identified by `id` + `name` only.
 
@@ -374,12 +377,15 @@ Emitted ONCE after `session.complete`, only when the start frame carried a non-e
   "ticker": "NVDA",
   "trade_date": "2026-05-08",
   "decision": {
-    "action": "HOLD",   // BUY | SELL | HOLD
-    "confidence": 0.55, // 0..1
+    "stance": "neutral",         // bullish | moderately_bullish | neutral | moderately_bearish | bearish
+    "conviction": 0.55,          // 0..1
+    "bull_strength": 50,         // 0-100, how strongly the bull case argued
+    "bear_strength": 50,         // 0-100, how strongly the bear case argued
+    "risk_level": "moderate",    // low | moderate | elevated
     "reasoning": "..."
   },
-  // Live-only fields — present when the session ran via a real LLM.
-  // Stub-mode session.complete carries only the four fields above.
+  // Live-only fields: present when the session ran via a real LLM.
+  // Stub-mode session.complete carries only the decision block and the stub flag.
   "live": true,
   "model": "gpt-4o-mini",
   "input_tokens": 7401,
@@ -388,7 +394,7 @@ Emitted ONCE after `session.complete`, only when the start frame carried a non-e
 }
 ```
 
-When `provider_config` was supplied in the start frame, the engine populates `live`, `provider`, `model`, `input_tokens`, `output_tokens`, and `estimated_cost_usd`. The renderer uses these to render a "Live · provider · model" badge on the decision card and to log a per-session cost estimate. Cost is calculated using local rate tables (`engine/llm_providers.py:_COST_PER_M_TOKENS`) and is **never** authoritative — it's a budgeting hint, not a billing record. The OpenRouter passthrough has no rate entries since the actual cost depends on the underlying model — `estimated_cost_usd` will read 0.0 in that case.
+When `provider_config` was supplied in the start frame, the engine populates `live`, `provider`, `model`, `input_tokens`, `output_tokens`, and `estimated_cost_usd`. The renderer uses these to render a "Live · provider · model" badge on the committee assessment card and to log a per-session cost estimate. Cost is calculated using local rate tables (`engine/llm_providers.py:_COST_PER_M_TOKENS`) and is **never** authoritative. It is a budgeting hint, not a billing record. The OpenRouter passthrough has no rate entries since the actual cost depends on the underlying model, so `estimated_cost_usd` will read 0.0 in that case.
 
 ##### Server close
 
@@ -430,5 +436,5 @@ The Electron main process awaits `child.stdout.once('data')`, parses it once, an
 - Token-level streaming — each agent's full response is sent as a single `agent.message` event. Token-by-token streaming is a future protocol upgrade and would gate on a `agent.message.delta` event variant.
 - Cross-session search / export / sharing — persistence is per-row only. Future.
 - Authentication beyond bearer — sidecar is `127.0.0.1`-bound; no remote callers.
-- Rate limiting / quotas — `max_tokens` and `MAX_AGENTS_PER_SESSION` are the only hard caps. The engine logs estimated cost per session to stderr, and the renderer surfaces it on the decision card; there is no enforced spend ceiling beyond the per-call cap.
+- Rate limiting / quotas: `max_tokens` and `MAX_AGENTS_PER_SESSION` are the only hard caps. The engine logs estimated cost per session to stderr, and the renderer surfaces it on the committee assessment; there is no enforced spend ceiling beyond the per-call cap.
 - Versioned protocol — single canonical version today. When it changes, the start frame will gain a `protocol_version` field and the server will reject mismatches with close code `1008`.

@@ -6,9 +6,9 @@
  * Verifies the full UI critical path:
  *   - Analyze button enabled once engine ready
  *   - Click → button flips to Stop
- *   - Events stream → decision card renders
- *   - Decision card carries `data-action="HOLD"` (the stub always
- *     produces HOLD@0.55)
+ *   - Events stream → assessment card renders
+ *   - Assessment card carries `data-stance="neutral"` (the stub always
+ *     produces neutral@0.55)
  *   - History page lists the just-completed session (engine writes
  *     a row post-stream, sandboxed DB starts empty)
  */
@@ -27,13 +27,13 @@ test('stub debate completes and persists to History', async ({ window }) => {
   await window.locator('[data-testid="analyze-button"]').click();
   await expect(window.locator('[data-testid="stop-button"]')).toBeVisible();
 
-  // Decision card appears once session.complete arrives. Stub always
-  // produces HOLD@55%. Bumping timeout to 30s for safety on slow CI
+  // Assessment card appears once session.complete arrives. Stub always
+  // produces neutral@55%. Bumping timeout to 30s for safety on slow CI
   // machines — typical local stub run is ~7s.
   const decisionCard = window.locator('[data-testid="decision-card"]');
   await expect(decisionCard).toBeVisible({ timeout: 30_000 });
-  await expect(decisionCard).toHaveAttribute('data-action', 'HOLD');
-  await expect(window.locator('[data-testid="decision-action"]')).toHaveText('HOLD');
+  await expect(decisionCard).toHaveAttribute('data-stance', 'neutral');
+  await expect(window.locator('[data-testid="decision-stance"]')).toHaveText('Neutral');
 
   // History should now have 1 row (sandbox started empty).
   await window.locator('[data-testid="nav-history"]').click();

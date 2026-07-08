@@ -10,9 +10,9 @@
 
 > **For educational research only.** Trading Agents Lab is **not** a registered investment advisor and does not provide investment, financial, legal, or tax advice. LLM-generated analyses can be inaccurate or hallucinated. Nothing this software produces is a recommendation to buy, sell, or hold any security, cryptocurrency, or other asset. See the [full disclaimer](#disclaimer) below.
 
-Trading Agents Lab is a standalone desktop application that lets you watch multi-agent LLM "trading firms" debate a ticker live, fundamentals analyst, sentiment analyst, news analyst, technical analyst, bull researcher, bear researcher, trader, and a risk-management committee, and produce a transparent, auditable trade thesis with a confidence score. Every step of the debate streams into the UI, every transcript is saved locally, and every API call uses your own key (or your own ChatGPT subscription via OAuth).
+Trading Agents Lab is a standalone desktop application that lets you watch multi-agent LLM "trading firms" debate a ticker live, fundamentals analyst, sentiment analyst, news analyst, technical analyst, bull researcher, bear researcher, trader, and a risk-management committee, and produce a transparent, auditable committee assessment. Every step of the debate streams into the UI, every transcript is saved locally, and every API call uses your own key (or your own ChatGPT subscription via OAuth).
 
-It is **not** a trading bot, brokerage, or signal service. It is a lab for *understanding how LLM agents reason about markets*, built for researchers, students, and traders who want to see the full chain of reasoning behind a recommendation rather than a black-box buy/sell call.
+It is **not** a trading bot, brokerage, or signal service. It is a lab for *understanding how LLM agents reason about markets*, built for researchers, students, and traders who want to see the full chain of reasoning behind an analytical assessment rather than a black-box output.
 
 ## Mission
 
@@ -26,10 +26,10 @@ The project also serves as a practical case study for **[Clawdemy.org](https://c
 
 ### The Analyze flow
 
-| Pick a ticker, provider, model, see live data context | Watch the debate stream → final decision with disclaimer |
+| Pick a ticker, provider, model, see live data context | Watch the debate stream → committee assessment with disclaimer |
 |:---:|:---:|
-| ![Analyze form](assets/screenshots/analyze-form.png) | ![Decision card](assets/screenshots/analyze-decision.png) |
-| Compact status strip up top (Engine / Data / LLM / Clawless) is always visible. Data card shows real Alpaca SIP-feed bars before the debate starts. | Risk committee debates → portfolio manager outputs BUY / SELL / HOLD with confidence + reasoning + inline disclaimer. |
+| ![Analyze form](assets/screenshots/analyze-form.png) | ![Assessment card](assets/screenshots/analyze-decision.png) |
+| Compact status strip up top (Engine / Data / LLM / Clawless) is always visible. Data card shows real Alpaca SIP-feed bars before the debate starts. | Risk committee debates → portfolio manager outputs a committee assessment (analytical stance, conviction, and reasoning) with an inline disclaimer. |
 
 ### Settings: bring your own everything
 
@@ -61,7 +61,7 @@ The project also serves as a practical case study for **[Clawdemy.org](https://c
 
 ## What it does
 
-- 🧠 **Multi-agent LLM debate.** A team of 12 specialised agents (4 analysts → 3 researchers → trader → 4-seat risk committee → portfolio manager) reasons about a ticker under your selected LLM, then produces a HOLD / BUY / SELL recommendation with confidence and a complete reasoning trail.
+- 🧠 **Multi-agent LLM debate.** A team of 12 specialised agents (4 analysts → 3 researchers → trader → 4-seat risk committee → portfolio manager) reasons about a ticker under your selected LLM, then produces a committee assessment: analytical stance (Bullish through Bearish), conviction score, bull and bear thesis strengths, and a complete reasoning trail.
 - 📈 **Stocks AND cryptocurrencies.** Type `NVDA` for equities or `BTC`, `ETH`, `SOL`, `BTC/USD`, `BTC-USD` for crypto, the engine auto-detects asset class and routes to the right data endpoint. The fundamental analyst's prompt is asset-class-aware (earnings/balance-sheet for equities, tokenomics/on-chain/macro liquidity for crypto).
 - 🔌 **Bring your own LLM provider.** First-class support for **OpenAI** (API key or **ChatGPT OAuth via the Codex backend**), **Anthropic**, **OpenRouter**, **Google Gemini**, **xAI Grok**, and **MiniMax**, plus any **local OpenAI-compatible runtime** (Ollama, LM Studio). Pick provider per session; switch model per provider with persistent memory of your last choice.
 - 🗂️ **Two market-data providers.** [yfinance](https://github.com/ranaroussi/yfinance) is the free zero-config default. **Alpaca Markets** (free Basic tier) optional for higher-quality SIP-feed data, auto-routed when your API keys are configured, falls back to yfinance otherwise. For crypto news, the engine falls through to yfinance when Alpaca's news endpoint returns thin coverage for mid- and small-cap tokens.
@@ -70,7 +70,7 @@ The project also serves as a practical case study for **[Clawdemy.org](https://c
 - ⌨️ **Native desktop app.** Electron + React + TypeScript on the front, FastAPI + Python sidecar on the back. Cmd+N (new analysis), Cmd+. (stop), Cmd+, (settings), Cmd+1/2/3 (navigate). Real macOS / Windows / Linux app menu.
 - 📰 **News integration.** Per-session headline pull from yfinance or Alpaca news (with crypto fallback chain), surfaced in a linked News card and included in transcript export.
 - 🪙 **Cost-aware by design.** Token usage and estimated USD cost shown per session for API-key paths. ChatGPT OAuth sessions route through your subscription, no per-token billing, $0 in the ledger.
-- 🔓 **Open source under AGPL-3.0.** Free forever. Modify it, study it, self-host it, fork it for personal use. The open-source app has no subscription, no paywall, and no feature gates. [Trading Agents Lab Pro](docs/kb/pro.md) is a separate, optional paid app that wires the same interface to the full upstream research pipeline.
+- 🔓 **Open source under AGPL-3.0.** Free forever. Modify it, study it, self-host it, fork it for personal use. The open-source app has no subscription, no paywall, and no feature gates. [Trading Agents Lab Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro) is a separate companion app, also free and open source, that wires the same interface to the full upstream research pipeline.
 
 ## How it works
 
@@ -159,7 +159,7 @@ flowchart TD
     P4 --> RN[⚖️ risk_neutral]
     RA & RC & RN --> PM[👔 portfolio_manager]
 
-    PM --> Out([🎯 BUY / SELL / HOLD<br/>+ confidence + reasoning])
+    PM --> Out([🎯 Committee Assessment<br/>stance + conviction + strengths + reasoning])
 
     style Out fill:#f0a830,stroke:#0d1117,color:#0d1117
     style Start fill:#0d1117,stroke:#f0a830,color:#f0a830
@@ -197,7 +197,7 @@ sequenceDiagram
     E-->>R: session.complete<br/>{decision, tokens, cost}
     E->>E: persist to sessions.db
     E--xR: WS close (1000)
-    R->>U: 🎯 Render decision card
+    R->>U: 🎯 Render committee assessment
 ```
 
 The whole loop typically takes 5-15 seconds for a `gpt-4o-mini` debate, costing ~$0.001-$0.003. ChatGPT-OAuth debates route through your subscription, no per-token billing, but are subject to subscription rate limits.
@@ -273,7 +273,7 @@ Configure under Settings → Cost Guard. Current spend visible inline with green
 
 ## Architecture
 
-TradingAgentsLab is built as **two cooperating processes**:
+Trading Agents Lab is built as **two cooperating processes**:
 
 - **Desktop (Electron + Vite + React + TypeScript)**, the user-facing app you interact with. Renders pages, manages secrets (in the Electron main process via `safeStorage`), drives the OAuth flow, and streams debate events into the UI over WebSocket.
 - **Engine (Python 3.13 + FastAPI + uvicorn)**, a local sidecar that wraps the upstream `tradingagents` LangGraph core, exposes a small REST + WebSocket API on `127.0.0.1`, and orchestrates the multi-agent debate loop. The engine speaks to LLM providers using a shared `LLMAdapter` protocol with one adapter per provider (OpenAI plus a Codex/OAuth sibling, OpenRouter, Anthropic, Google Gemini, xAI Grok, MiniMax, and local runtimes).
@@ -317,7 +317,7 @@ Phase status lives in [`backlog.md`](backlog.md). High-level:
 
 ## License
 
-TradingAgentsLab uses a **dual-license** structure:
+Trading Agents Lab uses a **dual-license** structure:
 
 | Code | License | File |
 |---|---|---|
@@ -350,7 +350,7 @@ The application contains no order-execution capability and never connects to liv
 
 ## Acknowledgements
 
-TradingAgentsLab is a derivative work of **[TradingAgents](https://github.com/TauricResearch/TradingAgents)** by [Tauric Research](https://tauric.ai/), the original multi-agent LLM trading framework that powers the debate engine inside this app. The vendored `tradingagents/` directory remains under Apache 2.0 and credit belongs entirely to its authors.
+Trading Agents Lab is a derivative work of **[TradingAgents](https://github.com/TauricResearch/TradingAgents)** by [Tauric Research](https://tauric.ai/), the original multi-agent LLM trading framework that powers the debate engine inside this app. The vendored `tradingagents/` directory remains under Apache 2.0 and credit belongs entirely to its authors.
 
 If you use the framework in academic work, please cite the upstream paper:
 

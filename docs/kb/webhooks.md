@@ -1,8 +1,8 @@
 # Webhooks
 
-Push every completed debate's decision to your own systems, Telegram, Slack, Discord, or any HTTPS endpoint. Useful for getting notified on a phone while an overnight analysis runs, logging decisions to a spreadsheet for backtesting later, or bridging the analysis output to your own broker via a small script.
+Push every completed debate's committee assessment to your own systems, Telegram, Slack, Discord, or any HTTPS endpoint. Useful for getting notified on a phone while an overnight analysis runs, logging assessments to a spreadsheet for backtesting later, or bridging the analysis output to your own broker via a small script.
 
-**Trading Agents Lab does not execute trades.** Webhooks are an analysis handoff. They push the JSON decision payload to your receivers; if you want to act on it (e.g. place an order with your brokerage), your receiving script does that part with your own broker credentials, on the regulated platform. This is the locked-positioning firewall, your app, your auth, your responsibility.
+**Trading Agents Lab does not execute trades.** Webhooks are an analysis handoff. They push the JSON assessment payload to your receivers; if you want to act on it (e.g. place an order with your brokerage), your receiving script does that part with your own broker credentials, on the regulated platform. This is the locked-positioning firewall, your app, your auth, your responsibility.
 
 ## Where to configure
 
@@ -15,9 +15,9 @@ Per-webhook you set:
 - **URL**, the webhook endpoint (treated as a secret; stored via OS keychain)
 - **Chat ID** (Telegram only)
 - **HMAC secret** (Generic only), sent as `X-TAL-Signature: sha256=<hex>`
-- **Filter**, fire only on certain actions and/or above a confidence threshold
+- **Filter**, fire only on certain stances and/or above a conviction threshold
 
-Filters are optional. Leave the action checkboxes empty + confidence slider at 0% to fire on every debate.
+Filters are optional. Leave the stance checkboxes empty and conviction slider at 0% to fire on every debate.
 
 ## Recipes
 
@@ -42,17 +42,20 @@ For group chats: add the bot to the group, send a message in the group, then vis
 
 ### Generic (your own script / Cloudflare Worker / Lambda)
 
-The payload shape is documented as `schema: tradingagentslab.webhook.v1`:
+The payload schema is `tradingagentslab.webhook.v2`. The `decision` block carries the full analytical stance model:
 
 ```json
 {
-  "schema": "tradingagentslab.webhook.v1",
+  "schema": "tradingagentslab.webhook.v2",
   "event": "session.complete",
   "ticker": "NVDA",
   "trade_date": "2026-05-15",
   "decision": {
-    "action": "BUY",
-    "confidence": 0.78,
+    "stance": "bullish",
+    "conviction": 0.78,
+    "bull_strength": 78,
+    "bear_strength": 42,
+    "risk_level": "moderate",
     "reasoning": "..."
   },
   "session_id": "01923f...",
@@ -62,6 +65,8 @@ The payload shape is documented as `schema: tradingagentslab.webhook.v1`:
   "estimated_cost_usd": 0.0042
 }
 ```
+
+Stance values: `bullish` | `moderately_bullish` | `neutral` | `moderately_bearish` | `bearish`. Conviction is 0..1. Bull and bear strengths are 0-100 integer scores. Risk level is `low` | `moderate` | `elevated`.
 
 Set an **HMAC shared secret** on the generic webhook to sign the body. Your receiver verifies by recomputing:
 
@@ -75,7 +80,7 @@ if not hmac.compare_digest(sig, expected):
 
 ### Bridge to your own broker (illustrative)
 
-If you want TAL's analysis to trigger a real-money trade, write a thin receiver. Example as a Cloudflare Worker that forwards BUY decisions over a confidence threshold to your Alpaca Live or Interactive Brokers account using *your* credentials:
+The assessment is analysis, not an instruction: nothing in the payload tells any system to trade, and the app never will. If you choose to build automation on top of it, that mapping from stance to action is a rule **you** define, running on **your** receiver, executing on a regulated platform under **your** credentials and authority. Example of such a user-defined rule as a Cloudflare Worker:
 
 ```ts
 export default {
@@ -84,8 +89,8 @@ export default {
     const body = await req.json<TalDecision>();
 
     // Filter is also enforced in TAL; this is belt-and-braces.
-    if (body.decision.action !== 'BUY') return new Response('skip');
-    if (body.decision.confidence < 0.75) return new Response('skip');
+    if (!['bullish', 'moderately_bullish'].includes(body.decision.stance)) return new Response('skip');
+    if (body.decision.conviction < 0.75) return new Response('skip');
 
     // Place the order with YOUR brokerage credentials, not TAL's.
     await fetch('https://api.alpaca.markets/v2/orders', {
