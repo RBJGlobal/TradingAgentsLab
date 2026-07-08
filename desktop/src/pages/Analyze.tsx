@@ -709,10 +709,10 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
         <div className={styles.pageHeaderTitleBlock}>
           <h1 className={styles.pageTitle}>Analyze</h1>
           <p className={styles.pageSubtitle}>
-            Run <strong>the Diligence</strong> on a ticker — twelve AI agents
+            Run <strong>the Diligence</strong> on a ticker: twelve AI agents
             (analyst, researcher, trader, risk-manager) deliberate from
-            independent angles and converge on a recommendation. Educational
-            research only; not investment advice.
+            independent angles and converge on a committee assessment.
+            Educational research only; not investment advice.
           </p>
         </div>
         <div className={styles.pageHeaderProvider}>
