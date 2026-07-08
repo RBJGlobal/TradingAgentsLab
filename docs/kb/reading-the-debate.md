@@ -10,7 +10,7 @@ The Analyze page has these sections, top to bottom:
 
 1. **Page header**, title and one-line description
 2. **Input card**, ticker, date, Analyze/Stop button
-3. **Status grid**, four status cards (Engine, Data, LLM, Clawless)
+3. **Status grid**, three status cards (Engine, Data, LLM)
 4. **Debate stream**, session header, data summary strip, news card, phase cards, committee assessment
 5. **Disclaimer footer**
 
@@ -77,9 +77,6 @@ Shows the active data provider. Flips from "Pending…" to "yfinance · live" on
 
 Shows the LLM configuration state. Currently always shows "Not configured" because the renderer-to-engine key injection is in progress (Phase 2.1). The hint line points you to Settings → LLM Providers.
 
-### Clawless card
-
-Shows the Clawless gateway connection state. Currently always shows "Disconnected", the gateway connector is Phase 6. See [clawless-connector.md](clawless-connector.md).
 
 ---
 

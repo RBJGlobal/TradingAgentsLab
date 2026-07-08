@@ -1,6 +1,6 @@
 # Frequently Asked Questions
 
-*Posture, license, what Trading Agents Lab is and is not, and the relationships with upstream and Clawless.*
+*Posture, license, what Trading Agents Lab is and is not, and the relationship with the upstream project.*
 
 ---
 
@@ -31,7 +31,7 @@ No. The agent debate produces a committee assessment: an analytical stance on ho
 
 - **Not a brokerage.** It does not execute trades on its own.
 - **Not a registered investment advisor.** Nothing it produces is investment advice.
-- **Not a Clawless extension, plugin, add-on, or integration.** It is a standalone product that can optionally connect to a Clawless gateway, the same way it can optionally connect to Alpaca or Yahoo Finance.
+- **Not a Clawless extension, plugin, add-on, or integration.** It is a standalone product from the same maker; the two share brand-family coherence, not code.
 - **Not a live trading platform.** Paper trading is the intended use case.
 
 ---
@@ -72,7 +72,7 @@ Yes. The open-source app remains AGPL-3.0 and free, with no feature removals and
 
 Trading Agents Lab is forked from [Tauric Research's TradingAgents](https://github.com/TauricResearch/TradingAgents), a multi-agent LLM trading research framework. The upstream project implements a full LangGraph-based pipeline with analyst, researcher, trader, and risk-manager agents.
 
-Trading Agents Lab wraps this core in a desktop UI and a FastAPI sidecar, adds key management, data provider integrations, and the Clawless connector option.
+Trading Agents Lab wraps this core in a desktop UI and a FastAPI sidecar, adds key management and data provider integrations.
 
 ### Are changes being contributed back upstream?
 
@@ -86,13 +86,11 @@ Not at this time. Trading Agents Lab is an independent fork under AGPL-3.0 for i
 
 Trading Agents Lab is a **standalone trading companion for Clawless**. It is an independent product with its own codebase, license, and UI.
 
-Clawless is one of several optional connectors in Trading Agents Lab, alongside Alpaca, Yahoo Finance, and direct LLM provider keys. Connecting the two is optional. Trading Agents Lab works fully without a running Clawless instance.
-
-No code is shared between the two products. Brand-level coherence (compatible dark palette, compatible font choices) is achieved through independent design decisions, not code reuse.
+Trading Agents Lab works fully on its own and does not connect to Clawless. No code is shared between the two products. Brand-level coherence (compatible dark palette, compatible font choices) is achieved through independent design decisions, not code reuse.
 
 ### Does Trading Agents Lab require Clawless?
 
-No. You can run Trading Agents Lab entirely without Clawless. The Clawless connector (Phase 6) adds an optional gateway routing path for LLM calls.
+No. Trading Agents Lab runs entirely on its own. An earlier version of Settings showed a placeholder for an optional Clawless gateway connector; it was never functional and has been removed. If a gateway integration ships in the future it will be announced in the release notes.
 
 ---
 
@@ -144,5 +142,4 @@ Locally, in `<repo>/data/sessions.db` (SQLite). The History page reads from this
 - [How it works](how-it-works.md), the multi-agent pipeline
 - [Configuring LLM providers](configuring-llm-providers.md), set up your providers
 - [OAuth](oauth.md), ChatGPT subscription routing
-- [Clawless connector](clawless-connector.md), optional gateway tap
 - [Security and storage](security-and-storage.md), how keys are protected

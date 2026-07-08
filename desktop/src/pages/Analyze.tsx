@@ -661,6 +661,23 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
     }
   };
 
+  // Full-page reading view: builds the standalone HTML document and hands it
+  // to main, which writes it under userData/transcripts and opens the default
+  // browser. Imported lazily — react-dom/server + the generator stay out of
+  // the initial bundle for what is a post-run affordance.
+  const onOpenHtml = async () => {
+    if (!events.length) return;
+    try {
+      const { buildTranscriptHtml } = await import('../lib/transcript-html');
+      const { html, suggestedName } = buildTranscriptHtml(events);
+      await window.tradingAgentsLab.transcript.openHtml(html, suggestedName);
+    } catch (err) {
+      setStreamError(
+        `open in HTML failed: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
+    }
+  };
+
   const buttonDisabled = engineStatus !== 'running' || isStreaming;
   const transcriptReady = events.some((e) => e.type === 'session.complete');
 
@@ -692,10 +709,10 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
         <div className={styles.pageHeaderTitleBlock}>
           <h1 className={styles.pageTitle}>Analyze</h1>
           <p className={styles.pageSubtitle}>
-            Run <strong>the Diligence</strong> on a ticker — twelve AI agents
+            Run <strong>the Diligence</strong> on a ticker: twelve AI agents
             (analyst, researcher, trader, risk-manager) deliberate from
-            independent angles and converge on a recommendation. Educational
-            research only; not investment advice.
+            independent angles and converge on a committee assessment.
+            Educational research only; not investment advice.
           </p>
         </div>
         <div className={styles.pageHeaderProvider}>
@@ -830,13 +847,23 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
               `Engine could not start after several retries: ${engineError ?? 'unknown error'}. Use the app menu (⏻ top right) to Restart.`}
           </p>
           {transcriptReady && !isStreaming && (
-            <button
-              className={styles.transcriptButton}
-              onClick={onCopyTranscript}
-              type="button"
-            >
-              {copied ? 'Copied ✓' : 'Copy transcript (Markdown)'}
-            </button>
+            <>
+              <button
+                className={styles.transcriptButton}
+                onClick={onCopyTranscript}
+                type="button"
+              >
+                {copied ? 'Copied ✓' : 'Copy transcript (Markdown)'}
+              </button>
+              <button
+                className={styles.transcriptButton}
+                onClick={onOpenHtml}
+                type="button"
+                data-testid="open-html-transcript"
+              >
+                Open in HTML
+              </button>
+            </>
           )}
         </div>
         {streamError && (

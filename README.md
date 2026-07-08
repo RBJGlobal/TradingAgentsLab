@@ -29,7 +29,7 @@ The project also serves as a practical case study for **[Clawdemy.org](https://c
 | Pick a ticker, provider, model, see live data context | Watch the debate stream → committee assessment with disclaimer |
 |:---:|:---:|
 | ![Analyze form](assets/screenshots/analyze-form.png) | ![Assessment card](assets/screenshots/analyze-decision.png) |
-| Compact status strip up top (Engine / Data / LLM / Clawless) is always visible. Data card shows real Alpaca SIP-feed bars before the debate starts. | Risk committee debates → portfolio manager outputs a committee assessment (analytical stance, conviction, and reasoning) with an inline disclaimer. |
+| Compact status strip up top (Engine / Data / LLM) is always visible. Data card shows real Alpaca SIP-feed bars before the debate starts. | Risk committee debates → portfolio manager outputs a committee assessment (analytical stance, conviction, and reasoning) with an inline disclaimer. |
 
 ### Settings: bring your own everything
 
@@ -48,7 +48,7 @@ The project also serves as a practical case study for **[Clawdemy.org](https://c
 | ![History](assets/screenshots/history.png) |  |
 | Every debate persisted to local SQLite at `data/sessions.db`. Browse past sessions, replay the full transcript, copy as Markdown. Aborted runs aren't stored. | |
 
-> 📸 *More captures (Analyst phase, Researcher phase, Clawless tab) live in [`assets/screenshots/`](assets/screenshots/) for documentation/marketing reuse. See the [capture spec](assets/screenshots/README.md) if you want to refresh them.*
+> 📸 *More captures (Analyst phase, Researcher phase, Settings tabs) live in [`assets/screenshots/`](assets/screenshots/) for documentation/marketing reuse. See the [capture spec](assets/screenshots/README.md) if you want to refresh them.*
 
 ---
 
@@ -312,7 +312,7 @@ Phase status lives in [`backlog.md`](backlog.md). High-level:
 
 - ✅ **Shipped:** Desktop shell + Python sidecar + end-to-end debate streaming + settings/secrets + multi-provider LLM picker (OpenAI, Anthropic, OpenRouter, Gemini, xAI Grok, MiniMax, local runtimes) + ChatGPT OAuth + history + watchlist + yfinance + Alpaca data adapter + crypto support (auto-routed, asset-class-aware) + Cost Guard with override UX + compact status strip + Telegram bot channel.
 - ⏳ **In progress:** Playwright UI tests; KB documentation sweep for crypto + Alpaca + Cost Guard.
-- 🔜 **Next:** Optional Clawless gateway tap (Phase 6), webhooks for external broker handoff (Phase 8), launch-prep (Terms of Service, Privacy Policy, brochure marketing site, signed DMG distribution).
+- 🔜 **Next:** ongoing polish and deeper educational content; see [backlog.md](backlog.md).
 - 🚫 **Out of scope, ever** (per locked positioning): native broker execution, live-trading order management, real-money trade routing. Users may fork for personal modifications; PRs adding execution code are rejected upstream.
 
 ## License

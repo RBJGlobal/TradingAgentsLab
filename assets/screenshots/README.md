@@ -14,7 +14,6 @@ Source images for the project README + future marketing surfaces. All shots dark
 | `settings-llm.png` | Settings → LLM Providers | OAuth Connected (plus plan), other providers configured |
 | `settings-data.png` | Settings → Data Providers | yfinance ACTIVE + Alpaca Markets Key ID + Secret CONNECTED |
 | `settings-costguard.png` | Settings → Cost Guard | Caps form + current period spend bars |
-| `settings-clawless.png` | Settings → Clawless | Gateway URL + Token CONNECTED |
 | `watchlist.png` | Watchlist | Mix of stocks (NVDA, JPM, BAC) + crypto (ETH, BTC) |
 | `history.png` | History | List view of past debates with sessions count card |
 

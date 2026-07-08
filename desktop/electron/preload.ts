@@ -198,6 +198,13 @@ contextBridge.exposeInMainWorld('tradingAgentsLab', {
   },
   checkUpstream: (): Promise<UpstreamCheckResultBridge> =>
     ipcRenderer.invoke('app:check-upstream'),
+  transcript: {
+    // Persists a renderer-built standalone HTML transcript under
+    // userData/transcripts and opens it in the default browser.
+    // Resolves with the written file path.
+    openHtml: (html: string, baseName: string): Promise<string> =>
+      ipcRenderer.invoke('transcript:open-html', html, baseName),
+  },
   shutdown: (): Promise<void> => ipcRenderer.invoke('app:shutdown'),
   restart: (): Promise<void> => ipcRenderer.invoke('app:restart'),
 });

@@ -4,7 +4,7 @@
 
 Trading Agents Lab is an open-source desktop application for educational market research and paper trading. It runs a panel of AI analyst agents, technical, fundamental, news, and sentiment, that debate a ticker on a date you specify, then produce a committee assessment: an analytical stance, conviction score, thesis strength scores, and reasoning. The analysis is for research and paper-trading purposes only. It is not investment advice.
 
-Trading Agents Lab is a standalone trading companion for Clawless. You can use it independently; connecting it to a running Clawless instance is optional and adds gateway routing for LLM calls.
+Trading Agents Lab is a standalone trading companion for Clawless: an independent product with its own codebase and license, sharing brand-family coherence rather than code or integration.
 
 > **For educational research and paper trading. This is not investment advice.**
 
@@ -25,12 +25,11 @@ Trading Agents Lab is a standalone trading companion for Clawless. You can use i
 | [sentiment.md](sentiment.md) | StockTwits + Reddit pre-fetch for the sentiment_analyst |
 | [cost-guard.md](cost-guard.md) | Daily / weekly / monthly USD caps + rate cap; per-run override flow |
 | [webhooks.md](webhooks.md) | Push committee assessments to Telegram / Slack / Discord / your own HTTPS endpoint |
-| [clawless-connector.md](clawless-connector.md) | What the optional Clawless gateway tap is and when it activates (Phase 6) |
 | [reading-the-debate.md](reading-the-debate.md) | Walk through every element of the Analyze page as a debate runs |
 | [keyboard-shortcuts.md](keyboard-shortcuts.md) | Full table of menu accelerators and page-level shortcuts |
 | [security-and-storage.md](security-and-storage.md) | Where keys, OAuth tokens, and session history live on disk; encryption model |
 | [troubleshooting.md](troubleshooting.md) | Common problems and remedies |
-| [faq.md](faq.md) | Posture, license, what Trading Agents Lab is not, upstream and Clawless relationships |
+| [faq.md](faq.md) | Posture, license, what Trading Agents Lab is not, and the upstream relationship |
 
 ---
 
@@ -40,7 +39,7 @@ Trading Agents Lab is a standalone trading companion for Clawless. You can use i
 2. [configuring-llm-providers.md](configuring-llm-providers.md), connect at least one provider so debates run live
 3. [reading-the-debate.md](reading-the-debate.md), understand what you are looking at
 4. [how-it-works.md](how-it-works.md), go deeper on how the multi-agent debate pipeline works
-5. [faq.md](faq.md), licensing, posture, and the Clawless relationship
+5. [faq.md](faq.md), licensing, posture, and the upstream relationship
 
 If you have a paid ChatGPT account and want to use it instead of an OpenAI API key, jump to [oauth.md](oauth.md) after the getting-started page.
 

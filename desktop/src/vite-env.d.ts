@@ -153,6 +153,11 @@ interface TradingAgentsLabBridge {
     handler: (...args: unknown[]) => void,
   ) => () => void;
   checkUpstream: () => Promise<UpstreamCheckResultBridge>;
+  transcript: {
+    /** Writes a standalone HTML transcript to userData/transcripts and
+     * opens it in the default browser; resolves with the file path. */
+    openHtml: (html: string, baseName: string) => Promise<string>;
+  };
   shutdown: () => Promise<void>;
   restart: () => Promise<void>;
 }

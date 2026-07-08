@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from 'electron';
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
@@ -202,6 +203,43 @@ ipcMain.on('oauth:openai:prompt-response', (_evt, value: string) => {
 ipcMain.handle('app:check-upstream', async (): Promise<UpstreamCheckResult> => {
   return checkUpstream();
 });
+
+// ---- Transcript HTML export ----------------------------------------------
+//
+// The renderer builds the complete standalone document (src/lib/
+// transcript-html.tsx — inline CSS, no scripts, model output escaped by
+// react-markdown); main only persists it under userData/transcripts and
+// opens it in the default browser. Files are kept, not temp: users can
+// bookmark, print, or share a past analysis without re-running it.
+ipcMain.handle(
+  'transcript:open-html',
+  async (_evt, html: string, baseName: string): Promise<string> => {
+    if (typeof html !== 'string' || html.trim().length === 0) {
+      throw new Error('transcript document is empty');
+    }
+    // A full transcript renders well under 1 MB; 8 MB is a generous
+    // ceiling that still stops a runaway renderer payload.
+    if (html.length > 8 * 1024 * 1024) {
+      throw new Error('transcript document too large');
+    }
+    const safe =
+      String(baseName || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 64) || 'transcript';
+    const dir = path.join(app.getPath('userData'), 'transcripts');
+    await fs.promises.mkdir(dir, { recursive: true });
+    // Second-precision stamp keeps repeated exports of the same session
+    // distinct while sorting chronologically in the folder.
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const file = path.join(dir, `${safe}-${stamp}.html`);
+    await fs.promises.writeFile(file, html, 'utf8');
+    const openError = await shell.openPath(file);
+    if (openError) throw new Error(openError);
+    return file;
+  },
+);
 
 // ---- Graceful shutdown / restart ---------------------------------------
 //
