@@ -18,7 +18,7 @@ The app is designed to help you understand how AI agents reason about market dat
 
 You can connect a live Alpaca account, but:
 - Live trading is intentionally restricted in the current distribution.
-- The app produces AI-generated recommendations, not financial advice.
+- The app produces AI-generated analytical assessments, not financial advice.
 - Any real-money trading decision is entirely your own. Trading Agents Lab is not a registered investment advisor.
 
 ### Does it guarantee profitable trades?
@@ -58,7 +58,7 @@ The `tradingagents/` directory contains code from Tauric Research's TradingAgent
 
 ### What is Trading Agents Lab Pro?
 
-Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, a deep/quick model split, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. It is in pre-release testing. See [pro.md](pro.md).
+Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, a deep/quick model split, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. The source is public now at github.com/RBJGlobal/TradingAgentsLab-Pro; a signed download is coming. See [pro.md](pro.md).
 
 ### Does the free app stay free?
 
