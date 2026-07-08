@@ -144,6 +144,21 @@ function History() {
     }
   }, [detail]);
 
+  // Same full-page HTML view as Analyze — lazily imported for the same
+  // bundle-size reason (react-dom/server rides along with the generator).
+  const onOpenHtml = useCallback(async () => {
+    if (!detail) return;
+    try {
+      const { buildTranscriptHtml } = await import('../lib/transcript-html');
+      const { html, suggestedName } = buildTranscriptHtml(detail.events);
+      await window.tradingAgentsLab.transcript.openHtml(html, suggestedName);
+    } catch (err) {
+      setError(
+        `open in HTML failed: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
+    }
+  }, [detail]);
+
   const stats = useMemo(() => {
     if (!sessions) return null;
     const total = sessions.length;
@@ -205,6 +220,15 @@ function History() {
                 type="button"
               >
                 {copied ? 'Copied ✓' : 'Copy transcript'}
+              </button>
+              <button
+                className={styles.toolbarButton}
+                onClick={() => void onOpenHtml()}
+                disabled={busy}
+                type="button"
+                data-testid="history-open-html"
+              >
+                Open in HTML
               </button>
               <button
                 className={`${styles.toolbarButton} ${styles.toolbarDanger}`}
