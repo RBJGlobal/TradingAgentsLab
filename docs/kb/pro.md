@@ -10,7 +10,7 @@
 
 Most of this knowledge base applies to the free open-source app. Where a section describes something that exists only in Trading Agents Lab Pro, it is marked with a **Pro** callout like this:
 
-> **Pro** This feature is part of Trading Agents Lab Pro, the paid desktop app.
+> **Pro** This feature is part of Trading Agents Lab Pro, the full-depth companion app.
 
 If a page has no Pro callouts, everything on it applies to both apps.
 
@@ -18,7 +18,7 @@ If a page has no Pro callouts, everything on it applies to both apps.
 
 ## What Trading Agents Lab Pro is
 
-Trading Agents Lab Pro is a separate, paid desktop application from the same maker. It shares the desktop interface you know from the free app, but wires it to the full research-grade multi-agent pipeline from the upstream TradingAgents project, the same code that this repository bundles under `tradingagents/` and that the free app deliberately simplifies.
+Trading Agents Lab Pro is a separate desktop application from the same maker, and it is **free and open source** under AGPL-3.0, just like this app. Its source lives at [github.com/RBJGlobal/TradingAgentsLab-Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro). It shares the desktop interface you know from this app, but wires it to the full research-grade multi-agent pipeline from the upstream TradingAgents project, the same code that this repository bundles under `tradingagents/` and that this app deliberately simplifies.
 
 Concretely, a Pro analysis runs:
 
@@ -37,7 +37,7 @@ A full Pro run typically takes 8 to 15 minutes depending on provider, models, de
 
 | | Free app | Trading Agents Lab Pro |
 |---|---|---|
-| License | AGPL-3.0, open source | Proprietary, paid |
+| License | AGPL-3.0, open source | AGPL-3.0, open source |
 | Engine | Simplified single-pass debate | Full upstream LangGraph graph |
 | Analysts | Pre-fetched data summary | Tool-using, iterate mid-run |
 | Researcher debate | Single exchange | Multi-round with a ruling research manager |
@@ -48,7 +48,7 @@ A full Pro run typically takes 8 to 15 minutes depending on provider, models, de
 | Cost controls | CostGuard caps | Same CostGuard caps |
 | Privacy posture | Zero data collection | Same: zero data collection, keys stay in the OS-encrypted store |
 
-The free app is not a demo. It is a complete educational lab and stays free and open source. Pro exists for users who want the full-depth pipeline the upstream research project describes.
+The free app is not a demo. It is a complete educational lab. Pro exists for users who want the full-depth pipeline the upstream research project describes. Both apps are free, open source, and collect zero data.
 
 ---
 
@@ -69,10 +69,10 @@ CostGuard applies to Pro runs the same way it applies to free runs. OAuth and lo
 
 ## Availability
 
-Trading Agents Lab Pro is in pre-release testing and is coming soon. This page will be updated when it ships.
+The Pro source code is public now at [github.com/RBJGlobal/TradingAgentsLab-Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro); you can build and run it from source today. A signed, notarized macOS download with automatic updates is in pre-release testing and is coming soon. This page will be updated when it ships.
 
 ---
 
-## Does the free app stay free?
+## Are both apps really free?
 
-Yes. The open-source app remains AGPL-3.0, free, with no feature removals and no telemetry. Pro is a separate application, not a paywall inside the free one.
+Yes. Both applications are free and open source under AGPL-3.0, with no subscriptions, no paywalls, no feature gates, and no telemetry in either. This project is an educational contribution; it is how we build trust, not revenue.

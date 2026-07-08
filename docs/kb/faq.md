@@ -56,9 +56,9 @@ The `tradingagents/` directory contains code from Tauric Research's TradingAgent
 
 ## Trading Agents Lab Pro
 
-### Is there a paid version?
+### What is Trading Agents Lab Pro?
 
-Trading Agents Lab Pro is a separate, paid desktop app that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, a deep/quick model split, and a portfolio-manager verdict with rating, modeled scenario range, and time horizon. It is in pre-release testing. See [pro.md](pro.md).
+Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, a deep/quick model split, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. It is in pre-release testing. See [pro.md](pro.md).
 
 ### Does the free app stay free?
 

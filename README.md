@@ -70,7 +70,7 @@ The project also serves as a practical case study for **[Clawdemy.org](https://c
 - ⌨️ **Native desktop app.** Electron + React + TypeScript on the front, FastAPI + Python sidecar on the back. Cmd+N (new analysis), Cmd+. (stop), Cmd+, (settings), Cmd+1/2/3 (navigate). Real macOS / Windows / Linux app menu.
 - 📰 **News integration.** Per-session headline pull from yfinance or Alpaca news (with crypto fallback chain), surfaced in a linked News card and included in transcript export.
 - 🪙 **Cost-aware by design.** Token usage and estimated USD cost shown per session for API-key paths. ChatGPT OAuth sessions route through your subscription, no per-token billing, $0 in the ledger.
-- 🔓 **Open source under AGPL-3.0.** Free forever. Modify it, study it, self-host it, fork it for personal use. The open-source app has no subscription, no paywall, and no feature gates. [Trading Agents Lab Pro](docs/kb/pro.md) is a separate, optional paid app that wires the same interface to the full upstream research pipeline.
+- 🔓 **Open source under AGPL-3.0.** Free forever. Modify it, study it, self-host it, fork it for personal use. The open-source app has no subscription, no paywall, and no feature gates. [Trading Agents Lab Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro) is a separate companion app, also free and open source, that wires the same interface to the full upstream research pipeline.
 
 ## How it works
 

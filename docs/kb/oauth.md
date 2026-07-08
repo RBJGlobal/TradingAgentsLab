@@ -108,7 +108,7 @@ OAuth is **OpenAI only**. Anthropic explicitly bans OAuth flows in their Terms o
 
 ## OAuth in Trading Agents Lab Pro
 
-> **Pro** This section describes Trading Agents Lab Pro, the paid desktop app. See [pro.md](pro.md) for what Pro is.
+> **Pro** This section describes Trading Agents Lab Pro, the full-depth companion app (free and open source). See [pro.md](pro.md) for what Pro is.
 
 In Trading Agents Lab Pro, OAuth drives the **entire full-depth pipeline**, including the analysts' live tool calls (price history, indicators, fundamentals, news). The Codex backend speaks the same Responses API wire format the full engine already uses, so an OAuth run and an API-key run execute the identical twelve-role debate: same agents, same tools, same market data, same decision contract.
 

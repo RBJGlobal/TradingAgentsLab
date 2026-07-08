@@ -80,7 +80,7 @@ if not hmac.compare_digest(sig, expected):
 
 ### Bridge to your own broker (illustrative)
 
-If you want TAL's analysis to trigger a real-money trade, write a thin receiver. Example as a Cloudflare Worker that forwards bullish assessments above a conviction threshold to your Alpaca Live or Interactive Brokers account using *your* credentials:
+The assessment is analysis, not an instruction: nothing in the payload tells any system to trade, and the app never will. If you choose to build automation on top of it, that mapping from stance to action is a rule **you** define, running on **your** receiver, executing on a regulated platform under **your** credentials and authority. Example of such a user-defined rule as a Cloudflare Worker:
 
 ```ts
 export default {
