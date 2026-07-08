@@ -6,6 +6,7 @@ import type {
   Headline,
   NewsHeadlinesEvent,
 } from '../lib/engine-client';
+import Markdown from './Markdown';
 import { normalizeStance, riskLabel, stanceLabel, stanceLean } from '../lib/stance';
 import styles from './DebateStream.module.css';
 
@@ -426,7 +427,9 @@ function DebateStream({ events, isStreaming }: DebateStreamProps) {
             {group.messages.map((msg, idx) => (
               <article key={`${msg.agent}-${idx}`} className={styles.message}>
                 <div className={styles.messageAgent}>{msg.agent}</div>
-                <div className={styles.messageContent}>{msg.content}</div>
+                <div className={styles.messageContent}>
+                  <Markdown>{msg.content}</Markdown>
+                </div>
               </article>
             ))}
           </div>
@@ -489,7 +492,9 @@ function DebateStream({ events, isStreaming }: DebateStreamProps) {
               )}
             </div>
           )}
-          <div className={styles.decisionReasoning}>{decision.reasoning}</div>
+          <div className={styles.decisionReasoning}>
+            <Markdown>{decision.reasoning}</Markdown>
+          </div>
           <div className={styles.decisionOwnership}>
             This assessment is an analytical output of a simulated research
             committee, not a recommendation. Any investment decision is yours
