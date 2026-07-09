@@ -69,7 +69,7 @@ CostGuard applies to Pro runs the same way it applies to free runs. OAuth and lo
 
 ## Availability
 
-The Pro source code is public now at [github.com/RBJGlobal/TradingAgentsLab-Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro); you can build and run it from source today. A signed, notarized macOS download with automatic updates is in pre-release testing and is coming soon. This page will be updated when it ships.
+The Pro source code is public at [github.com/RBJGlobal/TradingAgentsLab-Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro), and a signed, notarized macOS download with automatic updates is available on the [download page](https://tradingagentslab.ai/download/). You can also build and run it from source.
 
 ---
 
