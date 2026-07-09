@@ -60,9 +60,9 @@ The `tradingagents/` directory contains code from Tauric Research's TradingAgent
 
 Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, a deep/quick model split, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. The source is public at github.com/RBJGlobal/TradingAgentsLab-Pro, and a signed macOS download is available on the [download page](https://tradingagentslab.ai/download/). See [pro.md](pro.md).
 
-### Does the free app stay free?
+### Does the Lite app stay free?
 
-Yes. The open-source app remains AGPL-3.0 and free, with no feature removals and no telemetry. Pro is a separate application, not a paywall inside this one. Content in this knowledge base that applies only to Pro is marked with a **Pro** callout; everything unmarked applies to both.
+Yes. The Lite app remains AGPL-3.0 and free, with no feature removals and no telemetry. Pro is a separate application, not a paywall inside this one. Content in this knowledge base that applies only to Pro is marked with a **Pro** callout; everything unmarked applies to both.
 
 ---
 

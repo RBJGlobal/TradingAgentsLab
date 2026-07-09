@@ -1,6 +1,6 @@
 # Trading Agents Lab Pro
 
-*What the Pro desktop app is, how it differs from the free open-source app, and how to choose between an API key and ChatGPT OAuth for full-depth analysis.*
+*What the Pro desktop app is, how it differs from the Lite app (Trading Agents Lab itself), and how to choose between an API key and ChatGPT OAuth for full-depth analysis.*
 
 > **For educational research and paper trading. This is not investment advice.**
 
@@ -8,7 +8,7 @@
 
 ## How Pro content is marked in this knowledge base
 
-Most of this knowledge base applies to the free open-source app. Where a section describes something that exists only in Trading Agents Lab Pro, it is marked with a **Pro** callout like this:
+Most of this knowledge base applies to the Lite app. Where a section describes something that exists only in Trading Agents Lab Pro, it is marked with a **Pro** callout like this:
 
 > **Pro** This feature is part of Trading Agents Lab Pro, the full-depth companion app.
 
@@ -33,9 +33,9 @@ A full Pro run typically takes 8 to 15 minutes depending on provider, models, de
 
 ---
 
-## Free app vs Pro at a glance
+## Lite app vs Pro at a glance
 
-| | Free app | Trading Agents Lab Pro |
+| | Lite app | Trading Agents Lab Pro |
 |---|---|---|
 | License | AGPL-3.0, open source | AGPL-3.0, open source |
 | Engine | Simplified single-pass debate | Full upstream LangGraph graph |
@@ -48,7 +48,7 @@ A full Pro run typically takes 8 to 15 minutes depending on provider, models, de
 | Cost controls | CostGuard caps | Same CostGuard caps |
 | Privacy posture | Zero data collection | Same: zero data collection, keys stay in the OS-encrypted store |
 
-The free app is not a demo. It is a complete educational lab. Pro exists for users who want the full-depth pipeline the upstream research project describes. Both apps are free, open source, and collect zero data.
+The Lite app is not a demo. It is a complete educational lab. Pro exists for users who want the full-depth pipeline the upstream research project describes. Both apps are free, open source, and collect zero data.
 
 ---
 
@@ -56,14 +56,14 @@ The free app is not a demo. It is a complete educational lab. Pro exists for use
 
 > **Pro** This section describes provider behavior in Trading Agents Lab Pro.
 
-Pro runs on your own credentials, exactly like the free app. Two paths are supported:
+Pro runs on your own credentials, exactly like the Lite app. Two paths are supported:
 
 1. **API keys** for OpenAI, Anthropic, OpenRouter, or Google Gemini. Per-token billing against your provider account.
 2. **OpenAI OAuth** through your paid ChatGPT subscription. No per-token charges; runs bill against your plan's rate limits.
 
 Both paths drive the same full pipeline, including the analysts' tool calls. The differences that matter when choosing are documented in [oauth.md](oauth.md#oauth-in-trading-agents-lab-pro), including what we observed running the two side by side on the same ticker and date.
 
-CostGuard applies to Pro runs the same way it applies to free runs. OAuth and local runs meter at $0; API-key runs reserve against your configured daily, weekly, and monthly caps before the run starts.
+CostGuard applies to Pro runs the same way it applies to runs in the Lite app. OAuth and local runs meter at $0; API-key runs reserve against your configured daily, weekly, and monthly caps before the run starts.
 
 ---
 
