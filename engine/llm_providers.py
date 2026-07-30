@@ -73,11 +73,13 @@ _COST_PER_M_TOKENS: dict[str, dict[str, float]] = {
     "gpt-5-mini":          {"input": 1.00, "output": 4.00},
     "gpt-5":               {"input": 8.00, "output": 30.00},
     "gpt-5.5":             {"input": 10.00, "output": 40.00},
-    # Anthropic
-    "claude-haiku-4-5":    {"input": 1.00, "output": 5.00},
-    "claude-sonnet-4-5":   {"input": 3.00, "output": 15.00},
-    "claude-sonnet-4-6":   {"input": 3.00, "output": 15.00},
-    "claude-opus-4-7":     {"input": 15.00, "output": 75.00},
+    # Anthropic (refreshed 2026-07-30)
+    "claude-haiku-4-5":    {"input": 1.00,  "output": 5.00},
+    "claude-sonnet-4-5":   {"input": 3.00,  "output": 15.00},
+    "claude-sonnet-4-6":   {"input": 3.00,  "output": 15.00},
+    "claude-opus-4-7":     {"input": 15.00, "output": 75.00},  # kept for backward compat
+    "claude-opus-4-8":     {"input": 15.00, "output": 75.00},  # conservative ceiling; verify vs billing
+    "claude-fable-5":      {"input": 15.00, "output": 75.00},  # new model; conservative ceiling
     # Google Gemini
     "gemini-2.0-flash":    {"input": 0.10, "output": 0.40},
     "gemini-2.5-flash":    {"input": 0.30, "output": 2.50},

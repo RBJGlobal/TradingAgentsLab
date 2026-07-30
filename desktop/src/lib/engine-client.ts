@@ -98,10 +98,10 @@ export const OPENAI_CODEX_DEFAULT_MODEL = 'gpt-5.4';
  * inline, and a `recommended` flag for the suggested default.
  *
  * Curated to the 3-5 latest, non-legacy models per provider. Last
- * refreshed 2026-05-28: xAI lineup re-aligned to docs.x.ai (grok-4.3 +
- * grok-4.20-0309 family) after the grok-4-fast-* IDs were deprecated
- * 2026-05-15. gpt-5.5 / gemini-3.1-flash-lite GA verified current against
- * vendor docs. Refresh manually as providers ship new model families.
+ * refreshed 2026-07-30: added claude-fable-5 + claude-opus-4-8 (Anthropic
+ * new releases); claude-opus-4-7 retained in cost table only for backward
+ * compat with saved preferences. Refresh manually as providers ship new
+ * model families.
  */
 export interface ModelChoice {
   id: string;
@@ -119,13 +119,15 @@ export const PROVIDER_MODELS: Record<LLMProvider, ModelChoice[]> = {
     { id: 'gpt-4o-mini', label: 'gpt-4o-mini',  note: 'Cheapest', recommended: true },
   ],
   anthropic: [
-    { id: 'claude-opus-4-7',   label: 'Claude Opus 4.7',   note: 'Most capable' },
-    { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', note: 'Balanced',  recommended: true },
+    { id: 'claude-fable-5',    label: 'Claude Fable 5',    note: 'Latest release' },
+    { id: 'claude-opus-4-8',   label: 'Claude Opus 4.8',   note: 'Most capable' },
+    { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', note: 'Balanced', recommended: true },
     { id: 'claude-haiku-4-5',  label: 'Claude Haiku 4.5',  note: 'Cheapest' },
   ],
   openrouter: [
-    { id: 'openai/gpt-4o-mini',          label: 'OpenAI · gpt-4o-mini', note: 'Cheapest', recommended: true },
-    { id: 'openai/gpt-5-mini',           label: 'OpenAI · gpt-5-mini',  note: 'Balanced' },
+    { id: 'openai/gpt-4o-mini',          label: 'OpenAI · gpt-4o-mini',   note: 'Cheapest', recommended: true },
+    { id: 'openai/gpt-5-mini',           label: 'OpenAI · gpt-5-mini',    note: 'Balanced' },
+    { id: 'anthropic/claude-opus-4-8',   label: 'Anthropic · Opus 4.8' },
     { id: 'anthropic/claude-sonnet-4-6', label: 'Anthropic · Sonnet 4.6' },
     { id: 'google/gemini-2.0-flash',     label: 'Google · Gemini 2.0 Flash' },
   ],
