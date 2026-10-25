@@ -1,6 +1,6 @@
 # Data Providers
 
-*Where market data comes from, what the engine fetches, and how to add Alpaca for power-user data access.*
+*Where market data and news come from, what the engine fetches, and how to connect a free Alpaca account for fuller news coverage.*
 
 ---
 
@@ -9,7 +9,7 @@
 The engine fetches two types of data before running a debate:
 
 1. **A price summary**, last close, period range, average volume, session count
-2. **News headlines**, recent Yahoo Finance news for the ticker
+2. **News headlines**, recent news for the ticker (Yahoo Finance by default, Alpaca when connected)
 
 Both are fetched at the start of every WS session, before any agent speaks. If a fetch fails, the engine degrades gracefully: the debate runs with reduced context rather than failing entirely.
 
@@ -41,20 +41,54 @@ The Settings page shows **Yahoo Finance, Active · default** in the Data Provide
 
 ---
 
-## Alpaca Markets: optional power-user data
+## Alpaca Markets: optional, free data upgrade
 
-Alpaca provides IEX/SIP market data feed access under a paid subscription. Adding Alpaca credentials is optional.
+Alpaca Markets is an optional second data source. A free Alpaca account (the Basic data plan) is enough; Trading Agents Lab never needs a paid Alpaca subscription.
 
-**Status today:** The `AlpacaProvider` adapter is planned but not yet implemented. The Data Providers settings tab shows the Alpaca row and accepts an API key, but the engine does not yet use it. When the adapter lands, Alpaca will serve as an alternative (or preferred) data source for live-market feeds with higher reliability than yfinance.
+Alpaca is used **for market data and news only**. The app connects only to Alpaca's data endpoints and has no code path that places orders, so a connected Alpaca account can never trade from Trading Agents Lab.
 
-**Same key for data and broker:** The Alpaca API key in the Data Providers tab is the same credential that will also power the Alpaca broker (paper and live trading). You only need one key for both.
+### Connecting Alpaca
 
-To configure the Alpaca key now (for when the adapter ships):
+1. Create a free account at alpaca.markets and generate an API key pair in the dashboard. The **Secret** is shown only once, so copy it right away (regenerate the pair if you missed it).
+2. In Trading Agents Lab, go to **Settings → Data Providers**.
+3. Click **Configure** next to **Alpaca Markets: Key ID** and paste the Key ID.
+4. Click **Configure** next to **Alpaca Markets: Secret** and paste the Secret.
 
-1. Go to **Settings → Data Providers**.
-2. Click **Configure** next to Alpaca Markets.
-3. Paste your Alpaca API key (`PK…`).
-4. Click **Save**.
+Both values are stored in your operating system's encrypted credential store, like your LLM keys. See [security-and-storage.md](security-and-storage.md).
+
+### What changes when Alpaca is connected
+
+As soon as both the Key ID and the Secret are saved, every new analysis uses Alpaca automatically. There is no separate switch to flip:
+
+- **Price summary** comes from Alpaca's daily bars instead of yfinance. The **Data** pill and the data summary strip show `alpaca` as the source.
+- **News headlines** come from Alpaca's news feed (sourced from Benzinga) instead of Yahoo Finance. Alpaca's feed is often fuller than Yahoo's, which can return no headlines at all for some well-known tickers.
+
+Remove either value to go back to Yahoo Finance for both.
+
+---
+
+## News sources
+
+There are two news feeds the app can use:
+
+| Source | Needs a key | Notes |
+|---|---|---|
+| **Yahoo Finance** | No | The default. Coverage varies by ticker; some tickers return no headlines. |
+| **Alpaca (Benzinga)** | Free Alpaca key pair | Used automatically when Alpaca is connected. Strong coverage for US equities and major crypto. |
+
+For crypto tickers, if Alpaca returns no headlines the engine falls back to Yahoo Finance's crypto news so the News card is not left empty. See [crypto-tickers.md](crypto-tickers.md).
+
+The News card in the debate view always shows which source supplied its headlines.
+
+### News source in Trading Agents Lab Pro
+
+> **Pro** In Trading Agents Lab Pro, the news analyst looks up news itself during the run, and you can choose where it looks. Go to **Settings → Analysis → News source**:
+>
+> - **Auto (Alpaca when connected, else Yahoo)**: the default. Uses Alpaca (Benzinga) when your Alpaca keys are saved, otherwise Yahoo Finance.
+> - **Alpaca (Benzinga)**: always tries Alpaca first. If Alpaca is not connected or returns nothing, the analyst falls back to Yahoo Finance.
+> - **Yahoo Finance**: Yahoo Finance only.
+>
+> Whenever Alpaca is in use, Yahoo Finance stays as the fallback, so an empty result from one source never leaves the news analyst with no news at all. The News card in the debate view follows the same rule as the Lite app (Alpaca when connected, otherwise Yahoo).
 
 ---
 
@@ -103,7 +137,7 @@ Separately from market data, the engine fetches public social signal (StockTwits
 
 ## Deferred providers
 
-**Massive.com / Polygon-class providers**, institutional-grade tick data and alternative data. Deferred until a feature specifically requires it. Alpaca is sufficient for v1.
+**Massive.com / Polygon-class providers**, institutional-grade tick data and alternative data. Deferred until a feature specifically requires it. Alpaca covers current needs.
 
 ---
 
@@ -112,5 +146,5 @@ Separately from market data, the engine fetches public social signal (StockTwits
 - [How it works](how-it-works.md), how data fits into the debate flow
 - [Crypto tickers](crypto-tickers.md), symbol normalization and routing
 - [Sentiment](sentiment.md), StockTwits + Reddit pre-fetch
-- [Troubleshooting](troubleshooting.md), yfinance returns no data
+- [Troubleshooting](troubleshooting.md), yfinance returns no data or no news
 - Engine API reference for data endpoints: [docs/api.md](../api.md)

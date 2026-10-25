@@ -97,6 +97,8 @@ The debate still runs when data is unavailable, analyst messages fall back to ge
 
 This is normal for some tickers or at certain times of day. Yahoo Finance's news API does not guarantee coverage for every ticker. The debate runs without the news card.
 
+For fuller coverage, connect a free Alpaca account under **Settings → Data Providers**. News then comes from Alpaca's Benzinga feed. See [data-providers.md](data-providers.md#news-sources).
+
 ---
 
 ## Settings / secret storage problems

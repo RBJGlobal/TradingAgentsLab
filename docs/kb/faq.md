@@ -118,7 +118,7 @@ You can have keys (and OAuth) for all of them connected at once. Each individual
 
 ### Where does market data come from?
 
-Yahoo Finance by default (free, no API key required). Optionally Alpaca for power users with an Alpaca subscription. See [data-providers.md](data-providers.md).
+Yahoo Finance by default (free, no API key required). Optionally Alpaca, which works with a free Alpaca account and also gives fuller news coverage (Benzinga). See [data-providers.md](data-providers.md).
 
 ### Does Trading Agents Lab send data to any server?
 
