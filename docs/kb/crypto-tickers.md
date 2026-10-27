@@ -59,7 +59,7 @@ The other analysts (technical, news, sentiment) work the same way for crypto as 
 
 ## News for crypto
 
-The default Yahoo Finance news provider returns crypto news when the ticker is in their database (BTC-USD, ETH-USD, etc.). When Alpaca is the active data provider, crypto news falls back to yfinance because Alpaca's news API only covers equities. The transition is transparent, the News card just shows whichever provider returned headlines.
+The default Yahoo Finance news provider returns crypto news when the ticker is in their database (BTC-USD, ETH-USD, etc.). When Alpaca is the active data provider, the engine asks Alpaca first (its feed covers major crypto such as BTC and ETH) and falls back to Yahoo Finance's crypto news when Alpaca returns nothing. The transition is transparent, the News card just shows whichever provider returned headlines.
 
 ---
 

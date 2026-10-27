@@ -102,7 +102,7 @@ If yfinance could not fetch data (offline, unknown ticker, future date), the sum
 
 ### News card
 
-Appears after the `news.headlines` event arrives. Shows up to 5 recent Yahoo Finance headlines for the ticker. Each headline is a clickable link to the original article, with the publisher name and a relative timestamp. If no headlines were found, the card is absent.
+Appears after the `news.headlines` event arrives. Shows up to 5 recent headlines for the ticker, from Yahoo Finance by default or from Alpaca (Benzinga) when Alpaca is connected. The card names its source. Each headline is a clickable link to the original article, with the publisher name and a relative timestamp. If no headlines were found, the card is absent.
 
 ### Phase cards
 
