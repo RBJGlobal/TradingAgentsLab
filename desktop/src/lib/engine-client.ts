@@ -83,15 +83,16 @@ export const PROVIDER_DEFAULT_MODEL: Record<LLMProvider, string> = {
 };
 
 /**
- * Default model when the OpenAI auth flow is OAuth (Codex). Subscription-
- * routed model availability differs from the API-tier list and even from
- * pi-ai's registry — both `gpt-4o-mini` AND `gpt-5.1-codex-mini` got
- * rejected with "not supported when using Codex with a ChatGPT account"
- * during founder smoke tests. `gpt-5.4` ("strong model for everyday
- * coding" per the official Codex model list) is the first entry on
- * Codex's own picker and should be reliably available across tiers.
+ * Fallback default model when the OpenAI auth flow is OAuth (Codex).
+ *
+ * The real default comes from the account's LIVE Codex catalog (see
+ * `listCodexModels` + engine/codex_models.py): OpenAI retires
+ * ChatGPT-sign-in models on its own schedule (the entire gpt-5.x line was
+ * retired in 2026), so a hardcoded list breaks in production. This value and
+ * `OPENAI_CODEX_MODELS` are only used before the catalog loads or when it is
+ * unreachable. Mirrors engine/codex_models.py FALLBACK_MODELS.
  */
-export const OPENAI_CODEX_DEFAULT_MODEL = 'gpt-5.4';
+export const OPENAI_CODEX_DEFAULT_MODEL = 'gpt-6.1-sol';
 
 /** Per-provider model registry for the model picker. Each entry has an
  * id (sent to the engine), a display label, an optional `note` shown
@@ -154,31 +155,18 @@ export const PROVIDER_MODELS: Record<LLMProvider, ModelChoice[]> = {
   local: [],
 };
 
-/** OpenAI Codex (OAuth path) — list mirrors what the user's ChatGPT
- * Codex picker actually shows.
- *
- * Source: founder's own Codex picker (2026-05-09). Descriptions are
- * verbatim from the picker. Order matches founder's UI.
- *
- * Excluded: `gpt-5.4-pro` and `gpt-5.4-nano` (not on the picker — they
- * appear in pi-ai's general registry but Codex backend rejects them for
- * ChatGPT-account auth). Also excluded: `gpt-5.1-codex-mini` — picker
- * lists it but Codex returns 400 "not supported when using Codex with
- * a ChatGPT account" (verified 2026-05-09).
- *
- * Clawless Advisor flagged that codex-tuned variants (the *-codex,
- * *-codex-max, *-codex-mini family) are hit-or-miss across ChatGPT plan
- * tiers — they may work for the founder's plan but fail for free-tier
- * users. If any of these throws a 400, we demote/remove on a case-by-
- * case basis as the empirical data comes in.
+/** OpenAI Codex (OAuth path) FALLBACK list, shown only until the live
+ * catalog loads or if it cannot be fetched. Current ChatGPT-sign-in models
+ * per OpenAI's Codex model docs (2026-10). The picker normally shows the
+ * live list from `listCodexModels`, which reflects exactly what this
+ * account can use, so this list going stale no longer breaks runs (the
+ * engine also swaps any unavailable model for the live default). Notes are
+ * OUR research-context descriptions. Mirrors engine/codex_models.py.
  */
 export const OPENAI_CODEX_MODELS: ModelChoice[] = [
-  { id: 'gpt-5.4',           label: 'gpt-5.4',           note: 'Strong model for everyday coding', recommended: true },
-  { id: 'gpt-5.2-codex',     label: 'gpt-5.2-codex',     note: 'Frontier agentic coding model' },
-  { id: 'gpt-5.1-codex-max', label: 'gpt-5.1-codex-max', note: 'Codex-optimized flagship for deep and fast reasoning' },
-  { id: 'gpt-5.4-mini',      label: 'gpt-5.4-mini',      note: 'Small, fast, and cost-efficient model for simpler coding tasks' },
-  { id: 'gpt-5.3-codex',     label: 'gpt-5.3-codex',     note: 'Coding-optimized model' },
-  { id: 'gpt-5.2',           label: 'gpt-5.2',           note: 'Optimized for professional work and long-running agents' },
+  { id: 'gpt-6.1-sol', label: 'gpt-6.1-sol', note: 'Strong all-round model, a good default for the debate', recommended: true },
+  { id: 'gpt-6-astra', label: 'gpt-6-astra', note: 'Most capable, slower per turn' },
+  { id: 'gpt-6-luna',  label: 'gpt-6-luna',  note: 'Fast and focused, lighter reasoning' },
 ];
 
 /** Returns the model list to show in the picker for a given provider +
@@ -730,6 +718,49 @@ export async function testLLMConnection(args: {
         error: `Test timed out after ${LLM_TEST_TIMEOUT_MS / 1000}s`,
       };
     }
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Result of POST /llm/models. `source` is 'live' when the list came from
+ * the account's Codex catalog, 'fallback' when the engine could not reach
+ * it and returned its built-in list. */
+export interface CodexModelsResult {
+  ok: boolean;
+  source?: 'live' | 'fallback';
+  default?: string;
+  models?: ModelChoice[];
+  error?: string;
+}
+
+/**
+ * Models the signed-in ChatGPT account can use on the OAuth (Codex) path,
+ * from OpenAI's live Codex catalog via the engine. `providerConfig` must be
+ * the OAuth shape `resolveProviderConfig` builds for live runs. `refresh`
+ * bypasses the engine's 15-minute cache.
+ */
+export async function listCodexModels(
+  providerConfig: ProviderConfig,
+  refresh = false,
+): Promise<CodexModelsResult> {
+  const { port, token } = await handshake();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LLM_TEST_TIMEOUT_MS);
+  try {
+    const res = await fetchWithTimeout(`http://127.0.0.1:${port}/llm/models`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ provider_config: providerConfig, refresh }),
+      signal: controller.signal,
+    });
+    if (!res.ok) return { ok: false, error: `${res.status} ${res.statusText}` };
+    return (await res.json()) as CodexModelsResult;
+  } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   } finally {
     clearTimeout(timer);

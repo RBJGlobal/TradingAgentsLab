@@ -836,6 +836,19 @@ class TelegramBot:
             )
             return
 
+        # OpenAI OAuth (Codex): swap a model OpenAI has retired for the
+        # account's current default, same self-heal as the WS path. A bot
+        # started before a retirement keeps its old model in memory, so this
+        # matters more here than anywhere. See engine/codex_models.py.
+        if provider_config.provider == "openai" and provider_config.auth_kind == "oauth":
+            from . import codex_models
+
+            provider_config.model, _ = await codex_models.resolve_model(
+                provider_config.model,
+                provider_config.bearer_token,
+                str(provider_config.auth.get("account_id") or ""),
+            )
+
         # Global CostGuard reservation. The per-chat daily cap above limits
         # abuse per Telegram chat; this reservation makes bot debates also
         # count against the SAME global daily/weekly/monthly USD caps the

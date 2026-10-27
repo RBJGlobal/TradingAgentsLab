@@ -28,6 +28,7 @@ import { loadLocalConfig, saveLocalConfig } from '../lib/local-llm';
 import ProviderSetupCallout from '../components/ProviderSetupCallout';
 import { getLocalRuntimes } from '../lib/engine-client';
 import { getOpenAIOAuthStatus } from '../lib/oauth';
+import { useCodexModels } from '../lib/codex-models';
 
 /** Persists the dropdown choice across app sessions (per founder, 2026-05-09). */
 const SELECTED_PROVIDER_STORAGE_KEY = 'tal:analyze:selected-provider';
@@ -90,6 +91,8 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
    * path the next debate will hit when the active provider is OpenAI.
    */
   const [openaiAuthKind, setOpenaiAuthKind] = useState<'oauth' | 'api_key' | null>(null);
+  // Live Codex model list for the OAuth path; inert unless OpenAI OAuth is active.
+  const codexModels = useCodexModels(openaiAuthKind === 'oauth');
 
   /**
    * CostGuard override modal state. When `blocked` is non-null, the modal
@@ -183,8 +186,13 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
       const detected: ModelChoice[] = localModels.map((m) => ({ id: m, label: m }));
       return [...seed, ...detected];
     }
+    // OpenAI via OAuth: the live Codex catalog for this ChatGPT account
+    // (OpenAI retires sign-in models on its own schedule; see codex-models.ts).
+    if (activeProvider === 'openai' && openaiAuthKind === 'oauth') {
+      return codexModels.models;
+    }
     return getAvailableModels(activeProvider, openaiAuthKind);
-  }, [activeProvider, openaiAuthKind, localModels, localSavedModel]);
+  }, [activeProvider, openaiAuthKind, localModels, localSavedModel, codexModels.models]);
 
   /**
    * The model that will run the next debate. Pulls from per-(provider,auth)
@@ -223,7 +231,13 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
       // ignore
     }
     const inList = saved && availableModels.some((m) => m.id === saved);
-    setActiveModel(inList ? saved : getRecommendedModel(activeProvider, openaiAuthKind));
+    // Recommended comes from the list actually shown (for OAuth that is the
+    // live catalog), so a saved model OpenAI has retired falls through to the
+    // account's current default instead of a stale built-in pick.
+    const recommended =
+      (availableModels.find((m) => m.recommended) ?? availableModels[0])?.id ??
+      getRecommendedModel(activeProvider, openaiAuthKind);
+    setActiveModel(inList ? saved : recommended);
   }, [activeProvider, openaiAuthKind, availableModels, localSavedModel]);
 
   /** Ref mirror so onAnalyze sees the right model under racing state. */
@@ -538,11 +552,16 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
     const provider = activeProviderRef.current;
     const authKind = openaiAuthKindRef.current;
     if (provider) {
-      setActiveModel(getRecommendedModel(provider, authKind));
+      // OAuth: the live catalog's default, not the built-in fallback's.
+      setActiveModel(
+        provider === 'openai' && authKind === 'oauth' && codexModels.models[0]
+          ? codexModels.models[0].id
+          : getRecommendedModel(provider, authKind),
+      );
     } else {
       setActiveModel(null);
     }
-  }, []);
+  }, [codexModels.models]);
 
   const onAnalyze = async () => {
     if (!engineReadyRef.current || isStreamingRef.current) return;
@@ -766,7 +785,10 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
           {(manualProvider ||
             (activeProvider &&
               activeModel !== null &&
-              activeModel !== getRecommendedModel(activeProvider, openaiAuthKind))) && (
+              activeModel !==
+                (activeProvider === 'openai' && openaiAuthKind === 'oauth' && codexModels.models[0]
+                  ? codexModels.models[0].id
+                  : getRecommendedModel(activeProvider, openaiAuthKind)))) && (
             <button
               type="button"
               className={styles.providerReset}
@@ -780,6 +802,31 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
           )}
         </div>
       </header>
+
+      {activeProvider === 'openai' && openaiAuthKind === 'oauth' && (
+        // Make live-vs-fallback visible. A silent fallback looks exactly like
+        // success until OpenAI's next model retirement breaks OAuth again.
+        <p className={styles.helper} data-testid="codex-models-source">
+          {codexModels.loading
+            ? 'Models: checking your ChatGPT account...'
+            : codexModels.source === 'live'
+              ? 'Models: live from your ChatGPT account.'
+              : codexModels.source === 'cached' && !codexModels.error
+                ? 'Models: last list from your ChatGPT account.'
+                : `Models: built-in list. OpenAI catalog unavailable${
+                    codexModels.error ? ` (${codexModels.error})` : ''
+                  }.`}{' '}
+          <button
+            type="button"
+            className={styles.providerReset}
+            onClick={codexModels.refresh}
+            disabled={codexModels.loading || isStreaming}
+            data-testid="codex-models-refresh"
+          >
+            Refresh
+          </button>
+        </p>
+      )}
 
       {activeProvider === null && <ProviderSetupCallout />}
 
