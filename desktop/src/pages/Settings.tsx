@@ -970,6 +970,7 @@ function OpenAIOAuthRow({ disabled }: OpenAIOAuthRowProps) {
   }, [pasteValue]);
 
   const connected = status?.connected ?? false;
+  const expired = connected && !!status?.reauthRequired;
 
   return (
     <div className={styles.row}>
@@ -988,6 +989,12 @@ function OpenAIOAuthRow({ disabled }: OpenAIOAuthRowProps) {
             Connected{status?.email ? ` as ${status.email}` : ''}
             {status?.planType && ` · ${status.planType} plan`}
             {status?.needsRefresh && ' · token will refresh on next use'}
+          </div>
+        )}
+        {expired && (
+          <div className={styles.editorError} role="alert" data-testid="oauth-reauth-required">
+            Your ChatGPT sign-in has expired. Click Sign in again to reconnect,
+            or add an OpenAI API key below to use instead.
           </div>
         )}
         {connected && status?.isFreeTier && (
@@ -1028,11 +1035,26 @@ function OpenAIOAuthRow({ disabled }: OpenAIOAuthRowProps) {
       <div className={styles.rowAside}>
         <span
           className={`${styles.pill} ${
-            connected ? styles.pill_success : styles.pill_optional
+            expired
+              ? styles.pill_optional
+              : connected
+                ? styles.pill_success
+                : styles.pill_optional
           }`}
         >
-          {connected ? 'Connected' : 'Recommended'}
+          {expired ? 'Expired' : connected ? 'Connected' : 'Recommended'}
         </span>
+        {expired && (
+          <button
+            className={styles.rowAction}
+            onClick={() => void onConnect()}
+            disabled={disabled || busy}
+            type="button"
+            data-testid="oauth-sign-in-again"
+          >
+            {busy ? 'Connecting…' : 'Sign in again'}
+          </button>
+        )}
         {connected ? (
           <button
             className={styles.rowActionDanger}

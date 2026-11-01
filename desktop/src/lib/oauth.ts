@@ -24,6 +24,8 @@ export interface OAuthStatus {
   /** True when `planType === "free"`. Codex routing is unreliable on
    * free-tier accounts; UI surfaces a banner. */
   isFreeTier?: boolean;
+  /** The saved sign-in no longer works; the user must sign in again. */
+  reauthRequired?: boolean;
 }
 
 export interface OAuthProgressEvent { message: string }
@@ -55,6 +57,31 @@ export function getOpenAIOAuthStatus(): Promise<OAuthStatus> {
 
 export function disconnectOpenAIOAuth(): Promise<boolean> {
   return bridge().openaiDisconnect();
+}
+
+/** Tell the main process a run failed because the sign-in is dead, so
+ * Settings shows "sign in again" too. */
+export function markOpenAIOAuthExpired(): Promise<void> {
+  return bridge().openaiMarkExpired();
+}
+
+/**
+ * True when an engine error text means the ChatGPT sign-in itself was
+ * rejected (expired, revoked, or unparseable token), as opposed to a model
+ * or network problem. The engine's Codex adapter raises "Codex <status>:
+ * <body>" (Pro's full graph surfaces the OpenAI SDK's AuthenticationError
+ * instead), and the error reaches the renderer inside an agent message
+ * ("[live debate error] ...") or a Pro `run.error` event.
+ */
+export function isOAuthAuthFailure(text: string | null | undefined): boolean {
+  if (!text) return false;
+  return (
+    /\bCodex 401\b/.test(text) ||
+    // Pro's full graph calls Codex through the OpenAI SDK, which raises
+    // "AuthenticationError: Error code: 401 - ...".
+    /\bAuthenticationError\b|Error code: 401\b/.test(text) ||
+    /authentication token|token[_ ]expired|invalid[_ ]token|refresh[_ ]token/i.test(text)
+  );
 }
 
 export function submitOAuthPromptResponse(value: string): void {

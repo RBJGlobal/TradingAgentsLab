@@ -91,6 +91,9 @@ export interface OAuthStatus {
   email?: string;
   expiresAt?: number;
   needsRefresh?: boolean;
+  planType?: string;
+  isFreeTier?: boolean;
+  reauthRequired?: boolean;
 }
 
 export interface OAuthProgressEvent { message: string }
@@ -170,6 +173,8 @@ contextBridge.exposeInMainWorld('tradingAgentsLab', {
       ipcRenderer.invoke('oauth:openai:status'),
     openaiDisconnect: (): Promise<boolean> =>
       ipcRenderer.invoke('oauth:openai:disconnect'),
+    openaiMarkExpired: (): Promise<void> =>
+      ipcRenderer.invoke('oauth:openai:mark-expired'),
     openaiPromptResponse: (value: string): void =>
       ipcRenderer.send('oauth:openai:prompt-response', value),
     openaiCredentials: (): Promise<OAuthCredentialsBridge | null> =>

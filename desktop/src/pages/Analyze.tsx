@@ -27,7 +27,11 @@ import { consumePendingTicker } from '../lib/handoff';
 import { loadLocalConfig, saveLocalConfig } from '../lib/local-llm';
 import ProviderSetupCallout from '../components/ProviderSetupCallout';
 import { getLocalRuntimes } from '../lib/engine-client';
-import { getOpenAIOAuthStatus } from '../lib/oauth';
+import {
+  getOpenAIOAuthStatus,
+  isOAuthAuthFailure,
+  markOpenAIOAuthExpired,
+} from '../lib/oauth';
 import { useCodexModels } from '../lib/codex-models';
 
 /** Persists the dropdown choice across app sessions (per founder, 2026-05-09). */
@@ -91,6 +95,17 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
    * path the next debate will hit when the active provider is OpenAI.
    */
   const [openaiAuthKind, setOpenaiAuthKind] = useState<'oauth' | 'api_key' | null>(null);
+  // ChatGPT sign-in expired (refresh failed or a run hit an auth error).
+  // Drives a soft notice asking the user to sign in again or use an API key.
+  const [oauthExpired, setOauthExpired] = useState(false);
+  const [hasOpenAIKey, setHasOpenAIKey] = useState(false);
+  // "Use API key" from that notice: run on the saved API key until the
+  // user signs in again (the effect below clears it once the sign-in works).
+  const [apiKeyOverride, setApiKeyOverride] = useState(false);
+  const apiKeyOverrideRef = useRef(false);
+  // Bumped when the user comes back to Analyze, so a fresh sign-in done in
+  // Settings clears the notice without waiting for the next run.
+  const [authStatusTick, setAuthStatusTick] = useState(0);
   // Live Codex model list for the OAuth path; inert unless OpenAI OAuth is active.
   const codexModels = useCodexModels(openaiAuthKind === 'oauth');
 
@@ -415,12 +430,22 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
           else if (p !== 'openai' && p !== 'local' && hasKey) next.add(p);
         }
         setConfiguredProviders(next);
+        const hasKey = stored.has(PROVIDER_SECRET_KEY.openai);
+        const expired = oauth.connected && 'reauthRequired' in oauth && !!oauth.reauthRequired;
+        if (!expired) {
+          apiKeyOverrideRef.current = false;
+          setApiKeyOverride(false);
+        }
+        setHasOpenAIKey(hasKey);
+        setOauthExpired(expired);
         // OAuth wins over API key when both are present (founder
-        // preference). Surfaced when openai is the active provider.
+        // preference). Surfaced when openai is the active provider. The
+        // exception is an expired sign-in where the user chose "Use API key".
+        const useApiKey = expired && apiKeyOverrideRef.current && hasKey;
         setOpenaiAuthKind(
-          oauth.connected
+          oauth.connected && !useApiKey
             ? 'oauth'
-            : stored.has(PROVIDER_SECRET_KEY.openai)
+            : hasKey
               ? 'api_key'
               : null,
         );
@@ -435,7 +460,21 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
     return () => {
       cancelled = true;
     };
-  }, [resetSignal, isStreaming]);
+  }, [resetSignal, isStreaming, authStatusTick]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      if (window.location.hash === '#analyze') setAuthStatusTick((n) => n + 1);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  const onUseApiKeyInstead = () => {
+    apiKeyOverrideRef.current = true;
+    setApiKeyOverride(true);
+    setOpenaiAuthKind('api_key');
+  };
 
   // Refresh local runtime detection + saved-model state whenever the
   // Settings tab might have updated them. Probes /llm/local-runtimes and
@@ -585,6 +624,17 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
       activeModelRef.current ??
       (provider ? getRecommendedModel(provider, authKind) : '');
 
+    // A ChatGPT sign-in failure shows up as error text in the stream. Flag
+    // it once per run so the notice appears and Settings knows too.
+    let authFailureSeen = false;
+    const checkAuthFailure = (text: string | null | undefined) => {
+      if (authFailureSeen || provider !== 'openai' || authKind !== 'oauth') return;
+      if (!isOAuthAuthFailure(text)) return;
+      authFailureSeen = true;
+      setOauthExpired(true);
+      void markOpenAIOAuthExpired().catch(() => undefined);
+    };
+
     try {
       const result = await runAnalysis(
         {
@@ -595,9 +645,19 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
           model,
         },
         {
-          onEvent: (event) => setEvents((prev) => [...prev, event]),
+          onEvent: (event) => {
+            if (
+              event.type === 'agent.message' &&
+              event.content.startsWith('[live debate error]')
+            ) {
+              checkAuthFailure(event.content);
+            }
+            setEvents((prev) => [...prev, event]);
+          },
           onError: (err) => {
-            setStreamError(err instanceof Error ? err.message : 'stream error');
+            const message = err instanceof Error ? err.message : 'stream error';
+            checkAuthFailure(message);
+            setStreamError(message);
           },
           // Open the existing CostGuard modal and await the user's choice.
           // Preserves the established UX where Cancel aborts and Override
@@ -626,7 +686,9 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
       handleRef.current = result.handle;
       await result.handle.done;
     } catch (err) {
-      setStreamError(err instanceof Error ? err.message : 'stream failed');
+      const message = err instanceof Error ? err.message : 'stream failed';
+      checkAuthFailure(message);
+      setStreamError(message);
     } finally {
       handleRef.current = null;
       isStreamingRef.current = false;
@@ -802,6 +864,32 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
           )}
         </div>
       </header>
+
+      {activeProvider === 'openai' && oauthExpired && !apiKeyOverride && (
+        <div className={styles.authNotice} role="status" data-testid="oauth-expired-notice">
+          <span>
+            Your ChatGPT sign-in has expired. Sign in again in Settings to keep
+            using your ChatGPT plan, or{' '}
+            {hasOpenAIKey ? 'switch to your OpenAI API key.' : 'add an OpenAI API key in Settings.'}
+          </span>
+          <span className={styles.authNoticeActions}>
+            <a className={styles.providerReset} href="#settings" data-testid="oauth-expired-settings">
+              Open Settings
+            </a>
+            {hasOpenAIKey && (
+              <button
+                type="button"
+                className={styles.providerReset}
+                onClick={onUseApiKeyInstead}
+                disabled={isStreaming}
+                data-testid="oauth-expired-use-api-key"
+              >
+                Use API key
+              </button>
+            )}
+          </span>
+        </div>
+      )}
 
       {activeProvider === 'openai' && openaiAuthKind === 'oauth' && (
         // Make live-vs-fallback visible. A silent fallback looks exactly like
