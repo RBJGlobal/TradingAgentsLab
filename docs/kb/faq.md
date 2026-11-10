@@ -31,7 +31,7 @@ No. The agent debate produces a committee assessment: an analytical stance on ho
 
 - **Not a brokerage.** It does not execute trades on its own.
 - **Not a registered investment advisor.** Nothing it produces is investment advice.
-- **Not a Clawless extension, plugin, add-on, or integration.** It is a standalone product from the same maker; the two share brand-family coherence, not code.
+- **Not a Clawless Computer extension, plugin, add-on, or integration.** It is a standalone product from the same maker; the two share brand-family coherence, not code.
 - **Not a live trading platform.** Paper trading is the intended use case.
 
 ---
@@ -80,17 +80,17 @@ Not at this time. Trading Agents Lab is an independent fork under AGPL-3.0 for i
 
 ---
 
-## Clawless relationship
+## Clawless Computer relationship
 
-### What is the relationship between Trading Agents Lab and Clawless?
+### What is the relationship between Trading Agents Lab and Clawless Computer?
 
-Trading Agents Lab is a **standalone trading companion for Clawless**. It is an independent product with its own codebase, license, and UI.
+Trading Agents Lab is a **standalone trading companion for [Clawless Computer](https://clawless.ai/)**. It is an independent product with its own codebase, license, and UI.
 
-Trading Agents Lab works fully on its own and does not connect to Clawless. No code is shared between the two products. Brand-level coherence (compatible dark palette, compatible font choices) is achieved through independent design decisions, not code reuse.
+Trading Agents Lab works fully on its own and does not connect to Clawless Computer. No code is shared between the two products. Brand-level coherence (compatible dark palette, compatible font choices) is achieved through independent design decisions, not code reuse.
 
-### Does Trading Agents Lab require Clawless?
+### Does Trading Agents Lab require Clawless Computer?
 
-No. Trading Agents Lab runs entirely on its own. An earlier version of Settings showed a placeholder for an optional Clawless gateway connector; it was never functional and has been removed. If a gateway integration ships in the future it will be announced in the release notes.
+No. Trading Agents Lab runs entirely on its own. An earlier version of Settings showed a placeholder for an optional Clawless Computer gateway connector; it was never functional and has been removed. If a gateway integration ships in the future it will be announced in the release notes.
 
 ---
 
