@@ -195,6 +195,9 @@ ipcMain.handle('oauth:openai:status', () => ensureOAuthService().getStatus());
 ipcMain.handle('oauth:openai:disconnect', () =>
   ensureOAuthService().disconnect(),
 );
+ipcMain.handle('oauth:openai:mark-expired', () =>
+  ensureOAuthService().markReauthRequired(),
+);
 ipcMain.on('oauth:openai:prompt-response', (_evt, value: string) => {
   ensureOAuthService().handlePromptResponse(value);
 });

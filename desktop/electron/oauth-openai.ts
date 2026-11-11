@@ -79,6 +79,11 @@ export interface OAuthStatus {
    * The Settings UI uses this to show a "Codex routing is unreliable
    * on free-tier accounts" banner. */
   isFreeTier?: boolean;
+  /** True when the saved sign-in no longer works: either the background
+   * refresh failed, or a run came back with an auth error (renderer calls
+   * `markReauthRequired`). Cleared by a fresh login, a successful refresh,
+   * or disconnect. The UI uses it to ask the user to sign in again. */
+  reauthRequired?: boolean;
 }
 
 /** Renderer-facing event payloads (matches the preload bridge surface). */
@@ -187,6 +192,12 @@ let activeFallbackCleanup: (() => void) | null = null;
  */
 let refreshInFlight: Promise<StoredOAuthCredentials | null> | null = null;
 
+/**
+ * Session-scoped "this sign-in is dead" flag (see OAuthStatus.reauthRequired).
+ * Kept in memory only: after an app restart the next failing run sets it again.
+ */
+let reauthRequired = false;
+
 export class OpenAIOAuthService {
   constructor(
     private readonly emitProgress: ProgressHandler,
@@ -257,6 +268,7 @@ export class OpenAIOAuthService {
       });
       const stored = this.toStored(credentials);
       persist(stored);
+      reauthRequired = false;
       this.emitProgress({ message: 'Connected.' });
       return { success: true, email: stored.email };
     } catch (err) {
@@ -296,6 +308,7 @@ export class OpenAIOAuthService {
       needsRefresh,
       planType: stored.planType,
       isFreeTier: stored.planType === 'free',
+      reauthRequired,
     };
   }
 
@@ -325,12 +338,15 @@ export class OpenAIOAuthService {
         const fresh = await refreshOpenAICodexToken(stored.refresh);
         const updated = this.toStored(fresh, stored.email);
         persist(updated);
+        reauthRequired = false;
         return updated;
       } catch (err) {
         // Refresh failure shouldn't drop the cached credentials — caller
         // (renderer) will get a 401 from OpenAI on the actual chat call,
         // which routes through the engine's adapter error path. We keep
-        // what we have so the user can re-login manually.
+        // what we have so the user can re-login manually. The flag makes
+        // the UI say so plainly instead of leaving a bare 401.
+        reauthRequired = true;
         this.emitProgress({
           message: `Refresh failed: ${friendlyError(err)}`,
         });
@@ -342,7 +358,13 @@ export class OpenAIOAuthService {
     return refreshInFlight;
   }
 
+  /** Renderer reports that a run failed with an auth error. */
+  markReauthRequired(): void {
+    if (loadStored()) reauthRequired = true;
+  }
+
   disconnect(): boolean {
+    reauthRequired = false;
     return deleteSecret(OPENAI_OAUTH_SECRET_KEY);
   }
 

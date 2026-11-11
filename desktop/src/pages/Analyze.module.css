@@ -229,6 +229,30 @@
   border-color: var(--tal-accent-border);
 }
 
+.authNotice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tal-space-2) var(--tal-space-3);
+  padding: var(--tal-space-2) var(--tal-space-3);
+  border-radius: var(--tal-radius-md);
+  background: var(--tal-accent-muted);
+  border: 1px solid var(--tal-accent-border);
+  color: var(--tal-text-primary);
+  font-size: var(--tal-text-sm);
+  line-height: 1.5;
+}
+
+.authNoticeActions {
+  display: inline-flex;
+  gap: var(--tal-space-2);
+}
+
+.authNoticeActions a {
+  text-decoration: none;
+}
+
 .helper {
   margin: 0;
   font-size: var(--tal-text-xs);
