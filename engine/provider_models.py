@@ -45,7 +45,7 @@ from typing import Any, Callable, Optional
 
 import httpx
 
-from .llm_providers import register_runtime_rates
+from .llm_providers import normalize_model_id, register_runtime_rates
 
 _TIMEOUT_S = 10.0
 _CACHE_TTL_S = 15 * 60
@@ -158,6 +158,12 @@ def _require_list(body: object, key: str) -> list:
     return raw
 
 
+# Deprecated, and priced above the Claude family ceiling: not offered in the
+# picker even if the API still lists it (it keeps an explicit price row in
+# llm_providers so a saved choice is still budgeted correctly).
+_ANTHROPIC_EXCLUDE = frozenset({"claude-mythos-preview"})
+
+
 def parse_anthropic(body: object) -> list[dict[str, Any]]:
     """Anthropic ``/v1/models``: keep ``claude-*`` ids, newest first.
 
@@ -171,7 +177,7 @@ def parse_anthropic(body: object) -> list[dict[str, Any]]:
         if not isinstance(item, dict):
             continue
         mid = str(item.get("id") or "").strip()
-        if not mid.startswith("claude-"):
+        if not mid.startswith("claude-") or normalize_model_id(mid) in _ANTHROPIC_EXCLUDE:
             continue
         items.append((str(item.get("created_at") or ""), mid,
                       str(item.get("display_name") or mid)))

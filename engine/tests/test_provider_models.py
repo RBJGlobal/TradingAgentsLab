@@ -465,3 +465,59 @@ def test_costguard_worst_case_numbers_for_a_15_75_model():
     assert worst_case_reservation(model="claude-mythos-1", auth_kind="api_key", max_tokens=400) == pytest.approx(0.864)
     # At the engine's 800-token hard cap: 60,000 in + 9,600 out.
     assert worst_case_reservation(model="claude-mythos-1", auth_kind="api_key", max_tokens=800) == pytest.approx(1.62)
+
+
+# ---- Review follow-ups ------------------------------------------------------
+
+
+def test_parse_anthropic_excludes_mythos_preview():
+    body = {"data": [
+        {"id": "claude-mythos-preview", "display_name": "Mythos Preview", "created_at": "2026-01-01T00:00:00Z"},
+        {"id": "claude-mythos-5-2", "display_name": "Mythos 5.2", "created_at": "2026-10-01T00:00:00Z"},
+    ], "has_more": False}
+    assert [m["id"] for m in provider_models.parse_anthropic(body)] == ["claude-mythos-5-2"]
+
+
+@pytest.mark.parametrize("model,expected", [
+    ("claude-mythos-preview", (25.0, 125.0)),
+    ("claude-mythos-5", (10.0, 50.0)),
+    ("claude-mythos-5-1", (10.0, 50.0)),
+    ("claude-mythos-5-2", (8.0, 40.0)),
+])
+def test_mythos_rows(model, expected):
+    r = rates_for(model)
+    assert (r["input"], r["output"]) == expected
+
+
+@pytest.mark.parametrize("model", [
+    "gpt-5-pro", "gpt-5.5-pro", "o1-pro", "o3-pro", "o3-deep-research", "gpt-4.5-preview",
+    "openai/gpt-5.5-pro", "openai/o1-pro", "openai/gpt-4.5-preview", "openai/o4-mini-deep-research",
+])
+def test_premium_openai_tiers_get_the_premium_ceiling(model):
+    r = rates_for(model)
+    assert r["input"] >= 150.0 and r["output"] >= 600.0, model
+
+
+def test_gemini_pro_is_not_treated_as_an_openai_premium_tier():
+    assert rates_for("gemini-9-pro") == {"input": 5.0, "output": 20.0}
+
+
+def test_endpoint_unexpected_parser_error_falls_back_without_500(client, monkeypatch):
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return httpx.Response(200, json=OPENAI_LIST)
+
+    def broken_parser(body):
+        raise TypeError("boom with details")
+
+    _mock_async_client(monkeypatch, handler)
+    monkeypatch.setattr(provider_models, "parse_openai", broken_parser)
+    resp = client.post("/llm/models", json={"provider_config": _cfg("openai")})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["ok"] is True and body["source"] == "fallback"
+    assert body["models"] == provider_models.STATIC_MODELS["openai"]
+    assert body["error"] == "unexpected error: TypeError"
+    assert calls["n"] == 1

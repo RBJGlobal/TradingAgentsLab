@@ -77,6 +77,14 @@ _COST_PER_M_TOKENS: dict[str, dict[str, float]] = {
     # models reference (as of 2026-11-03). Ids are the aliases; a DATED id the
     # API may return (e.g. claude-haiku-4-5-20251001) resolves to its alias
     # row through `rates_for` below, so dated ids are never "unknown".
+    # Mythos 5.x is priced like Fable 5.x (per the coordinator's review,
+    # same reference). Mythos Preview is deprecated and believed to be priced
+    # ABOVE our 15/75 Claude ceiling (25/125, unverified), so it gets an
+    # explicit row and is excluded from discovery (provider_models).
+    "claude-mythos-preview": {"input": 25.00, "output": 125.00},
+    "claude-mythos-5-2":   {"input": 8.00,  "output": 40.00},
+    "claude-mythos-5-1":   {"input": 10.00, "output": 50.00},
+    "claude-mythos-5":     {"input": 10.00, "output": 50.00},
     "claude-fable-5-2":    {"input": 8.00,  "output": 40.00},
     "claude-fable-5-1":    {"input": 10.00, "output": 50.00},
     "claude-fable-5":      {"input": 10.00, "output": 50.00},
@@ -145,6 +153,7 @@ _CEIL_CLAUDE_TOP = {"input": 15.00, "output": 75.00}   # opus / fable / mythos /
 _CEIL_CLAUDE_MID = {"input": 5.00, "output": 25.00}    # sonnet, haiku
 _CEIL_OPENAI = {"input": 15.00, "output": 60.00}       # gpt-*, o1/o3/o4...
 _CEIL_OPENAI_LEGACY_GPT4 = {"input": 60.00, "output": 120.00}  # gpt-4 / gpt-4-32k (pre-turbo)
+_CEIL_OPENAI_PREMIUM = {"input": 150.00, "output": 600.00}     # *-pro, deep-research, gpt-4.5
 _CEIL_GEMINI = {"input": 5.00, "output": 20.00}
 _CEIL_GROK = {"input": 5.00, "output": 15.00}
 # Anything else we cannot place (an unfamiliar OpenRouter vendor, a renamed
@@ -191,6 +200,13 @@ def _family_ceiling(model: str) -> Optional[dict[str, float]]:
     if m == "gpt-4" or m.startswith("gpt-4-0") or m.startswith("gpt-4-32k"):
         return _CEIL_OPENAI_LEGACY_GPT4
     if m.startswith("gpt-") or re.match(r"^o\d", m):
+        # Premium tiers (gpt-5.5-pro at 30/180, o1-pro at 150/600, gpt-4.5
+        # at 75/150, deep-research...) cost far more than the generic gpt
+        # ceiling. Discovery filters them out of the picker, but a saved id,
+        # a Telegram config or a direct reserve call can still carry one, so
+        # the resolver itself must be safe for them.
+        if "-pro" in m or "deep-research" in m or m.startswith("gpt-4.5"):
+            return _CEIL_OPENAI_PREMIUM
         return _CEIL_OPENAI
     if m.startswith("gemini-"):
         return _CEIL_GEMINI
@@ -493,11 +509,52 @@ def openai_is_classic_chat_model(model: str) -> bool:
     return m.startswith("gpt-4") or m.startswith("gpt-3.5")
 
 
+def openai_reasoning_effort(model: str) -> Optional[str]:
+    """Lowest `reasoning_effort` an OpenAI reasoning model accepts, or None
+    to leave the parameter out.
+
+    Why: reasoning models spend hidden reasoning tokens out of the SAME
+    `max_completion_tokens` budget as the visible answer. With our small
+    per-agent budget (400 by default) a model on its default ("medium")
+    effort can spend everything on reasoning and return no text at all.
+    Asking for the least reasoning keeps the budget for the answer.
+
+    Per the pinned openai SDK (2.36) docs for `reasoning_effort`:
+    - models before gpt-5.1 default to "medium" and do NOT support "none";
+      the gpt-5 family (gpt-5, -mini, -nano) has "minimal";
+    - gpt-5.1 supports "none" (its default). We send "none" for gpt-5.1 and
+      later too (gpt-5.2+, gpt-6+): an assumption, since the SDK docs only
+      name gpt-5.1. If a later model rejects it, the run fails loudly with
+      a 400 rather than quietly;
+    - the o-series predates "minimal", so it gets "low";
+    - gpt-5-pro supports only "high" (its default), and the "-chat" models
+      are not reasoning models: leave the parameter out for both.
+    """
+    m = (model or "").strip().lower()
+    if "-pro" in m or "chat" in m:
+        return None
+    if re.match(r"^o\d", m):
+        return "low"
+    version = re.match(r"^gpt-(\d+)(?:\.(\d+))?", m)
+    if not version:
+        return None
+    major, minor = int(version.group(1)), int(version.group(2) or 0)
+    if major < 5:
+        return None
+    if major == 5 and minor == 0:
+        return "minimal"
+    return "none"
+
+
 def openai_sampling_kwargs(model: str, max_tokens: int) -> dict[str, Any]:
     """Kwargs for direct OpenAI Chat Completions."""
     if openai_is_classic_chat_model(model):
         return {"max_tokens": max_tokens, "temperature": _TEMPERATURE}
-    return {"max_completion_tokens": max_tokens}
+    out: dict[str, Any] = {"max_completion_tokens": max_tokens}
+    effort = openai_reasoning_effort(model)
+    if effort is not None:
+        out["reasoning_effort"] = effort
+    return out
 
 
 def _classic_sampling_kwargs(model: str, max_tokens: int) -> dict[str, Any]:
@@ -524,7 +581,38 @@ def openrouter_sampling_kwargs(model: str, max_tokens: int) -> dict[str, Any]:
     out: dict[str, Any] = {"max_tokens": max_tokens}
     if ok:
         out["temperature"] = _TEMPERATURE
+    # Same reasoning-budget problem as direct OpenAI (see
+    # `openai_reasoning_effort`). OpenRouter's catalog lists
+    # `reasoning_effort` as supported for openai/gpt-5, -5-mini, -5.1 and
+    # -5.5, so we pass it for the gpt-5+ line only. The o-series on OpenRouter
+    # does not consistently list it (o3-pro doesn't), so it is left out there.
+    if vendor == "openai" and name.lower().startswith("gpt-"):
+        effort = openai_reasoning_effort(name)
+        if effort is not None:
+            out["reasoning_effort"] = effort
     return out
+
+
+class ReasoningBudgetExhausted(RuntimeError):
+    """A reasoning model spent its whole output budget on hidden reasoning
+    and returned no visible text.
+
+    Raised instead of returning "" so the turn fails visibly (the debate
+    shows a "[live debate error]" message, and a first-agent failure aborts
+    the run) rather than "completing" with blank agents and a default
+    neutral stance. Carries the token usage, because those reasoning tokens
+    were still billed and CostGuard must count them.
+    """
+
+    USER_MESSAGE = (
+        "The model used its whole output budget on internal reasoning and "
+        "returned no text. Try a non-reasoning model."
+    )
+
+    def __init__(self, input_tokens: int = 0, output_tokens: int = 0) -> None:
+        super().__init__(self.USER_MESSAGE)
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
 
 
 # ---- Adapter Protocol -----------------------------------------------------
@@ -617,10 +705,15 @@ class OpenAIAdapter:
                 {"role": "user", "content": user},
             ],
         )
-        choice = resp.choices[0].message.content or ""
+        first = resp.choices[0]
+        choice = first.message.content or ""
         usage = resp.usage
         in_tok = getattr(usage, "prompt_tokens", 0) if usage else 0
         out_tok = getattr(usage, "completion_tokens", 0) if usage else 0
+        if not choice.strip() and getattr(first, "finish_reason", None) == "length":
+            # Empty text AND cut off at the token limit: a reasoning model
+            # used the whole budget thinking. Fail the turn loudly.
+            raise ReasoningBudgetExhausted(in_tok, out_tok)
         return choice.strip(), in_tok, out_tok
 
 

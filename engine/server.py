@@ -327,13 +327,25 @@ def build_app(*, token: str) -> FastAPI:
                     str(config.auth.get("api_key") or ""),
                     force_refresh=req.refresh,
                 )
-            except provider_models.ProviderModelsUnavailable as exc:
+            except Exception as exc:  # noqa: BLE001 — discovery must never 500
+                # Any failure (including a parser bug on an unexpected
+                # catalog, or a key with characters an HTTP header can't
+                # carry) answers with the built-in list. A 500 here would make
+                # the renderer retry six more times, i.e. seven provider calls.
+                # Expected failures carry a safe message; anything else is
+                # reported by TYPE only, since its text could include request
+                # details.
+                if isinstance(exc, provider_models.ProviderModelsUnavailable):
+                    reason = str(exc)
+                else:
+                    reason = f"unexpected error: {type(exc).__name__}"
+                    sys.stderr.write(f"[provider-models] {config.provider} {reason}\n")
                 return {
                     "ok": True,
                     "source": "fallback",
                     "default": default_model_for(config.provider),
                     "models": provider_models.static_models(config.provider),
-                    "error": str(exc),
+                    "error": reason,
                 }
             return {
                 "ok": True,

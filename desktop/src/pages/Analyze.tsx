@@ -33,7 +33,12 @@ import {
   markOpenAIOAuthExpired,
 } from '../lib/oauth';
 import { useCodexModels } from '../lib/codex-models';
-import { hasLiveDiscovery, useProviderModels, withSavedChoice } from '../lib/provider-models';
+import {
+  hasLiveDiscovery,
+  migrateSavedModel,
+  useProviderModels,
+  withSavedChoice,
+} from '../lib/provider-models';
 
 /** The user's saved model id for a (provider, auth) pair, or null. */
 function readSavedModel(
@@ -41,7 +46,13 @@ function readSavedModel(
   authKind: 'oauth' | 'api_key' | null,
 ): string | null {
   try {
-    return localStorage.getItem(getModelStorageKey(provider, authKind));
+    const key = getModelStorageKey(provider, authKind);
+    const saved = localStorage.getItem(key);
+    // One-time remap of ids our old built-in list offered but the provider
+    // never had (see migrateSavedModel). Written back so it happens once.
+    const migrated = migrateSavedModel(provider, saved);
+    if (migrated !== saved && migrated) localStorage.setItem(key, migrated);
+    return migrated;
   } catch {
     return null; // private mode / storage unavailable
   }
@@ -273,6 +284,7 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
         providerModels.models,
         readSavedModel(activeProvider, openaiAuthKind),
         providerModels.recommendedId,
+        providerModels.source !== 'fallback',
       );
     }
     return getAvailableModels(activeProvider, openaiAuthKind);
@@ -287,6 +299,7 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
     isApiKeyDiscovery,
     providerModels.models,
     providerModels.recommendedId,
+    providerModels.source,
     activeModel,
   ]);
 
@@ -1010,8 +1023,12 @@ function Analyze({ resetSignal = 0 }: AnalyzeProps) {
             ? `Models: checking ${PROVIDER_LABEL[activeProvider]}...`
             : providerModels.source === 'live'
               ? `Models: live from ${PROVIDER_LABEL[activeProvider]}.`
-              : providerModels.source === 'cached' && !providerModels.error
-                ? `Models: saved list from ${PROVIDER_LABEL[activeProvider]}.`
+              : providerModels.source === 'cached'
+                ? `Models: saved list from ${PROVIDER_LABEL[activeProvider]}${
+                    providerModels.error
+                      ? ` (live list unavailable: ${providerModels.error})`
+                      : ''
+                  }.`
                 : `Models: built-in list. ${PROVIDER_LABEL[activeProvider]} model list unavailable${
                     providerModels.error ? ` (${providerModels.error})` : ''
                   }.`}{' '}

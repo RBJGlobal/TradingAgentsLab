@@ -87,6 +87,31 @@ export function mergeWithCurated(
 }
 
 /**
+ * One-time fix for three OpenRouter ids our built-in list used to offer but
+ * OpenRouter never had (checked against its catalog on 2026-11-11). OpenRouter
+ * writes Claude versions with dots, so the dashed Claude ids were typos for
+ * models that DO exist in dot form; gemini-2.0-flash is not in OpenRouter's
+ * catalog at all, so it moves to the curated Gemini entry. Without this, a
+ * user who picked one of them keeps it (the API-key picker never
+ * auto-switches) and every run fails at OpenRouter.
+ *
+ * Only an EXACT match is remapped, and no target is itself a key, so running
+ * it again changes nothing.
+ */
+const RETIRED_STATIC_IDS: Partial<Record<LLMProvider, Record<string, string>>> = {
+  openrouter: {
+    'anthropic/claude-opus-4-8': 'anthropic/claude-opus-4.8',
+    'anthropic/claude-sonnet-4-6': 'anthropic/claude-sonnet-4.6',
+    'google/gemini-2.0-flash': 'google/gemini-2.5-flash',
+  },
+};
+
+export function migrateSavedModel(provider: LLMProvider, saved: string | null): string | null {
+  if (!saved) return saved;
+  return RETIRED_STATIC_IDS[provider]?.[saved] ?? saved;
+}
+
+/**
  * Make sure the user's saved model (and the recommended pick) stay
  * selectable even when the live list doesn't contain them. Returned entries
  * go first, ungrouped, so they are visible above a long live list.
@@ -100,11 +125,18 @@ export function withSavedChoice(
   list: ModelChoice[],
   saved: string | null,
   recommendedId: string,
+  listIsFromProvider = false,
 ): ModelChoice[] {
   const ids = new Set(list.map((m) => m.id));
   const extras: ModelChoice[] = [];
   if (saved && !ids.has(saved)) {
-    extras.push({ id: saved, label: `${saved} (your saved choice)` });
+    // Tell the user plainly when the provider's own list has no model by
+    // this name (not even a dated or -latest twin): the run may fail.
+    const norm = normalizeModelId(saved);
+    const twinListed = list.some((m) => normalizeModelId(m.id) === norm);
+    const note =
+      listIsFromProvider && !twinListed ? 'saved, not listed by provider' : 'your saved choice';
+    extras.push({ id: saved, label: `${saved} (${note})` });
     ids.add(saved);
   }
   if (recommendedId && !ids.has(recommendedId)) {
@@ -147,6 +179,7 @@ export function useProviderModels(
     },
     missingConfigError: 'no API key saved',
     unavailableError: 'provider model list unavailable',
+    keepLastGoodOnFallback: true,
   });
 
   const models = useMemo(

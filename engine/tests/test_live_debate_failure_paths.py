@@ -396,3 +396,35 @@ async def test_adapter_close_runs_even_when_an_agent_raises(monkeypatch):
     )
 
     assert fake.close_calls == 1
+
+
+# ---- Reasoning budget exhausted (empty answer) ----------------------------
+
+
+@pytest.mark.asyncio
+async def test_reasoning_budget_exhausted_fails_the_turn_visibly(monkeypatch):
+    """A reasoning model that returns no text must surface as an error turn
+    (and abort on the first agent), not a blank turn that "completes", and
+    its billed tokens must still be counted."""
+    from engine.llm_providers import ReasoningBudgetExhausted
+
+    fake = _FakeAdapter(script=[ReasoningBudgetExhausted(900, 400)])
+    monkeypatch.setattr(live_debate, "_AGENTS", _two_agents())
+    monkeypatch.setattr(live_debate, "adapter_for", lambda _cfg: fake)
+    cfg = _api_key_config()
+    cfg.model = "gpt-5"
+
+    events = await _drain(
+        live_debate.live_debate(
+            ticker="NVDA", trade_date="2026-05-24", summary=None, headlines=None, config=cfg,
+        )
+    )
+    err = next(e for e in events if e["type"] == "agent.message")
+    assert "[live debate error] ReasoningBudgetExhausted" in err["content"]
+    assert "returned no text" in err["content"]
+    assert fake.complete_calls == 1  # not retried
+    complete = events[-1]
+    assert complete["type"] == "session.complete"
+    assert "aborted" in complete["decision"]["reasoning"].lower()
+    assert (complete["input_tokens"], complete["output_tokens"]) == (900, 400)
+    assert complete["estimated_cost_usd"] > 0

@@ -80,8 +80,9 @@ The model dropdown shows the models your provider offers **right now**, not a li
 
 - **Recommended** at the top: a short list we picked for the debate, limited to models the provider still offers. The model marked *(recommended)* is the one used when you have not chosen one.
 - **All available** below: every other text model the provider lists. OpenRouter lists hundreds.
-- A line under the dropdown says where the list came from: *live from* the provider, a *saved list* from the last time it loaded, or the *built-in list* if the provider could not be reached (with the reason). **Refresh** asks the provider again.
-- Your chosen model is **never switched for you**. If the provider's list no longer shows it (for example, it now lists the same model under a dated name), it stays selected and appears at the top as *your saved choice*.
+- A line under the dropdown says where the list came from: *live from* the provider, a *saved list* from the last time it loaded (with the reason, if the latest attempt failed), or the *built-in list* if the provider has never been reached (with the reason). **Refresh** asks the provider again.
+- Your chosen model is **never switched for you**. If the provider's list no longer shows it (for example, it now lists the same model under a dated name), it stays selected and appears at the top as *your saved choice*, or as *saved, not listed by provider* when the provider lists no model by that name at all (runs with it may then fail).
+- **Reasoning models** (such as OpenAI's gpt-5 line) are asked for their lowest reasoning effort, so the short per-agent answer budget goes to the answer. If a model still uses its whole budget on internal reasoning, that turn shows an error instead of a blank answer; pick a non-reasoning model in that case.
 - The request goes from the app's local engine straight to the provider you configured, with your own key, and only for the provider selected in the dropdown. Nothing is sent anywhere else, and the key is not stored by the engine.
 - **MiniMax** keeps its built-in list. **Local** runtimes list whatever you have installed (see [local-llm.md](local-llm.md)). The **OpenAI account (OAuth)** path has its own live list from your ChatGPT account (see [oauth.md](oauth.md)).
 

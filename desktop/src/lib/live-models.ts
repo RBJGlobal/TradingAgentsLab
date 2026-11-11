@@ -64,6 +64,10 @@ export interface LiveModelsOptions {
   missingConfigError: string;
   /** Error shown when the engine falls back without saying why. */
   unavailableError: string;
+  /** On an engine fallback, keep a list that came from the provider
+   * (live or cached) instead of replacing it with the built-in list. The
+   * API-key picker sets this; the Codex picker keeps its original behavior. */
+  keepLastGoodOnFallback?: boolean;
   /** Override for tests; defaults to the engine call. */
   fetchModels?: (cfg: ProviderConfig, refresh: boolean) => Promise<ModelsListResult>;
 }
@@ -106,6 +110,8 @@ export function useLiveModels(opts: LiveModelsOptions): LiveModelsState {
   const { enabled, cacheKey, fallback } = opts;
   const [snap, setSnap] = useState<Snapshot>(() => initialSnapshot(cacheKey, fallback));
   const [nonce, setNonce] = useState(0);
+  // The last refresh nonce a fetch has already handled (see the effect).
+  const handledNonceRef = useRef(0);
   // The callbacks change identity every render; read them through a ref so
   // the fetch effect only re-runs on what matters (enabled, key, refresh).
   const optsRef = useRef(opts);
@@ -147,7 +153,12 @@ export function useLiveModels(opts: LiveModelsOptions): LiveModelsState {
         // network error ("Failed to fetch"). Retry with backoff while the
         // ENGINE is unreachable (res.ok === false). An answer from the
         // engine (even a fallback because the provider refused) is final.
-        const refresh = nonce > 0;
+        //
+        // Bypass the engine's cache only for the fetch a Refresh click
+        // triggered. (`nonce > 0` would keep bypassing it on every later
+        // fetch, e.g. after a provider switch, for the rest of the session.)
+        const refresh = nonce !== handledNonceRef.current;
+        handledNonceRef.current = nonce;
         let res = await fetchModels(cfg, refresh);
         for (const delayMs of ENGINE_RETRY_DELAYS_MS) {
           if (cancelled || res.ok) break;
@@ -162,6 +173,28 @@ export function useLiveModels(opts: LiveModelsOptions): LiveModelsState {
           return;
         }
         const live = res.source === 'live';
+        if (!live && o.keepLastGoodOnFallback) {
+          // A transient provider failure must not throw away a good list we
+          // already have. If what we show came from the provider (live now,
+          // or cached from an earlier launch), keep it, call it the saved
+          // list, and only record why it could not be refreshed.
+          // (Decided inside the updater, because only there is the current
+          // snapshot known for sure.)
+          const reason = res.error ?? o.unavailableError;
+          const fallbackModels = res.models;
+          const engineDefault = res.default ?? null;
+          setSnap((prev) => {
+            const cur = prev.forKey === key ? prev : initialSnapshot(key, o.fallback);
+            if (cur.source !== 'fallback') {
+              return { ...cur, forKey: key, source: 'cached', error: reason, engineDefault };
+            }
+            return {
+              ...cur, forKey: key, models: fallbackModels, source: 'fallback',
+              error: reason, engineDefault,
+            };
+          });
+          return;
+        }
         update({
           models: res.models,
           source: live ? 'live' : 'fallback',

@@ -20,6 +20,7 @@ vi.mock('../../src/lib/secrets', () => ({
 import { ENGINE_RETRY_DELAYS_MS } from '../../src/lib/live-models';
 import {
   mergeWithCurated,
+  migrateSavedModel,
   normalizeModelId,
   providerModelsCacheKey,
   useProviderModels,
@@ -91,7 +92,74 @@ describe('withSavedChoice', () => {
   });
 });
 
+describe('withSavedChoice labels', () => {
+  it('flags a saved id the provider list does not have at all', () => {
+    const out = withSavedChoice([{ id: 'claude-opus-5-5', label: 'Opus' }], 'claude-gone-1', 'claude-opus-5-5', true);
+    expect(out[0].label).toBe('claude-gone-1 (saved, not listed by provider)');
+  });
+
+  it('keeps the soft label when a dated twin is listed', () => {
+    const out = withSavedChoice(
+      [{ id: 'claude-opus-4-7-20260101', label: 'Opus 4.7' }], 'claude-opus-4-7', 'claude-opus-4-7-20260101', true,
+    );
+    expect(out[0].label).toBe('claude-opus-4-7 (your saved choice)');
+  });
+
+  it('keeps the soft label on the built-in list (not the provider list)', () => {
+    const out = withSavedChoice([{ id: 'a', label: 'A' }], 'claude-gone-1', 'a', false);
+    expect(out[0].label).toBe('claude-gone-1 (your saved choice)');
+  });
+});
+
+describe('migrateSavedModel', () => {
+  it('remaps exactly the three dead OpenRouter ids', () => {
+    expect(migrateSavedModel('openrouter', 'anthropic/claude-opus-4-8')).toBe('anthropic/claude-opus-4.8');
+    expect(migrateSavedModel('openrouter', 'anthropic/claude-sonnet-4-6')).toBe('anthropic/claude-sonnet-4.6');
+    expect(migrateSavedModel('openrouter', 'google/gemini-2.0-flash')).toBe('google/gemini-2.5-flash');
+  });
+
+  it('is idempotent and leaves everything else alone', () => {
+    expect(migrateSavedModel('openrouter', 'anthropic/claude-opus-4.8')).toBe('anthropic/claude-opus-4.8');
+    expect(migrateSavedModel('openrouter', 'anthropic/claude-opus-4-8:free')).toBe('anthropic/claude-opus-4-8:free');
+    expect(migrateSavedModel('openrouter', null)).toBeNull();
+    // Same string under another provider is not touched.
+    expect(migrateSavedModel('gemini', 'google/gemini-2.0-flash')).toBe('google/gemini-2.0-flash');
+    expect(migrateSavedModel('anthropic', 'claude-opus-4-8')).toBe('claude-opus-4-8');
+  });
+});
+
 describe('useProviderModels', () => {
+  it('keeps the last good live list when a later fetch falls back', async () => {
+    listProviderModels.mockResolvedValueOnce({ ok: true, source: 'live', models: ANTHROPIC_LIVE });
+    const { result } = renderHook(() => useProviderModels('anthropic', true));
+    await waitFor(() => expect(result.current.source).toBe('live'));
+
+    listProviderModels.mockResolvedValueOnce({
+      ok: true, source: 'fallback', models: PROVIDER_MODELS.anthropic, error: 'provider error (HTTP 503)',
+    });
+    result.current.refresh();
+    await waitFor(() => expect(result.current.error).toBe('provider error (HTTP 503)'));
+    expect(result.current.source).toBe('cached');
+    expect(result.current.models.some((m) => m.id === 'claude-mythos-1')).toBe(true);
+  });
+
+  it('bypasses the engine cache only for the fetch a Refresh click triggered', async () => {
+    listProviderModels.mockResolvedValue({ ok: true, source: 'live', models: ANTHROPIC_LIVE });
+    const { result, rerender } = renderHook(
+      ({ p }: { p: LLMProvider }) => useProviderModels(p, true),
+      { initialProps: { p: 'anthropic' as LLMProvider } },
+    );
+    await waitFor(() => expect(listProviderModels).toHaveBeenCalledTimes(1));
+    expect(listProviderModels.mock.calls[0][1]).toBe(false);
+    result.current.refresh();
+    await waitFor(() => expect(listProviderModels).toHaveBeenCalledTimes(2));
+    expect(listProviderModels.mock.calls[1][1]).toBe(true);
+    // A later fetch caused by something else (provider switch) uses the cache.
+    rerender({ p: 'xai' });
+    await waitFor(() => expect(listProviderModels).toHaveBeenCalledTimes(3));
+    expect(listProviderModels.mock.calls[2][1]).toBe(false);
+  });
+
   it('is inert when disabled: no secret read, no engine call', async () => {
     renderHook(() => useProviderModels('anthropic', false));
     await new Promise((r) => setTimeout(r, 10));

@@ -609,6 +609,12 @@ async def live_debate(
                     max_tokens=config.max_tokens,
                 )
             except Exception as exc:  # noqa: BLE001 — convert any provider error into a stream event
+                # Some failures still consumed billed tokens (e.g. a
+                # reasoning model that spent its budget and returned no text,
+                # see ReasoningBudgetExhausted). Count them so the logged cost
+                # and the CostGuard finalize are not understated.
+                state.input_tokens += int(getattr(exc, "input_tokens", 0) or 0)
+                state.output_tokens += int(getattr(exc, "output_tokens", 0) or 0)
                 yield {
                     "type": "agent.message",
                     "agent": agent.name,

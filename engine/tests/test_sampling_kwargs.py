@@ -19,6 +19,7 @@ from engine.llm_providers import (
     MiniMaxAdapter,
     OpenAIAdapter,
     OpenRouterAdapter,
+    ReasoningBudgetExhausted,
     XaiAdapter,
 )
 
@@ -88,9 +89,65 @@ async def test_openai_classic_models_keep_max_tokens_and_temperature(model):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", ["gpt-5", "gpt-5-mini", "gpt-5.5", "o4-mini", "o3", "gpt-6.1-sol"])
-async def test_openai_reasoning_models_use_max_completion_tokens_without_temperature(model):
+@pytest.mark.parametrize("model,effort", [
+    ("gpt-5", "minimal"),
+    ("gpt-5-mini", "minimal"),
+    ("gpt-5-nano", "minimal"),
+    ("gpt-5.1", "none"),
+    ("gpt-5.5", "none"),
+    ("gpt-6.1-sol", "none"),
+    ("o4-mini", "low"),
+    ("o3", "low"),
+])
+async def test_openai_reasoning_models_get_lowest_effort_and_max_completion_tokens(model, effort):
+    assert await _openai_kwargs(OpenAIAdapter(), model) == {
+        "max_completion_tokens": 400, "reasoning_effort": effort,
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model", ["gpt-5-pro", "gpt-5-chat-latest"])
+async def test_openai_effort_left_out_where_unsupported(model):
+    # gpt-5-pro only supports "high" (its default); -chat is not a reasoning model.
     assert await _openai_kwargs(OpenAIAdapter(), model) == {"max_completion_tokens": 400}
+
+
+# ---- Empty answer after spending the whole budget on reasoning --------------
+
+
+def _empty_length_resp():
+    return SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=""), finish_reason="length")],
+        usage=SimpleNamespace(prompt_tokens=900, completion_tokens=400),
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("adapter,model", [
+    (OpenAIAdapter(), "gpt-5"),
+    (OpenRouterAdapter(), "openai/gpt-5-mini"),
+])
+async def test_empty_length_response_raises_visible_error(adapter, model):
+    create = AsyncMock(return_value=_empty_length_resp())
+    adapter._client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
+    with pytest.raises(ReasoningBudgetExhausted) as exc:
+        await adapter.complete(system="s", user="u", model=model, max_tokens=400)
+    assert "returned no text" in str(exc.value)
+    assert "—" not in str(exc.value) and "–" not in str(exc.value)
+    # The billed reasoning tokens travel with the error.
+    assert (exc.value.input_tokens, exc.value.output_tokens) == (900, 400)
+
+
+@pytest.mark.asyncio
+async def test_empty_but_finished_response_is_not_an_error():
+    adapter = OpenAIAdapter()
+    resp = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=""), finish_reason="stop")],
+        usage=SimpleNamespace(prompt_tokens=1, completion_tokens=0),
+    )
+    adapter._client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(
+        create=AsyncMock(return_value=resp))))
+    assert await adapter.complete(system="s", user="u", model="gpt-5", max_tokens=400) == ("", 1, 0)
 
 
 # ---- OpenAI-compatible endpoints keep the original shape ---------------------
@@ -117,7 +174,9 @@ async def test_compatible_endpoints_unchanged(adapter, model):
     ("anthropic/claude-sonnet-5.5", {"max_tokens": 400}),
     ("anthropic/claude-sonnet-4.6", {"max_tokens": 400, "temperature": 0.7}),
     ("anthropic/claude-haiku-4.5", {"max_tokens": 400, "temperature": 0.7}),
-    ("openai/gpt-5-mini", {"max_tokens": 400}),
+    ("openai/gpt-5-mini", {"max_tokens": 400, "reasoning_effort": "minimal"}),
+    ("openai/gpt-5.5", {"max_tokens": 400, "reasoning_effort": "none"}),
+    ("openai/o4-mini", {"max_tokens": 400}),
     ("openai/gpt-4o-mini", {"max_tokens": 400, "temperature": 0.7}),
     ("google/gemini-2.5-flash", {"max_tokens": 400, "temperature": 0.7}),
     ("x-ai/grok-4.3", {"max_tokens": 400, "temperature": 0.7}),
