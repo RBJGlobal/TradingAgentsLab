@@ -32,7 +32,9 @@ from engine.llm_providers import (
 )
 
 # Defaults that are intentionally NOT in the cost table:
-#   - openrouter: passthrough, real cost depends on the underlying model.
+#   - openrouter: priced from OpenRouter's catalog at discovery time, else
+#     through the first-party row of the vendor model (see
+#     test_openrouter_picker_models_map_to_first_party_rows below).
 #   - local: billed by the user's own runtime, never by us.
 _POLICY_ZERO_DEFAULTS = {"openrouter", "local"}
 
@@ -109,3 +111,32 @@ def test_every_native_picker_model_is_priced():
         f"renderer picker offers native model(s) with no engine cost row "
         f"(they would silently reserve $0): {missing}"
     )
+
+
+def test_openrouter_picker_models_map_to_first_party_rows():
+    """Before OpenRouter discovery has run (e.g. right after an engine
+    restart) the curated OpenRouter entries and the OpenRouter default must
+    price through a REAL first-party row, not a family ceiling. Otherwise
+    the default openai/gpt-4o-mini would log about 100x its real cost."""
+    from engine.llm_providers import rates_for
+    from engine.provider_models import STATIC_MODELS
+
+    rows = list(_COST_PER_M_TOKENS.values())
+    ids = [m["id"] for m in STATIC_MODELS["openrouter"]] + [_DEFAULT_MODELS["openrouter"]]
+    for mid in ids:
+        assert any(rates_for(mid) is row for row in rows), (
+            f"{mid!r} does not resolve to a first-party price row"
+        )
+
+
+def test_every_engine_static_model_is_priced():
+    """The engine fallback lists (provider_models.STATIC_MODELS) must be
+    priced exactly like the renderer list they mirror."""
+    from engine.provider_models import STATIC_MODELS
+
+    for provider, models in STATIC_MODELS.items():
+        for m in models:
+            if "/" in m["id"]:
+                continue  # OpenRouter, covered above
+            mid = m["id"]
+            assert mid in _COST_PER_M_TOKENS, f"{provider}: {mid} has no price row"

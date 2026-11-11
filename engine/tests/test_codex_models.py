@@ -202,7 +202,9 @@ def test_endpoint_falls_back_when_catalog_unreachable(client, monkeypatch):
     assert body["models"] == codex_models.FALLBACK_MODELS
 
 
-def test_endpoint_rejects_non_oauth(client):
-    cfg = {"provider": "openai", "auth": {"type": "api_key", "api_key": "sk-x"}}
+def test_endpoint_rejects_auth_without_discovery(client):
+    # API-key configs now get live discovery (test_provider_models.py); the
+    # local runtime has its own detection, so /llm/models refuses it.
+    cfg = {"provider": "local", "auth": {"type": "local", "base_url": "http://localhost:11434/v1"}}
     body = client.post("/llm/models", json={"provider_config": cfg}).json()
     assert body["ok"] is False

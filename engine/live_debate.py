@@ -655,7 +655,8 @@ async def live_debate(
                 0.0
                 if free
                 else estimate_cost(
-                    config.model, state.input_tokens, state.output_tokens
+                    config.model, state.input_tokens, state.output_tokens,
+                    provider=config.provider,
                 )
             )
             yield {
@@ -666,7 +667,10 @@ async def live_debate(
                 "free": free,
             }
 
-        cost = estimate_cost(config.model, state.input_tokens, state.output_tokens)
+        cost = estimate_cost(
+            config.model, state.input_tokens, state.output_tokens,
+            provider=config.provider,
+        )
         duration = time.time() - started_at
         sys.stderr.write(
             f"[live_debate] provider={config.provider} auth={config.auth_kind} "
@@ -727,12 +731,15 @@ async def live_debate(
                 from . import cost_guard as _cost_guard
 
                 # Bill the actual partial cost on early exit; full cost on
-                # normal completion. OAuth always finalizes at 0.0.
+                # normal completion. OAuth and local always finalize at 0.0
+                # (local was $0 before only because its model names had no
+                # price row; now that unknown names get a ceiling, say so).
                 final_cost = (
                     0.0
-                    if config.auth_kind == "oauth"
+                    if config.auth_kind in ("oauth", "local")
                     else estimate_cost(
-                        config.model, state.input_tokens, state.output_tokens
+                        config.model, state.input_tokens, state.output_tokens,
+                        provider=config.provider,
                     )
                 )
                 _cost_guard.finalize_reservation(

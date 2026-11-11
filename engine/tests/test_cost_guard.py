@@ -54,13 +54,18 @@ def test_worst_case_reservation_oauth_always_zero(tmp_db):
         assert est == 0.0
 
 
-def test_worst_case_reservation_unknown_model_zero(tmp_db):
-    """Unknown model (e.g. OpenRouter passthrough) returns zero — cost cap
-    can't block what we can't price; rate cap still applies."""
+def test_worst_case_reservation_unknown_model_is_not_zero(tmp_db):
+    """Changed 2026-11-11 with live model discovery. An unknown per-token
+    model used to reserve $0 ("can't price it, so don't block it"), which let
+    any model missing from the table bypass the spend cap. With discovery,
+    unknown models are the normal case, so they now reserve the top ceiling
+    (15/75 per 1M). Over-estimating is the safe direction."""
     est = worst_case_reservation(
         model="some-router/exotic-model", auth_kind="api_key", max_tokens=400
     )
-    assert est == 0.0
+    assert est > 0.0
+    # 12 agents x 400 tokens at 15/75: 33,600 in + 4,800 out = $0.864.
+    assert est == pytest.approx(0.864)
 
 
 def test_worst_case_reservation_scales_with_max_tokens(tmp_db):

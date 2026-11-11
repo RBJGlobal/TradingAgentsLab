@@ -58,7 +58,7 @@ def _patch_adapter(monkeypatch: pytest.MonkeyPatch) -> _StubAdapter:
     )
     monkeypatch.setattr(
         "engine.live_debate.estimate_cost",
-        lambda model, in_tok, out_tok: round(0.000001 * (in_tok + out_tok), 6),
+        lambda model, in_tok, out_tok, provider=None: round(0.000001 * (in_tok + out_tok), 6),
     )
     return stub
 

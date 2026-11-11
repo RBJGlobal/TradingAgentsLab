@@ -6,15 +6,19 @@
  * signed-in account can use TODAY rather than a list baked into the build.
  * This hook asks the engine (POST /llm/models -> OpenAI's Codex catalog) and
  * keeps the last good live list in localStorage so the picker is correct
- * instantly on the next launch, before the refetch lands.
+ * instantly on the next launch, before the refetch lands. The shared
+ * fetch/cache/retry machinery lives in lib/live-models.ts (the API-key
+ * providers use it too, via lib/provider-models.ts).
  *
  * Order: cached live list (if any) -> built-in fallback, then replaced by the
  * fresh live list when it arrives. The first entry is marked recommended so
  * Analyze's existing "saved choice not in list -> use recommended" rule
- * automatically moves anyone off a retired model.
+ * automatically moves anyone off a retired model. (That auto-switch is
+ * OAuth-only: Codex models cost the user nothing per token. The API-key
+ * picker never auto-switches a saved model, see provider-models.ts.)
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import {
   listCodexModels,
   OPENAI_CODEX_MODELS,
@@ -22,40 +26,16 @@ import {
   type ProviderConfig,
 } from './engine-client';
 import { getOpenAICredentialsForRequest } from './oauth';
+import { ENGINE_RETRY_DELAYS_MS, useLiveModels, type LiveModelsSource } from './live-models';
+
+export { ENGINE_RETRY_DELAYS_MS };
 
 const CACHE_KEY = 'tal:codex-models:v1';
 
-/** Backoff while the engine is still starting (~30s total). Exported so
- * tests can shrink it. */
-export const ENGINE_RETRY_DELAYS_MS: number[] = [1000, 2000, 3000, 5000, 8000, 10000];
-
-export type CodexModelsSource = 'live' | 'cached' | 'fallback';
+export type CodexModelsSource = LiveModelsSource;
 
 function withRecommended(models: ModelChoice[]): ModelChoice[] {
   return models.map((m, i) => ({ ...m, recommended: i === 0 }));
-}
-
-function readCache(): ModelChoice[] | null {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed) || parsed.length === 0) return null;
-    const ok = parsed.every(
-      (m) => m && typeof m === 'object' && typeof (m as ModelChoice).id === 'string',
-    );
-    return ok ? (parsed as ModelChoice[]) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(models: ModelChoice[]): void {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(models));
-  } catch {
-    /* storage unavailable: non-fatal, we just refetch next launch */
-  }
 }
 
 /** Build the same OAuth provider_config shape live runs send. */
@@ -89,62 +69,21 @@ export interface CodexModelsState {
  *   when false the hook is inert and returns the cached/fallback list.
  */
 export function useCodexModels(enabled: boolean): CodexModelsState {
-  const [models, setModels] = useState<ModelChoice[]>(() =>
-    withRecommended(readCache() ?? OPENAI_CODEX_MODELS),
-  );
-  const [source, setSource] = useState<CodexModelsSource>(() =>
-    readCache() ? 'cached' : 'fallback',
-  );
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [nonce, setNonce] = useState(0);
-
-  const refresh = useCallback(() => setNonce((n) => n + 1), []);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const cfg = await oauthProviderConfig();
-        if (cancelled) return;
-        if (!cfg) {
-          setError('not signed in to ChatGPT');
-          return;
-        }
-        // Analyze mounts at app launch, often a second or two before the
-        // engine sidecar is listening, so the first call can fail with a
-        // network error ("Failed to fetch"). Retry with backoff while the
-        // ENGINE is unreachable (res.ok === false), the same startup race
-        // StatusStrip handles. An answer from the engine (even a fallback
-        // because OpenAI refused) is final and is not retried.
-        let res = await listCodexModels(cfg, nonce > 0);
-        for (const delayMs of ENGINE_RETRY_DELAYS_MS) {
-          if (cancelled || res.ok) break;
-          await new Promise((r) => setTimeout(r, delayMs));
-          if (cancelled) return;
-          res = await listCodexModels(cfg, nonce > 0);
-        }
-        if (cancelled) return;
-        if (!res.ok || !res.models || res.models.length === 0) {
-          // Keep whatever list we have, but say why it is not live.
-          setError(res.error ?? 'model catalog unavailable');
-          return;
-        }
-        const next = withRecommended(res.models);
-        setModels(next);
-        setSource(res.source === 'live' ? 'live' : 'fallback');
-        setError(res.source === 'live' ? null : (res.error ?? 'OpenAI catalog unavailable'));
-        if (res.source === 'live') writeCache(next);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, nonce]);
-
-  return { models, source, loading, error, refresh };
+  const live = useLiveModels({
+    enabled,
+    cacheKey: CACHE_KEY,
+    fallback: OPENAI_CODEX_MODELS,
+    loadConfig: oauthProviderConfig,
+    missingConfigError: 'not signed in to ChatGPT',
+    unavailableError: 'OpenAI catalog unavailable',
+    fetchModels: listCodexModels,
+  });
+  const models = useMemo(() => withRecommended(live.models), [live.models]);
+  return {
+    models,
+    source: live.source,
+    loading: live.loading,
+    error: live.error,
+    refresh: live.refresh,
+  };
 }

@@ -98,17 +98,20 @@ export const OPENAI_CODEX_DEFAULT_MODEL = 'gpt-6.1-sol';
  * id (sent to the engine), a display label, an optional `note` shown
  * inline, and a `recommended` flag for the suggested default.
  *
- * Curated to the 3-5 latest, non-legacy models per provider. Last
- * refreshed 2026-07-30: added claude-fable-5 + claude-opus-4-8 (Anthropic
- * new releases); claude-opus-4-7 retained in cost table only for backward
- * compat with saved preferences. Refresh manually as providers ship new
- * model families.
+ * Since 2026-11-11 the picker shows each provider's LIVE model list (see
+ * `useProviderModels` in lib/provider-models.ts and
+ * engine/provider_models.py). This curated list is now (a) the
+ * "Recommended" group pinned at the top of the live list and (b) the
+ * fallback before the live list loads or when it can't be fetched. It
+ * MIRRORS engine/provider_models.py STATIC_MODELS (a test enforces it).
  */
 export interface ModelChoice {
   id: string;
   label: string;
   note?: string;
   recommended?: boolean;
+  /** Picker group (rendered as an <optgroup>) for long live lists. */
+  group?: 'Recommended' | 'All available';
 }
 
 export const PROVIDER_MODELS: Record<LLMProvider, ModelChoice[]> = {
@@ -120,17 +123,26 @@ export const PROVIDER_MODELS: Record<LLMProvider, ModelChoice[]> = {
     { id: 'gpt-4o-mini', label: 'gpt-4o-mini',  note: 'Cheapest', recommended: true },
   ],
   anthropic: [
-    { id: 'claude-fable-5',    label: 'Claude Fable 5',    note: 'Latest release' },
-    { id: 'claude-opus-4-8',   label: 'Claude Opus 4.8',   note: 'Most capable' },
-    { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', note: 'Balanced', recommended: true },
-    { id: 'claude-haiku-4-5',  label: 'Claude Haiku 4.5',  note: 'Cheapest' },
+    { id: 'claude-opus-5-5',   label: 'Claude Opus 5.5',   note: 'Most capable Opus' },
+    { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5', note: 'Balanced', recommended: true },
+    { id: 'claude-haiku-5-5',  label: 'Claude Haiku 5.5',  note: 'Fast and low cost' },
+    { id: 'claude-fable-5-2',  label: 'Claude Fable 5.2',  note: 'Largest model, highest cost' },
+    { id: 'claude-opus-4-8',   label: 'Claude Opus 4.8',   note: 'Previous Opus' },
+    { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6', note: 'Previous Sonnet' },
+    { id: 'claude-haiku-4-5',  label: 'Claude Haiku 4.5',  note: 'Previous Haiku' },
   ],
+  // OpenRouter slugs verified against openrouter.ai/api/v1/models on
+  // 2026-11-11. OpenRouter writes Claude versions with DOTS
+  // (anthropic/claude-opus-5.5), not Anthropic's dashes; the old
+  // anthropic/claude-opus-4-8, anthropic/claude-sonnet-4-6 and
+  // google/gemini-2.0-flash entries were not in OpenRouter's catalog.
   openrouter: [
     { id: 'openai/gpt-4o-mini',          label: 'OpenAI · gpt-4o-mini',   note: 'Cheapest', recommended: true },
     { id: 'openai/gpt-5-mini',           label: 'OpenAI · gpt-5-mini',    note: 'Balanced' },
-    { id: 'anthropic/claude-opus-4-8',   label: 'Anthropic · Opus 4.8' },
-    { id: 'anthropic/claude-sonnet-4-6', label: 'Anthropic · Sonnet 4.6' },
-    { id: 'google/gemini-2.0-flash',     label: 'Google · Gemini 2.0 Flash' },
+    { id: 'anthropic/claude-opus-5.5',   label: 'Anthropic · Opus 5.5' },
+    { id: 'anthropic/claude-sonnet-5.5', label: 'Anthropic · Sonnet 5.5' },
+    { id: 'anthropic/claude-haiku-5.5',  label: 'Anthropic · Haiku 5.5' },
+    { id: 'google/gemini-2.5-flash',     label: 'Google · Gemini 2.5 Flash' },
   ],
   gemini: [
     { id: 'gemini-2.5-pro',        label: 'Gemini 2.5 Pro',        note: 'Most capable' },
@@ -725,26 +737,30 @@ export async function testLLMConnection(args: {
 }
 
 /** Result of POST /llm/models. `source` is 'live' when the list came from
- * the account's Codex catalog, 'fallback' when the engine could not reach
- * it and returned its built-in list. */
-export interface CodexModelsResult {
+ * the provider (or the account's Codex catalog), 'fallback' when the engine
+ * could not reach it and returned its built-in list. */
+export interface ModelsListResult {
   ok: boolean;
   source?: 'live' | 'fallback';
   default?: string;
   models?: ModelChoice[];
   error?: string;
 }
+/** @deprecated name kept for the OAuth hook; same shape as ModelsListResult. */
+export type CodexModelsResult = ModelsListResult;
 
 /**
- * Models the signed-in ChatGPT account can use on the OAuth (Codex) path,
- * from OpenAI's live Codex catalog via the engine. `providerConfig` must be
- * the OAuth shape `resolveProviderConfig` builds for live runs. `refresh`
+ * Live model list via the engine (POST /llm/models). `providerConfig` is the
+ * same shape `resolveProviderConfig` builds for live runs: an API-key config
+ * gets that provider's own model list; the OpenAI OAuth config gets the
+ * ChatGPT account's Codex catalog. The renderer only ever talks to the local
+ * engine; the engine calls the one provider named in the config. `refresh`
  * bypasses the engine's 15-minute cache.
  */
-export async function listCodexModels(
+export async function listProviderModels(
   providerConfig: ProviderConfig,
   refresh = false,
-): Promise<CodexModelsResult> {
+): Promise<ModelsListResult> {
   const { port, token } = await handshake();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LLM_TEST_TIMEOUT_MS);
@@ -759,12 +775,21 @@ export async function listCodexModels(
       signal: controller.signal,
     });
     if (!res.ok) return { ok: false, error: `${res.status} ${res.statusText}` };
-    return (await res.json()) as CodexModelsResult;
+    return (await res.json()) as ModelsListResult;
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** OAuth (Codex) name for the same call. Kept as a separate export so the
+ * Codex hook and its tests read naturally; it is the same function. */
+export function listCodexModels(
+  providerConfig: ProviderConfig,
+  refresh = false,
+): Promise<ModelsListResult> {
+  return listProviderModels(providerConfig, refresh);
 }
 
 // ---- Phase 8c: bidirectional Telegram bot ---------------------------------

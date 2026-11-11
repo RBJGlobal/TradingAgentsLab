@@ -228,6 +228,37 @@ Lists the user's saved watchlist tickers, newest-first by `added_at`. Same SQLit
 
 CORS-allowed for the renderer origin (`DELETE` is in `Access-Control-Allow-Methods`).
 
+### `POST /llm/models`
+
+Live model list for the model picker. The engine asks the ONE provider named in `provider_config` (with the credentials in this request; nothing is persisted) and falls back to its built-in list when that fails.
+
+```jsonc
+// request
+{
+  "provider_config": {
+    "provider": "anthropic",                       // any allowlisted provider
+    "auth": { "type": "api_key", "api_key": "..." } // or the OpenAI OAuth shape
+  },
+  "refresh": false   // true bypasses the engine's 15-minute cache
+}
+
+// response
+{
+  "ok": true,
+  "source": "live",            // "live" | "fallback"
+  "default": "claude-haiku-4-5",
+  "models": [ { "id": "claude-opus-5-5", "label": "Claude Opus 5.5", "note": "" } ],
+  "error": "key rejected (HTTP 401)"  // only on fallback: status + category, never the provider's body
+}
+```
+
+| Auth | Source of the list | `default` |
+|---|---|---|
+| `api_key`, provider `anthropic` / `openai` / `openrouter` / `gemini` / `xai` | That provider's `/models` endpoint (`engine/provider_models.py`). OpenRouter prices are captured for Cost Guard. | The engine's provider default (`_DEFAULT_MODELS`), unchanged by discovery. |
+| `api_key`, provider `minimax` | Built-in list (`source: "fallback"`, no `error`). | `_DEFAULT_MODELS["minimax"]` |
+| `oauth` (OpenAI) | The ChatGPT account's Codex catalog (`engine/codex_models.py`). | The catalog's first model. |
+| `local`, or an invalid config | Not served: `{ "ok": false, "error": "..." }`. Local runtimes use `GET /llm/local-runtimes`. | |
+
 ## WebSocket endpoint
 
 ### `WS /stream?token=<token>`

@@ -297,20 +297,55 @@ def build_app(*, token: str) -> FastAPI:
 
     @app.post("/llm/models", dependencies=bearer)
     async def llm_models(req: LLMModelsRequest) -> dict[str, Any]:
-        """Models the user's ChatGPT account can use on the OAuth (Codex) path.
+        """Models the user can pick for the configured provider, live.
 
-        Live from OpenAI's Codex catalog (see engine/codex_models.py), so the
-        Analyze picker tracks OpenAI's retirements without an app release.
-        Falls back to a small built-in list when the catalog is unreachable;
-        `source` tells the renderer which one it got. OAuth credentials arrive
-        per request (the renderer already sends them for live runs) and are
-        never persisted by the engine.
+        Two paths, same response shape
+        (`{ok, source: "live"|"fallback", default, models, error?}`):
+
+        - API key (any provider): the provider's own model list, via
+          engine/provider_models.py. Falls back to the built-in list for that
+          provider when the list can't be fetched. `default` is the engine's
+          provider default (unchanged by discovery, so no user's cost moves).
+        - OpenAI OAuth: OpenAI's Codex catalog for this ChatGPT account (see
+          engine/codex_models.py), so the picker tracks OpenAI's retirements
+          without an app release.
+
+        Credentials arrive per request (the renderer already sends them for
+        live runs) and are never persisted by the engine. The engine calls
+        only the provider named in this request.
         """
         from . import codex_models
 
         config = ProviderConfig.from_dict(req.provider_config)
+        if config is not None and config.auth_kind == "api_key":
+            from . import provider_models
+            from .llm_providers import default_model_for
+
+            try:
+                choices = await provider_models.list_provider_models(
+                    config.provider,
+                    str(config.auth.get("api_key") or ""),
+                    force_refresh=req.refresh,
+                )
+            except provider_models.ProviderModelsUnavailable as exc:
+                return {
+                    "ok": True,
+                    "source": "fallback",
+                    "default": default_model_for(config.provider),
+                    "models": provider_models.static_models(config.provider),
+                    "error": str(exc),
+                }
+            return {
+                "ok": True,
+                "source": (
+                    "live" if config.provider in provider_models.DISCOVERABLE
+                    else "fallback"
+                ),
+                "default": default_model_for(config.provider),
+                "models": choices,
+            }
         if config is None or config.provider != "openai" or config.auth_kind != "oauth":
-            return {"ok": False, "error": "model discovery is only for OpenAI OAuth"}
+            return {"ok": False, "error": "model discovery needs an API key or OpenAI OAuth"}
         try:
             models = await codex_models.list_codex_models(
                 config.bearer_token,
@@ -829,8 +864,8 @@ class CostGuardReserveRequest(CostGuardCheckRequest):
 
 
 class LLMModelsRequest(BaseModel):
-    """OAuth provider_config for Codex model discovery. `refresh` bypasses
-    the engine's 15-minute per-account catalog cache."""
+    """provider_config (API key, or OpenAI OAuth) for live model discovery.
+    `refresh` bypasses the engine's 15-minute catalog cache."""
 
     provider_config: dict[str, Any]
     refresh: bool = False
