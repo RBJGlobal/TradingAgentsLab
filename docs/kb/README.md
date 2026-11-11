@@ -4,7 +4,7 @@
 
 Trading Agents Lab is an open-source desktop application for educational market research and paper trading. It runs a panel of AI analyst agents, technical, fundamental, news, and sentiment, that debate a ticker on a date you specify, then produce a committee assessment: an analytical stance, conviction score, thesis strength scores, and reasoning. The analysis is for research and paper-trading purposes only. It is not investment advice.
 
-Trading Agents Lab is a standalone trading companion for Clawless: an independent product with its own codebase and license, sharing brand-family coherence rather than code or integration.
+Trading Agents Lab is a standalone trading companion for [Clawless Computer](https://clawless.ai/): an independent product with its own codebase and license, sharing brand-family coherence rather than code or integration.
 
 > **For educational research and paper trading. This is not investment advice.**
 
