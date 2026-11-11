@@ -12,7 +12,7 @@ Trading Agents Lab supports seven LLM provider families. All seven can drive a r
 
 | Provider | Auth options | Default model | Notes |
 |---|---|---|---|
-| **OpenAI** | API key **or** ChatGPT OAuth | `gpt-4o-mini` (key) / `gpt-5.4` (OAuth) | OAuth routes through your ChatGPT subscription, not per-token API billing, see [oauth.md](oauth.md). |
+| **OpenAI** | API key **or** ChatGPT OAuth | `gpt-4o-mini` (key) / your account's current default (OAuth) | OAuth routes through your ChatGPT subscription, not per-token API billing, see [oauth.md](oauth.md). |
 | **Anthropic** | API key only | `claude-haiku-4-5` | OAuth is **not** supported, banned by Anthropic Terms of Service. |
 | **OpenRouter** | API key | `openai/gpt-4o-mini` | One key, hundreds of models. Useful as a single-key multi-model fallback. |
 | **Google Gemini** | API key | `gemini-2.0-flash` | Gemini 2.x and 3.x; 3.1 Flash-Lite is the GA cost-efficient pick. |
@@ -72,7 +72,7 @@ For the full OAuth flow + Codex backend technical details, see [oauth.md](oauth.
 
 When multiple providers are configured, the **Analyze page header** shows a "Run with" dropdown listing every connected provider plus the OpenAI OAuth row when present. The dropdown selection persists across sessions in `localStorage`.
 
-Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI account (OAuth) · gpt-5.4" and back will restore your previous picks for each.
+Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI account (OAuth) · gpt-6.1-sol" and back will restore your previous picks for each.
 
 ### The model list is live
 

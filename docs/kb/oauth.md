@@ -87,14 +87,7 @@ This integration is built on `@earendil-works/pi-ai` (MIT-licensed npm package) 
 
 ## Models available via OAuth
 
-The Codex backend supports a different (smaller) model list than the standard API. The Trading Agents Lab model dropdown for the OAuth path lists exactly the models that work with Codex:
-
-- `gpt-5.4` (default, recommended)
-- `gpt-5.4-mini`
-- `gpt-5.1-codex-mini`
-- `gpt-5.4-thinking`
-- `gpt-5.4-thinking-mini`
-- `gpt-5.4-thinking-high`
+The Codex backend supports a different (smaller) model list than the standard API, and OpenAI changes it on its own schedule. The model dropdown for the OAuth path is therefore **live**: it shows the models your ChatGPT account can use right now, read from OpenAI when you open Analyze. The first model in that list is the default. If a model you picked is retired, the dropdown and the next run move to your account's current default. A line under the dropdown shows whether the list is live, saved from last time, or the built-in list (if OpenAI could not be reached), with a **Refresh** button.
 
 Unlike the API-key path, you cannot pick `gpt-4o`, `gpt-4o-mini`, or older models on the OAuth path, they're not exposed by the Codex backend.
 
@@ -126,7 +119,7 @@ That makes the choice between an API key and OAuth a real decision in Pro, so he
 | | API key | ChatGPT OAuth |
 |---|---|---|
 | Cost per run | Per-token, real money | $0 within your plan's rate limits |
-| Model choice | Full API catalog, plus Anthropic, OpenRouter, and Gemini entirely | The Codex model list (GPT-5.4 family) only |
+| Model choice | Full API catalog, plus Anthropic, OpenRouter, and Gemini entirely | The models your ChatGPT account can use with Codex (live list) only |
 | Rate limits | API tier limits, predictable | Subscription rolling windows, not publicly documented |
 | Endpoint | Official, versioned API | The Codex backend, an unofficial surface that OpenAI can change without notice |
 | Provider style | You can pick a provider whose output style you prefer | OpenAI models only |

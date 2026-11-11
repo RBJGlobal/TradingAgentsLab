@@ -235,6 +235,8 @@ def parse_openrouter(body: object) -> tuple[list[dict[str, Any]], dict[str, dict
     - negative prices (OpenRouter's auto-routers report -1: the real price
       depends on the model they pick, so we can't reserve for them honestly)
     - ``:batch`` variants (asynchronous batch pricing, not a live debate)
+    - ``openai/*`` ids matching the direct-OpenAI exclusions (``-pro``,
+      audio, image, codex, ...)
     """
     choices: list[dict[str, Any]] = []
     rates: dict[str, dict[str, float]] = {}
@@ -243,6 +245,13 @@ def parse_openrouter(body: object) -> tuple[list[dict[str, Any]], dict[str, dict
             continue
         mid = str(item.get("id") or "").strip()
         if not mid or mid.endswith(":batch"):
+            continue
+        vendor, _, name = mid.partition("/")
+        if vendor == "openai" and any(bad in name.lower() for bad in _OPENAI_EXCLUDE):
+            # Same exclusions as direct OpenAI. The -pro tiers in particular
+            # cost far more than the gpt family ceiling (e.g. 30/180 per 1M),
+            # so after an engine restart, before this catalog's prices are
+            # re-learned, they would be UNDER-reserved.
             continue
         arch = item.get("architecture")
         if isinstance(arch, dict) and isinstance(arch.get("output_modalities"), list):

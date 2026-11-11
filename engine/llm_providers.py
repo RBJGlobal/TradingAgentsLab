@@ -144,6 +144,7 @@ _RUNTIME_RATES: dict[str, dict[str, float]] = {}
 _CEIL_CLAUDE_TOP = {"input": 15.00, "output": 75.00}   # opus / fable / mythos / unrecognised claude
 _CEIL_CLAUDE_MID = {"input": 5.00, "output": 25.00}    # sonnet, haiku
 _CEIL_OPENAI = {"input": 15.00, "output": 60.00}       # gpt-*, o1/o3/o4...
+_CEIL_OPENAI_LEGACY_GPT4 = {"input": 60.00, "output": 120.00}  # gpt-4 / gpt-4-32k (pre-turbo)
 _CEIL_GEMINI = {"input": 5.00, "output": 20.00}
 _CEIL_GROK = {"input": 5.00, "output": 15.00}
 # Anything else we cannot place (an unfamiliar OpenRouter vendor, a renamed
@@ -183,6 +184,12 @@ def _family_ceiling(model: str) -> Optional[dict[str, float]]:
             return _CEIL_CLAUDE_MID
         # opus, fable, mythos, and any Claude name we don't recognise yet.
         return _CEIL_CLAUDE_TOP
+    # The original gpt-4 (and its -0613 / -0314 snapshots and -32k variant)
+    # costs MORE than every newer OpenAI chat model: $30/$60 per 1M, and
+    # $60/$120 for 32k. OpenAI still lists it, so the generic gpt ceiling
+    # would under-reserve it. (Found by scanning OpenRouter's catalog.)
+    if m == "gpt-4" or m.startswith("gpt-4-0") or m.startswith("gpt-4-32k"):
+        return _CEIL_OPENAI_LEGACY_GPT4
     if m.startswith("gpt-") or re.match(r"^o\d", m):
         return _CEIL_OPENAI
     if m.startswith("gemini-"):

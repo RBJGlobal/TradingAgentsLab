@@ -107,6 +107,14 @@ OPENROUTER_LIST = {
         {"id": "acme/free:free", "name": "Free one",
          "architecture": {"output_modalities": ["text"]},
          "pricing": {"prompt": "0", "completion": "0"}},
+        # Real catalog price 30/180: far above the gpt ceiling, so it must be
+        # excluded like the direct-OpenAI -pro tiers.
+        {"id": "openai/gpt-5.5-pro", "name": "OpenAI: GPT-5.5 Pro",
+         "architecture": {"output_modalities": ["text"]},
+         "pricing": {"prompt": "0.00003", "completion": "0.00018"}},
+        {"id": "openai/gpt-audio", "name": "audio",
+         "architecture": {"output_modalities": ["text", "audio"]},
+         "pricing": {"prompt": "0.0000025", "completion": "0.00001"}},
     ]
 }
 
@@ -417,6 +425,13 @@ def test_openrouter_ids_reuse_first_party_rows_before_ceilings():
     # OpenRouter writes Claude versions with dots.
     assert rates_for("anthropic/claude-sonnet-4.6") == llm_providers._COST_PER_M_TOKENS["claude-sonnet-4-6"]
     assert rates_for("anthropic/claude-haiku-5.5") == llm_providers._COST_PER_M_TOKENS["claude-haiku-5-5"]
+
+
+def test_legacy_gpt4_is_not_under_reserved():
+    """gpt-4 bills $30/$60 per 1M, above the generic gpt ceiling (15/60)."""
+    for mid in ("gpt-4", "gpt-4-0613", "gpt-4-32k", "openai/gpt-4"):
+        r = rates_for(mid)
+        assert r["input"] >= 30.0 and r["output"] >= 60.0, mid
 
 
 def test_runtime_price_beats_first_party_mapping():
