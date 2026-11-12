@@ -264,7 +264,7 @@ Routing logic: when both Alpaca Key ID + Secret are stored under Settings → Da
 
 Configurable spending caps with TOCTOU-safe atomic reservations so parallel debates can't blow the cap:
 
-- **Three USD windows** (daily / weekly / monthly), defaults $1 / $5 / $15. Set any to 0 to disable.
+- **Three USD windows** (daily / weekly / monthly), defaults $2 / $5 / $15 for new installs. Set any to 0 to disable.
 - **Sessions/day rate cap**, protects ChatGPT subscription quotas on the OAuth path (where per-token cost is $0 but rate limits still apply).
 - **Override modal** with a 3-second anti-tamper countdown. Per-session override only, no "remember for the day" bypass.
 - **OAuth-aware policy**, subscription-routed sessions count for rate caps but skip USD caps (cost is genuinely $0 in the ledger).

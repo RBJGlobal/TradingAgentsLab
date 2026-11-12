@@ -190,7 +190,7 @@ def test_reserve_endpoint_with_and_without_provider(client):
     assert without.status_code == 200
     assert without.json()["est_cost_usd"] == pytest.approx(0.8352)
     # (override: the first reservation is still pending, and two of these
-    # would exceed the $1.00 daily default.)
+    # would exceed the daily default before $2.00; kept for a pending-reservation path.)
     with_p = client.post("/cost-guard/reserve", json={**body, "provider": "openrouter", "override": True})
     assert with_p.status_code == 200
     assert with_p.json()["est_cost_usd"] == pytest.approx(0.8352)
