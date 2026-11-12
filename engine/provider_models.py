@@ -45,7 +45,15 @@ from typing import Any, Callable, Optional
 
 import httpx
 
-from .llm_providers import normalize_model_id, register_runtime_rates
+from .llm_providers import (
+    openrouter_name_reasons,
+    normalize_model_id,
+    register_runtime_rates,
+    register_runtime_reasoning,
+)
+
+# OpenRouter vendors whose reasoning default our own name rules decide.
+_KNOWN_REASONING_VENDORS = {"anthropic", "openai", "google"}
 
 _TIMEOUT_S = 10.0
 _CACHE_TTL_S = 15 * 60
@@ -292,6 +300,55 @@ def parse_openrouter(body: object) -> tuple[list[dict[str, Any]], dict[str, dict
     return choices, rates
 
 
+def parse_openrouter_reasoning(body: object) -> dict[str, dict[str, Any]]:
+    """Which OpenRouter models reason, from the same /models response.
+
+    Per OpenRouter's docs an entry may carry a ``reasoning`` object
+    (``supported_efforts``, ``default_effort``, ``default_enabled``,
+    ``supports_max_tokens``, ``mandatory``); we also treat ``"reasoning"`` in
+    ``supported_parameters`` as capable. Returns
+    ``{id: {"capable", "efforts", "mandatory"}}`` for every entry. Pure.
+    """
+    out: dict[str, dict[str, Any]] = {}
+    for item in _require_list(body, "data"):
+        if not isinstance(item, dict):
+            continue
+        mid = str(item.get("id") or "").strip()
+        if not mid:
+            continue
+        params = item.get("supported_parameters")
+        listed = isinstance(params, list) and "reasoning" in params
+        info = item.get("reasoning")
+        info = info if isinstance(info, dict) else {}
+        efforts = info.get("supported_efforts")
+        # "Capable" here means "reasons BY DEFAULT", because that is what
+        # eats the answer budget. A model where reasoning is optional and off
+        # by default (e.g. anthropic/claude-sonnet-4.6 lists "reasoning")
+        # must not get the allowance: sending a reasoning object would TURN
+        # thinking on and make every run cost more.
+        if info:
+            default_effort = str(info.get("default_effort") or "")
+            capable = bool(
+                info.get("mandatory")
+                or info.get("default_enabled")
+                or (default_effort and default_effort != "none")
+            )
+        elif listed:
+            vendor = mid.split("/", 1)[0].lower()
+            # For vendors we know, our own name rules say whether the model
+            # thinks by default; for everyone else (qwen, deepseek, ...)
+            # listing "reasoning" is the best signal we have.
+            capable = openrouter_name_reasons(mid) if vendor in _KNOWN_REASONING_VENDORS else True
+        else:
+            capable = False
+        out[mid] = {
+            "capable": capable,
+            "efforts": [str(e) for e in efforts] if isinstance(efforts, list) else [],
+            "mandatory": bool(info.get("mandatory")),
+        }
+    return out
+
+
 _GEMINI_EXCLUDE = ("embedding", "image", "tts", "live", "aqa")
 
 
@@ -400,8 +457,14 @@ async def _fetch_openrouter(client: httpx.AsyncClient, api_key: str) -> list[dic
     body = await _get_json(client, OPENROUTER_MODELS_URL,
                            headers={"Authorization": f"Bearer {api_key}"})
     choices, rates = parse_openrouter(body)
+    reasoning = parse_openrouter_reasoning(body)
     for mid, r in rates.items():
         register_runtime_rates(mid, input_per_m=r["input"], output_per_m=r["output"])
+        info = reasoning.get(mid)
+        if info is not None:
+            register_runtime_reasoning(
+                mid, capable=info["capable"], efforts=info["efforts"], mandatory=info["mandatory"],
+            )
     return choices
 
 

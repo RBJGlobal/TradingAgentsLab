@@ -9,11 +9,14 @@ kwargs each adapter hands its SDK client (the client is mocked; no network).
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from engine import llm_providers
 from engine.llm_providers import (
+    THINKING_ALLOWANCE_TOKENS,
+    GeminiAdapter,
     AnthropicAdapter,
     LocalLLMAdapter,
     MiniMaxAdapter,
@@ -43,7 +46,8 @@ async def _openai_kwargs(adapter, model: str) -> dict:
 
 async def _anthropic_kwargs(model: str) -> dict:
     create = AsyncMock(return_value=SimpleNamespace(
-        content=[SimpleNamespace(text="ok")],
+        content=[SimpleNamespace(type="text", text="ok")],
+        stop_reason="end_turn",
         usage=SimpleNamespace(input_tokens=1, output_tokens=1),
     ))
     adapter = AnthropicAdapter()
@@ -64,7 +68,73 @@ async def _anthropic_kwargs(model: str) -> dict:
 async def test_anthropic_omits_temperature_for_new_and_unknown_models(model):
     kwargs = await _anthropic_kwargs(model)
     assert "temperature" not in kwargs
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model", [
+    "claude-opus-5", "claude-opus-5-5", "claude-sonnet-5", "claude-sonnet-5-5",
+    "claude-haiku-5-5", "claude-fable-5", "claude-fable-5-1", "claude-fable-5-2",
+    "claude-mythos-5", "claude-mythos-5-1", "claude-mythos-5-2",
+    "claude-sonnet-5-5-20261001",  # dated id of a thinking model
+])
+async def test_anthropic_thinking_models_get_allowance_and_low_effort(model):
+    kwargs = await _anthropic_kwargs(model)
+    assert kwargs["max_tokens"] == 400 + THINKING_ALLOWANCE_TOKENS
+    assert kwargs["output_config"] == {"effort": "low"}
+    # Rejected (400) by these models, so never sent.
+    assert "thinking" not in kwargs
+    assert "budget_tokens" not in str(kwargs)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model", [
+    "claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-4-6",
+    "claude-sonnet-4-5", "claude-haiku-4-5", "claude-haiku-4-5-20251001",
+])
+async def test_anthropic_non_thinking_models_unchanged(model):
+    kwargs = await _anthropic_kwargs(model)
     assert kwargs["max_tokens"] == 400
+    assert "output_config" not in kwargs and "thinking" not in kwargs
+
+
+def _anthropic_adapter(resp):
+    adapter = AnthropicAdapter()
+    adapter._client = SimpleNamespace(messages=SimpleNamespace(create=AsyncMock(return_value=resp)))
+    return adapter
+
+
+@pytest.mark.asyncio
+async def test_anthropic_reads_only_text_blocks_after_a_leading_thinking_block():
+    resp = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="thinking", thinking="secret reasoning", signature="sig"),
+            SimpleNamespace(type="redacted_thinking", data="xxx"),
+            SimpleNamespace(type="text", text="Bullish on margins. "),
+            SimpleNamespace(type="text", text="Risks: rates."),
+        ],
+        stop_reason="end_turn",
+        usage=SimpleNamespace(input_tokens=10, output_tokens=900),
+    )
+    content, in_tok, out_tok = await _anthropic_adapter(resp).complete(
+        system="s", user="u", model="claude-sonnet-5-5", max_tokens=400,
+    )
+    assert content == "Bullish on margins. Risks: rates."
+    assert "secret" not in content
+    assert (in_tok, out_tok) == (10, 900)
+
+
+@pytest.mark.asyncio
+async def test_anthropic_thinking_only_at_max_tokens_raises():
+    resp = SimpleNamespace(
+        content=[SimpleNamespace(type="thinking", thinking="...", signature="sig")],
+        stop_reason="max_tokens",
+        usage=SimpleNamespace(input_tokens=10, output_tokens=1600),
+    )
+    with pytest.raises(ReasoningBudgetExhausted) as exc:
+        await _anthropic_adapter(resp).complete(
+            system="s", user="u", model="claude-opus-5-5", max_tokens=400,
+        )
+    assert (exc.value.input_tokens, exc.value.output_tokens) == (10, 1600)
 
 
 @pytest.mark.asyncio
@@ -100,16 +170,24 @@ async def test_openai_classic_models_keep_max_tokens_and_temperature(model):
     ("o3", "low"),
 ])
 async def test_openai_reasoning_models_get_lowest_effort_and_max_completion_tokens(model, effort):
+    # Visible answer budget (400) + the thinking allowance.
     assert await _openai_kwargs(OpenAIAdapter(), model) == {
-        "max_completion_tokens": 400, "reasoning_effort": effort,
+        "max_completion_tokens": 400 + THINKING_ALLOWANCE_TOKENS, "reasoning_effort": effort,
     }
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model", ["gpt-5-pro", "gpt-5-chat-latest"])
-async def test_openai_effort_left_out_where_unsupported(model):
-    # gpt-5-pro only supports "high" (its default); -chat is not a reasoning model.
-    assert await _openai_kwargs(OpenAIAdapter(), model) == {"max_completion_tokens": 400}
+async def test_openai_pro_gets_allowance_but_no_effort():
+    # gpt-5-pro only supports "high" (its default), but it still reasons.
+    assert await _openai_kwargs(OpenAIAdapter(), "gpt-5-pro") == {
+        "max_completion_tokens": 400 + THINKING_ALLOWANCE_TOKENS,
+    }
+
+
+@pytest.mark.asyncio
+async def test_openai_chat_model_gets_no_effort_and_no_allowance():
+    # -chat is not a reasoning model.
+    assert await _openai_kwargs(OpenAIAdapter(), "gpt-5-chat-latest") == {"max_completion_tokens": 400}
 
 
 # ---- Empty answer after spending the whole budget on reasoning --------------
@@ -168,18 +246,110 @@ async def test_compatible_endpoints_unchanged(adapter, model):
 # ---- OpenRouter: the vendor's rule on the part after the slash -------------
 
 
+_THINK = 400 + THINKING_ALLOWANCE_TOKENS
+_LOW = {"reasoning": {"effort": "low", "exclude": True}}
+
+
+@pytest.fixture
+def _clean_runtime_reasoning():
+    llm_providers._RUNTIME_REASONING.clear()
+    yield
+    llm_providers._RUNTIME_REASONING.clear()
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("model,expected", [
-    ("anthropic/claude-opus-5.5", {"max_tokens": 400}),
-    ("anthropic/claude-sonnet-5.5", {"max_tokens": 400}),
+    # Catalog not loaded: name rules for the known vendors.
+    ("anthropic/claude-opus-5.5", {"max_tokens": _THINK, "extra_body": _LOW}),
+    ("anthropic/claude-sonnet-5.5", {"max_tokens": _THINK, "extra_body": _LOW}),
     ("anthropic/claude-sonnet-4.6", {"max_tokens": 400, "temperature": 0.7}),
     ("anthropic/claude-haiku-4.5", {"max_tokens": 400, "temperature": 0.7}),
-    ("openai/gpt-5-mini", {"max_tokens": 400, "reasoning_effort": "minimal"}),
-    ("openai/gpt-5.5", {"max_tokens": 400, "reasoning_effort": "none"}),
-    ("openai/o4-mini", {"max_tokens": 400}),
+    ("openai/gpt-5-mini", {"max_tokens": _THINK, "extra_body": _LOW}),
+    ("openai/gpt-5.5", {"max_tokens": _THINK, "extra_body": _LOW}),
+    ("openai/o4-mini", {"max_tokens": _THINK, "extra_body": _LOW}),
     ("openai/gpt-4o-mini", {"max_tokens": 400, "temperature": 0.7}),
-    ("google/gemini-2.5-flash", {"max_tokens": 400, "temperature": 0.7}),
+    ("google/gemini-2.5-flash", {"max_tokens": _THINK, "temperature": 0.7, "extra_body": _LOW}),
+    ("google/gemini-2.0-flash", {"max_tokens": 400, "temperature": 0.7}),
     ("x-ai/grok-4.3", {"max_tokens": 400, "temperature": 0.7}),
+    # Unknown vendor, catalog not loaded: no allowance (guard still applies).
+    ("qwen/qwen3.8-2.4t-a95b", {"max_tokens": 400, "temperature": 0.7}),
 ])
-async def test_openrouter_applies_vendor_rule(model, expected):
+async def test_openrouter_applies_vendor_rule(model, expected, _clean_runtime_reasoning):
     assert await _openai_kwargs(OpenRouterAdapter(), model) == expected
+
+
+@pytest.mark.asyncio
+async def test_openrouter_catalog_flag_gives_allowance_and_lowest_listed_effort(_clean_runtime_reasoning):
+    # The founder's failing model: reasoning learned from the catalog.
+    llm_providers.register_runtime_reasoning(
+        "qwen/qwen3.8-2.4t-a95b", capable=True, efforts=["high", "medium", "minimal"],
+    )
+    assert await _openai_kwargs(OpenRouterAdapter(), "qwen/qwen3.8-2.4t-a95b") == {
+        "max_tokens": _THINK, "temperature": 0.7,
+        "extra_body": {"reasoning": {"effort": "minimal", "exclude": True}},
+    }
+
+
+@pytest.mark.asyncio
+async def test_openrouter_never_sends_none_when_reasoning_is_mandatory(_clean_runtime_reasoning):
+    llm_providers.register_runtime_reasoning(
+        "acme/thinker", capable=True, efforts=["none", "low", "high"], mandatory=True,
+    )
+    kwargs = await _openai_kwargs(OpenRouterAdapter(), "acme/thinker")
+    assert kwargs["extra_body"]["reasoning"]["effort"] == "low"
+    # Optional reasoning that the catalog marks not-by-default: no allowance.
+    llm_providers.register_runtime_reasoning("acme/optional", capable=False)
+    assert await _openai_kwargs(OpenRouterAdapter(), "acme/optional") == {
+        "max_tokens": 400, "temperature": 0.7,
+    }
+
+
+# ---- Gemini ------------------------------------------------------------------
+
+
+def _gemini_adapter(resp):
+    adapter = GeminiAdapter()
+    gen = MagicMock(return_value=resp)
+    adapter._client = SimpleNamespace(models=SimpleNamespace(generate_content=gen))
+    return adapter, gen
+
+
+def _gemini_resp(text, finish="STOP", thoughts=0):
+    return SimpleNamespace(
+        text=text,
+        candidates=[SimpleNamespace(finish_reason=SimpleNamespace(value=finish))],
+        usage_metadata=SimpleNamespace(
+            prompt_token_count=10, candidates_token_count=50, thoughts_token_count=thoughts,
+        ),
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model,expected", [
+    ("gemini-2.5-flash", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("gemini-2.5-pro", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("gemini-3.1-flash-lite", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("gemini-2.0-flash", 400),
+])
+async def test_gemini_thinking_models_get_allowance(model, expected):
+    adapter, gen = _gemini_adapter(_gemini_resp("ok"))
+    await adapter.complete(system="s", user="u", model=model, max_tokens=400)
+    config = gen.call_args.kwargs["config"]
+    assert config.max_output_tokens == expected
+    # No ThinkingConfig: allowed values are model dependent per the SDK.
+    assert config.thinking_config is None
+
+
+@pytest.mark.asyncio
+async def test_gemini_counts_thinking_tokens_as_output():
+    adapter, _ = _gemini_adapter(_gemini_resp("ok", thoughts=700))
+    assert await adapter.complete(system="s", user="u", model="gemini-2.5-flash", max_tokens=400) == (
+        "ok", 10, 750,
+    )
+
+
+@pytest.mark.asyncio
+async def test_gemini_empty_at_max_tokens_raises():
+    adapter, _ = _gemini_adapter(_gemini_resp("", finish="MAX_TOKENS", thoughts=1550))
+    with pytest.raises(ReasoningBudgetExhausted):
+        await adapter.complete(system="s", user="u", model="gemini-2.5-pro", max_tokens=400)

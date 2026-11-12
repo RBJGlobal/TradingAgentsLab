@@ -863,6 +863,7 @@ class TelegramBot:
                 auth_kind=provider_config.auth_kind,
                 max_tokens=provider_config.max_tokens,
                 override=False,
+                provider=provider_config.provider,
             )
             reservation_id = reservation.reservation_id
         except cost_guard.CostGuardBlocked as exc:

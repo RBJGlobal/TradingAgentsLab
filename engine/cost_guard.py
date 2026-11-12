@@ -62,7 +62,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator, Literal, Optional
 
-from .llm_providers import _CEIL_UNKNOWN, rates_for
+from .llm_providers import _CEIL_UNKNOWN, infer_provider, rates_for, thinking_allowance
 from .live_debate import MAX_AGENTS_PER_SESSION
 
 
@@ -199,8 +199,13 @@ def worst_case_reservation(
     model: str,
     auth_kind: str,
     max_tokens: int,
+    provider: Optional[str] = None,
 ) -> float:
     """Conservative upper-bound USD estimate for a single live debate.
+
+    `provider` decides the thinking allowance (see
+    `llm_providers.thinking_allowance`). When a caller doesn't send it (an
+    older renderer), it is inferred from the model id.
 
     OAuth sessions always return 0.0 — they bill via subscription, not
     per-token. Local runs are $0 too. Every per-token (api_key) model gets a
@@ -221,10 +226,16 @@ def worst_case_reservation(
         return 0.0
     rates = rates_for(model) or _CEIL_UNKNOWN
     n = MAX_AGENTS_PER_SESSION
-    # Output: every agent maxes its budget. (Worst case.)
-    max_out_tokens = n * max_tokens
+    # Output: every agent maxes its budget (worst case). A reasoning model's
+    # request allows max_tokens + the thinking allowance, all billed as
+    # output, so that is what we reserve. Same function the adapters use to
+    # size the request, so the two cannot drift.
+    allowance = thinking_allowance(provider or infer_provider(model), model)
+    max_out_tokens = n * (max_tokens + allowance)
     # Input: per-agent ~600 tokens of fixed context, plus prior turns.
     # Sum over agents 0..n-1 of prior agents' output: 0+1+2+…+(n-1) = n*(n-1)/2.
+    # Only the VISIBLE answer (max_tokens) is in the transcript the next
+    # agents read; reasoning is not, so the growth stays on max_tokens.
     fixed_input_per_agent = 600
     growth_input_tokens = (n * (n - 1) // 2) * max_tokens
     max_in_tokens = n * fixed_input_per_agent + growth_input_tokens
@@ -373,6 +384,7 @@ def check(
     model: str,
     auth_kind: str,
     max_tokens: int,
+    provider: Optional[str] = None,
 ) -> CheckResult:
     """Non-mutating preview: would this session be allowed under current caps?
 
@@ -381,7 +393,9 @@ def check(
     """
     initialize()
     config = get_config()
-    est = worst_case_reservation(model=model, auth_kind=auth_kind, max_tokens=max_tokens)
+    est = worst_case_reservation(
+        model=model, auth_kind=auth_kind, max_tokens=max_tokens, provider=provider
+    )
     with _connect() as conn:
         _sweep_expired_reservations(conn)
         spend = _compute_spend(conn)
@@ -412,6 +426,7 @@ def reserve(
     auth_kind: str,
     max_tokens: int,
     override: bool = False,
+    provider: Optional[str] = None,
 ) -> ReserveResult:
     """Atomically check-and-insert a reservation row.
 
@@ -421,7 +436,9 @@ def reserve(
     """
     initialize()
     config = get_config()
-    est = worst_case_reservation(model=model, auth_kind=auth_kind, max_tokens=max_tokens)
+    est = worst_case_reservation(
+        model=model, auth_kind=auth_kind, max_tokens=max_tokens, provider=provider
+    )
     rid = _new_reservation_id()
     now = _utcnow()
     expires = now + timedelta(seconds=RESERVATION_TTL_SECONDS)

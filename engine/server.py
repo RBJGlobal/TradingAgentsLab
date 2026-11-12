@@ -15,7 +15,7 @@ import asyncio
 import sys
 import time
 from contextlib import asynccontextmanager
-from typing import Annotated, Any
+from typing import Annotated, Any, Optional
 
 from fastapi import (
     Depends,
@@ -250,6 +250,7 @@ def build_app(*, token: str) -> FastAPI:
             model=req.model,
             auth_kind=req.auth_kind,
             max_tokens=req.max_tokens,
+            provider=req.provider,
         )
         return cost_guard.check_result_to_dict(result)
 
@@ -474,6 +475,7 @@ def build_app(*, token: str) -> FastAPI:
                 auth_kind=req.auth_kind,
                 max_tokens=req.max_tokens,
                 override=req.override,
+                provider=req.provider,
             )
         except cost_guard.CostGuardBlocked as exc:
             # 402 Payment Required — semantic match for "you can't afford
@@ -660,6 +662,7 @@ def build_app(*, token: str) -> FastAPI:
                             auth_kind=config.auth_kind,
                             max_tokens=config.max_tokens,
                             override=False,
+                            provider=config.provider,
                         )
                         reservation_id = auto.reservation_id
                     except cost_guard.CostGuardBlocked as exc:
@@ -869,6 +872,9 @@ class CostGuardCheckRequest(BaseModel):
     # downstream cost-guard logic in agreement.
     auth_kind: str = Field(pattern=r"^(api_key|oauth|local)$")
     max_tokens: int = Field(default=400, ge=1, le=8000)
+    # Optional (older renderers don't send it): decides the thinking
+    # allowance for reasoning models. Absent -> inferred from the model id.
+    provider: Optional[str] = Field(default=None, max_length=40)
 
 
 class CostGuardReserveRequest(CostGuardCheckRequest):

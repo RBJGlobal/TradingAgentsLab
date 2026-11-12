@@ -34,6 +34,7 @@ from typing import AsyncIterator, Optional
 from .data_providers import Headline, QuoteSummary
 from .llm_providers import (
     LLMAdapter,
+    ReasoningBudgetExhausted,
     ProviderConfig,
     adapter_for,
     estimate_cost,
@@ -629,9 +630,18 @@ async def live_debate(
                         "bull_strength": 0,
                         "bear_strength": 0,
                         "risk_level": "moderate",
+                        # The reason depends on the failure: "check your key"
+                        # is wrong advice when the key worked but a reasoning
+                        # model spent its whole budget thinking.
                         "reasoning": (
-                            f"Live debate aborted: {type(exc).__name__}. "
-                            f"Check the configured {config.provider} key and model availability."
+                            "Live debate stopped: the model spent its whole "
+                            "output budget on hidden reasoning and returned no "
+                            "text. Try a non-reasoning model."
+                            if isinstance(exc, ReasoningBudgetExhausted)
+                            else (
+                                f"Live debate aborted: {type(exc).__name__}. "
+                                f"Check the configured {config.provider} key and model availability."
+                            )
                         ),
                     }
                     break

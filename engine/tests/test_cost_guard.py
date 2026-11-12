@@ -79,13 +79,15 @@ def test_refreshed_catalog_models_are_priced(tmp_db):
     """The 2026-05-27 catalog refresh added rates for models that were
     previously absent from the table (gpt-5/gpt-5-mini/gpt-5.5) plus the new
     gemini-3.1-flash-lite. Before, these fell through the 'unknown' path and
-    reserved $0. Confirm each now reserves a positive amount, and that even
-    the priciest (gpt-5.5) stays well under $1 at the hard token cap — so a
-    refreshed default never silently logs zero, and the ceiling is sane."""
+    reserved $0. Confirm each now reserves a positive amount.
+
+    (Until 2026-11-12 this also asserted "< $1 at the 800-token hard cap".
+    Reasoning models now reserve output for the thinking allowance too
+    (max_tokens + 1200 per agent), so gpt-5 / gpt-5.5 exceed $1 there; the
+    reservation numbers are pinned in test_thinking_allowance.py.)"""
     for model in ("gpt-5", "gpt-5-mini", "gpt-5.5", "gemini-3.1-flash-lite"):
         est = worst_case_reservation(model=model, auth_kind="api_key", max_tokens=800)
         assert est > 0.0, f"{model} should be priced, not the unknown $0 path"
-        assert est < 1.0, f"{model} worst-case ${est:.4f} should stay under $1"
 
 
 # ---- _window_start ----------------------------------------------------------
