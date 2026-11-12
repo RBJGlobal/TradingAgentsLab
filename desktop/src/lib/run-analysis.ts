@@ -95,6 +95,7 @@ export async function runAnalysis(
       model: cgModel,
       auth_kind: providerConfig.auth.type,
       max_tokens: maxTokens,
+      provider: providerConfig.provider,
     };
     try {
       const reservation = await reserveCostGuard(reserveReq);

@@ -425,6 +425,9 @@ async def test_reasoning_budget_exhausted_fails_the_turn_visibly(monkeypatch):
     assert fake.complete_calls == 1  # not retried
     complete = events[-1]
     assert complete["type"] == "session.complete"
-    assert "aborted" in complete["decision"]["reasoning"].lower()
+    reasoning = complete["decision"]["reasoning"]
+    assert reasoning.startswith("Live debate stopped: the model spent its whole output budget")
+    assert "key" not in reasoning  # not the misleading "check your key" advice
+    assert "\u2014" not in reasoning and "\u2013" not in reasoning
     assert (complete["input_tokens"], complete["output_tokens"]) == (900, 400)
     assert complete["estimated_cost_usd"] > 0

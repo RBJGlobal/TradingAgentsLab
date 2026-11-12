@@ -136,3 +136,22 @@ def test_requires_bearer_token():
     with TestClient(app) as c:
         r = c.post("/llm/test", json={"provider_config": {}})
         assert r.status_code == 401
+
+
+def test_reasoning_budget_exhausted_counts_as_a_pass(client):
+    """A reasoning model that only thought (no text) still proves the key and
+    the model work: the provider accepted and billed the request."""
+    from engine.llm_providers import ReasoningBudgetExhausted
+
+    mock_adapter = MagicMock()
+    mock_adapter.open = AsyncMock()
+    mock_adapter.close = AsyncMock()
+    mock_adapter.complete = AsyncMock(side_effect=ReasoningBudgetExhausted(5, 1201))
+    with patch("engine.server.adapter_for", return_value=mock_adapter):
+        r = client.post("/llm/test", json={"provider_config": {
+            "provider": "anthropic", "auth": {"type": "api_key", "api_key": "sk-fake"},
+            "model": "claude-sonnet-5-5", "max_tokens": 1,
+        }})
+    body = r.json()
+    assert body["ok"] is True and body["model"] == "claude-sonnet-5-5"
+    mock_adapter.close.assert_awaited_once()

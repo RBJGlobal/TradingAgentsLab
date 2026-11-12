@@ -1794,7 +1794,7 @@ function CostGuardTab() {
           value={draftDaily}
           onChange={setDraftDaily}
           step={0.25}
-          placeholder="1.00"
+          placeholder="2.00"
         />
         <CostInputRow
           label="Weekly"

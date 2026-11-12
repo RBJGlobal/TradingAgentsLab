@@ -15,7 +15,7 @@ import asyncio
 import sys
 import time
 from contextlib import asynccontextmanager
-from typing import Annotated, Any
+from typing import Annotated, Any, Optional
 
 from fastapi import (
     Depends,
@@ -39,7 +39,7 @@ from .data_providers import (
     provider_from_data_config,
 )
 from .live_debate import ProviderConfig, SentimentBlock, live_debate
-from .llm_providers import adapter_for
+from .llm_providers import ReasoningBudgetExhausted, adapter_for
 from . import cost_guard, local_llm_detect, sentiment_sources, storage
 from . import webhooks as webhook_dispatcher
 from .stub_debate import canned_debate
@@ -250,6 +250,7 @@ def build_app(*, token: str) -> FastAPI:
             model=req.model,
             auth_kind=req.auth_kind,
             max_tokens=req.max_tokens,
+            provider=req.provider,
         )
         return cost_guard.check_result_to_dict(result)
 
@@ -257,9 +258,16 @@ def build_app(*, token: str) -> FastAPI:
     async def llm_test(req: LLMTestRequest) -> dict[str, Any]:
         """Validate stored LLM credentials with a 1-token completion.
 
-        Explicit-trigger only (Settings → "Test connection" per row).
-        Under ~$0.0001 per test for API-key providers; skips CostGuard
-        entirely because this is a credential ping, not a debate.
+        Explicit-trigger only (Settings → "Test connection" per row). Skips
+        CostGuard because this is a credential ping, not a debate. Cost: a
+        fraction of a cent for most models. A reasoning model gets the
+        thinking allowance on top of the 1-token budget (up to 1,201 output
+        tokens), so one test can cost up to about 1,200 output tokens at that
+        model's rate (e.g. about $0.06 at a $50 per 1M output price).
+
+        A reasoning model that spends the whole budget thinking raises
+        ReasoningBudgetExhausted; that still proves the key and model work
+        (the provider accepted and billed the request), so it is a pass.
 
         OAuth credentials live in the Electron main process and never
         reach the renderer, so OAuth is rejected here on principle;
@@ -285,6 +293,11 @@ def build_app(*, token: str) -> FastAPI:
                 model=config.model,
                 max_tokens=1,
             )
+            elapsed_ms = int((time.monotonic() - started) * 1000)
+            return {"ok": True, "model": config.model, "ms": elapsed_ms}
+        except ReasoningBudgetExhausted:
+            # The model answered with only reasoning: credentials and model
+            # are fine, which is all this endpoint checks.
             elapsed_ms = int((time.monotonic() - started) * 1000)
             return {"ok": True, "model": config.model, "ms": elapsed_ms}
         except Exception as exc:  # noqa: BLE001 — surface whatever blew up
@@ -474,6 +487,7 @@ def build_app(*, token: str) -> FastAPI:
                 auth_kind=req.auth_kind,
                 max_tokens=req.max_tokens,
                 override=req.override,
+                provider=req.provider,
             )
         except cost_guard.CostGuardBlocked as exc:
             # 402 Payment Required — semantic match for "you can't afford
@@ -660,6 +674,7 @@ def build_app(*, token: str) -> FastAPI:
                             auth_kind=config.auth_kind,
                             max_tokens=config.max_tokens,
                             override=False,
+                            provider=config.provider,
                         )
                         reservation_id = auto.reservation_id
                     except cost_guard.CostGuardBlocked as exc:
@@ -869,6 +884,9 @@ class CostGuardCheckRequest(BaseModel):
     # downstream cost-guard logic in agreement.
     auth_kind: str = Field(pattern=r"^(api_key|oauth|local)$")
     max_tokens: int = Field(default=400, ge=1, le=8000)
+    # Optional (older renderers don't send it): decides the thinking
+    # allowance for reasoning models. Absent -> inferred from the model id.
+    provider: Optional[str] = Field(default=None, max_length=40)
 
 
 class CostGuardReserveRequest(CostGuardCheckRequest):

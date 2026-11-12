@@ -65,6 +65,9 @@ export interface CostGuardCheckRequest {
   model: string;
   auth_kind: 'api_key' | 'oauth' | 'local';
   max_tokens: number;
+  /** Lets the engine size the thinking allowance for reasoning models.
+   * Optional: the engine infers it from the model id when absent. */
+  provider?: string;
 }
 
 export interface CostGuardReserveRequest extends CostGuardCheckRequest {

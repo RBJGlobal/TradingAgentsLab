@@ -461,10 +461,14 @@ def test_estimate_cost_local_zero_cloud_ceiling():
 
 def test_costguard_worst_case_numbers_for_a_15_75_model():
     """Documents the numbers reported to the founder. 12 agents x 400 tokens
-    (the renderer's default max_tokens): 33,600 in + 4,800 out tokens."""
-    assert worst_case_reservation(model="claude-mythos-1", auth_kind="api_key", max_tokens=400) == pytest.approx(0.864)
+    (the renderer's default max_tokens): 33,600 in + 4,800 out tokens, for a
+    15/75 model that does NOT reason (an unknown OpenRouter vendor)."""
+    assert worst_case_reservation(model="mystery/model", auth_kind="api_key", max_tokens=400) == pytest.approx(0.864)
     # At the engine's 800-token hard cap: 60,000 in + 9,600 out.
-    assert worst_case_reservation(model="claude-mythos-1", auth_kind="api_key", max_tokens=800) == pytest.approx(1.62)
+    assert worst_case_reservation(model="mystery/model", auth_kind="api_key", max_tokens=800) == pytest.approx(1.62)
+    # An unknown Claude Mythos-class model reasons (thinking allowance):
+    # 12 x 600 + 66 x 1600 = 112,800 in; 12 x 1600 = 19,200 out -> $3.132.
+    assert worst_case_reservation(model="claude-mythos-1", auth_kind="api_key", max_tokens=400) == pytest.approx(3.132)
 
 
 # ---- Review follow-ups ------------------------------------------------------
