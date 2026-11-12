@@ -180,7 +180,7 @@ Deletes a single session row. Returns `{"deleted": true, "id": "..."}` on succes
 
 Persistence is **strictly post-stream**: the engine captures the WS event sequence in memory while it streams, and writes a single SQLite row only after `session.complete` is sent (and only when one is sent — aborted streams via the renderer's Stop button do *not* persist). Failures to write are logged to stderr and silently ignored — the user already saw the debate, so persistence is best-effort, not contract.
 
-Storage backend: SQLite at `<repo>/data/sessions.db` with WAL mode + `PRAGMA synchronous=NORMAL`. Override the path with the `TAL_SESSIONS_DB` env var. The DB file is gitignored. Schema version 1; older schemas are upgraded in place by `_ensure_initialized()`, newer schemas refuse to write (the engine will refuse to clobber a file from a future version).
+Storage backend: SQLite at `<repo>/data/sessions.db` (dev) with WAL mode + `PRAGMA synchronous=NORMAL`. Override the path with the `TAL_SESSIONS_DB` env var. The packaged desktop app sets it to `<userData>/sessions.db` so history survives app updates (see `desktop/electron/sessions-db.ts`; before v1.1.5 the file lived inside the app bundle and was replaced on every update). The DB file is gitignored. Schema version 1; older schemas are upgraded in place by `_ensure_initialized()`, newer schemas refuse to write (the engine will refuse to clobber a file from a future version).
 
 ### `GET /watchlist`
 
