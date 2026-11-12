@@ -61,7 +61,7 @@ OAuth and Local sessions **skip** the three USD caps but **do count** against th
 
 Before a live debate kicks off, the renderer:
 
-1. **Estimates worst-case cost** for the session (assumes every agent maxes out its output budget, transcript grows triangularly across agents). For a **reasoning model** the output budget per agent includes its thinking allowance (1,200 extra tokens on top of the answer budget), because thinking is billed as output. Only the visible answers count toward the growing transcript, since the next agents never see the thinking.
+1. **Estimates worst-case cost** for the session (assumes every agent maxes out its output budget, transcript grows triangularly across agents). For a **reasoning model** the output budget per agent includes its thinking allowance (1,200 extra tokens on top of the answer budget), because thinking is billed as output. The growing transcript is budgeted at the same full size: the provider does not split that room between thinking and answer, so a model that thinks briefly can write a longer answer, and every later agent reads it.
 2. **POSTs `/cost-guard/reserve`** with `{model, auth_kind, max_tokens, provider}` (`provider` is optional; the engine works it out from the model name when it is missing).
 3. If the reservation succeeds → the debate proceeds with a `reservation_id` threaded on the WebSocket start frame.
 4. If the reservation fails with `CostGuardBlocked` → the **Cost Guard modal** opens.

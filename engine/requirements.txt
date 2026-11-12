@@ -2,6 +2,15 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 websockets>=14.0
 yfinance>=0.2.63
-openai>=1.50.0
-anthropic>=0.40.0
-google-genai>=1.0.0
+# openai: the adapters pass `reasoning_effort` and `max_completion_tokens` as
+# typed Chat Completions parameters (incl. the "none" effort documented for
+# gpt-5.1). Floor = the version the code was built and tested against.
+openai>=2.36.0
+# anthropic: `output_config` (effort) is a typed messages.create parameter in
+# 0.100.0, the version tested; the earliest release that added it could not
+# be determined offline, so the tested version is the floor.
+anthropic>=0.100.0
+# google-genai: only GenerateContentConfig.max_output_tokens and
+# usage_metadata.thoughts_token_count (read defensively with getattr) are
+# needed; 2.0.0 is the tested version.
+google-genai>=2.0.0

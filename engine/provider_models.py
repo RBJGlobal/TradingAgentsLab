@@ -326,15 +326,24 @@ def parse_openrouter_reasoning(body: object) -> dict[str, dict[str, Any]]:
         # by default (e.g. anthropic/claude-sonnet-4.6 lists "reasoning")
         # must not get the allowance: sending a reasoning object would TURN
         # thinking on and make every run cost more.
-        if info:
+        vendor = mid.split("/", 1)[0].lower()
+        has_default_signal = any(
+            k in info for k in ("mandatory", "default_enabled", "default_effort")
+        )
+        if info and has_default_signal:
             default_effort = str(info.get("default_effort") or "")
             capable = bool(
                 info.get("mandatory")
                 or info.get("default_enabled")
                 or (default_effort and default_effort != "none")
             )
-        elif listed:
-            vendor = mid.split("/", 1)[0].lower()
+        elif info and vendor in _KNOWN_REASONING_VENDORS:
+            # A reasoning object that says nothing about the DEFAULT (e.g.
+            # only supported_efforts): don't read that as "off". For vendors
+            # we know, our name rules decide (anthropic/claude-opus-5.5 must
+            # still get room to think, or the founder's failure returns).
+            capable = openrouter_name_reasons(mid)
+        elif info or listed:
             # For vendors we know, our own name rules say whether the model
             # thinks by default; for everyone else (qwen, deepseek, ...)
             # listing "reasoning" is the best signal we have.

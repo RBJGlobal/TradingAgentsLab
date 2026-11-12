@@ -124,6 +124,18 @@ async def test_anthropic_reads_only_text_blocks_after_a_leading_thinking_block()
 
 
 @pytest.mark.asyncio
+async def test_anthropic_empty_refusal_raises_clear_error():
+    from engine.llm_providers import ModelRefused
+
+    resp = SimpleNamespace(content=[], stop_reason="refusal",
+                           usage=SimpleNamespace(input_tokens=10, output_tokens=3))
+    with pytest.raises(ModelRefused) as exc:
+        await _anthropic_adapter(resp).complete(system="s", user="u", model="claude-sonnet-5-5", max_tokens=400)
+    assert str(exc.value) == "The model declined to answer this request."
+    assert (exc.value.input_tokens, exc.value.output_tokens) == (10, 3)
+
+
+@pytest.mark.asyncio
 async def test_anthropic_thinking_only_at_max_tokens_raises():
     resp = SimpleNamespace(
         content=[SimpleNamespace(type="thinking", thinking="...", signature="sig")],
@@ -159,20 +171,20 @@ async def test_openai_classic_models_keep_max_tokens_and_temperature(model):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("model,effort", [
-    ("gpt-5", "minimal"),
-    ("gpt-5-mini", "minimal"),
-    ("gpt-5-nano", "minimal"),
-    ("gpt-5.1", "none"),
-    ("gpt-5.5", "none"),
-    ("gpt-6.1-sol", "none"),
-    ("o4-mini", "low"),
-    ("o3", "low"),
+@pytest.mark.parametrize("model,effort,limit", [
+    ("gpt-5", "minimal", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("gpt-5-mini", "minimal", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("gpt-5-nano", "minimal", 400 + THINKING_ALLOWANCE_TOKENS),
+    # Effort "none" = no thinking, so no allowance.
+    ("gpt-5.1", "none", 400),
+    ("gpt-5.5", "none", 400),
+    ("gpt-6.1-sol", "none", 400),
+    ("o4-mini", "low", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("o3", "low", 400 + THINKING_ALLOWANCE_TOKENS),
 ])
-async def test_openai_reasoning_models_get_lowest_effort_and_max_completion_tokens(model, effort):
-    # Visible answer budget (400) + the thinking allowance.
+async def test_openai_reasoning_models_get_lowest_effort_and_max_completion_tokens(model, effort, limit):
     assert await _openai_kwargs(OpenAIAdapter(), model) == {
-        "max_completion_tokens": 400 + THINKING_ALLOWANCE_TOKENS, "reasoning_effort": effort,
+        "max_completion_tokens": limit, "reasoning_effort": effort,
     }
 
 
@@ -264,9 +276,19 @@ def _clean_runtime_reasoning():
     ("anthropic/claude-sonnet-5.5", {"max_tokens": _THINK, "extra_body": _LOW}),
     ("anthropic/claude-sonnet-4.6", {"max_tokens": 400, "temperature": 0.7}),
     ("anthropic/claude-haiku-4.5", {"max_tokens": 400, "temperature": 0.7}),
-    ("openai/gpt-5-mini", {"max_tokens": _THINK, "extra_body": _LOW}),
-    ("openai/gpt-5.5", {"max_tokens": _THINK, "extra_body": _LOW}),
+    # openai/*: exactly the direct OpenAI rules on the part after the slash.
+    ("openai/gpt-5-mini", {"max_tokens": _THINK,
+                           "extra_body": {"reasoning": {"effort": "minimal", "exclude": True}}}),
+    ("openai/gpt-5.1", {"max_tokens": 400,
+                        "extra_body": {"reasoning": {"effort": "none", "exclude": True}}}),
+    ("openai/gpt-5.5", {"max_tokens": 400,
+                        "extra_body": {"reasoning": {"effort": "none", "exclude": True}}}),
     ("openai/o4-mini", {"max_tokens": _THINK, "extra_body": _LOW}),
+    # -pro only accepts "high": room to think, no reasoning object.
+    ("openai/gpt-5-pro", {"max_tokens": _THINK}),
+    ("openai/o3-pro", {"max_tokens": _THINK}),
+    # -chat is not a reasoning model.
+    ("openai/gpt-5-chat", {"max_tokens": 400}),
     ("openai/gpt-4o-mini", {"max_tokens": 400, "temperature": 0.7}),
     ("google/gemini-2.5-flash", {"max_tokens": _THINK, "temperature": 0.7, "extra_body": _LOW}),
     ("google/gemini-2.0-flash", {"max_tokens": 400, "temperature": 0.7}),
@@ -291,12 +313,15 @@ async def test_openrouter_catalog_flag_gives_allowance_and_lowest_listed_effort(
 
 
 @pytest.mark.asyncio
-async def test_openrouter_never_sends_none_when_reasoning_is_mandatory(_clean_runtime_reasoning):
-    llm_providers.register_runtime_reasoning(
-        "acme/thinker", capable=True, efforts=["none", "low", "high"], mandatory=True,
-    )
-    kwargs = await _openai_kwargs(OpenRouterAdapter(), "acme/thinker")
-    assert kwargs["extra_body"]["reasoning"]["effort"] == "low"
+async def test_openrouter_never_sends_none_to_a_default_thinker(_clean_runtime_reasoning):
+    # "none" 400s on models that think by default, mandatory or not.
+    for mid, mandatory in (("acme/thinker", True), ("acme/optional-flag", False)):
+        llm_providers.register_runtime_reasoning(
+            mid, capable=True, efforts=["none", "low", "high"], mandatory=mandatory,
+        )
+        kwargs = await _openai_kwargs(OpenRouterAdapter(), mid)
+        assert kwargs["extra_body"]["reasoning"]["effort"] == "low", mid
+        assert kwargs["max_tokens"] == _THINK
     # Optional reasoning that the catalog marks not-by-default: no allowance.
     llm_providers.register_runtime_reasoning("acme/optional", capable=False)
     assert await _openai_kwargs(OpenRouterAdapter(), "acme/optional") == {
@@ -329,6 +354,8 @@ def _gemini_resp(text, finish="STOP", thoughts=0):
     ("gemini-2.5-flash", 400 + THINKING_ALLOWANCE_TOKENS),
     ("gemini-2.5-pro", 400 + THINKING_ALLOWANCE_TOKENS),
     ("gemini-3.1-flash-lite", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("gemini-flash-latest", 400 + THINKING_ALLOWANCE_TOKENS),
+    ("gemini-2.5-flash-lite", 400),  # does not think by default
     ("gemini-2.0-flash", 400),
 ])
 async def test_gemini_thinking_models_get_allowance(model, expected):

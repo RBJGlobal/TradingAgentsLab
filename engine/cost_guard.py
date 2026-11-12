@@ -231,13 +231,17 @@ def worst_case_reservation(
     # output, so that is what we reserve. Same function the adapters use to
     # size the request, so the two cannot drift.
     allowance = thinking_allowance(provider or infer_provider(model), model)
-    max_out_tokens = n * (max_tokens + allowance)
+    per_agent_out = max_tokens + allowance
+    max_out_tokens = n * per_agent_out
     # Input: per-agent ~600 tokens of fixed context, plus prior turns.
     # Sum over agents 0..n-1 of prior agents' output: 0+1+2+…+(n-1) = n*(n-1)/2.
-    # Only the VISIBLE answer (max_tokens) is in the transcript the next
-    # agents read; reasoning is not, so the growth stays on max_tokens.
+    # The growth uses the FULL per-agent output limit, allowance included:
+    # the provider doesn't split that limit between thinking and answer, so a
+    # model that thinks little can return all of it as visible text, and that
+    # text is replayed verbatim to every later agent. Anything smaller would
+    # not be a true upper bound.
     fixed_input_per_agent = 600
-    growth_input_tokens = (n * (n - 1) // 2) * max_tokens
+    growth_input_tokens = (n * (n - 1) // 2) * per_agent_out
     max_in_tokens = n * fixed_input_per_agent + growth_input_tokens
     return (max_in_tokens * rates["input"] + max_out_tokens * rates["output"]) / 1_000_000
 

@@ -34,6 +34,7 @@ from typing import AsyncIterator, Optional
 from .data_providers import Headline, QuoteSummary
 from .llm_providers import (
     LLMAdapter,
+    ModelRefused,
     ReasoningBudgetExhausted,
     ProviderConfig,
     adapter_for,
@@ -638,6 +639,8 @@ async def live_debate(
                             "output budget on hidden reasoning and returned no "
                             "text. Try a non-reasoning model."
                             if isinstance(exc, ReasoningBudgetExhausted)
+                            else "Live debate stopped: the model declined to answer this request."
+                            if isinstance(exc, ModelRefused)
                             else (
                                 f"Live debate aborted: {type(exc).__name__}. "
                                 f"Check the configured {config.provider} key and model availability."

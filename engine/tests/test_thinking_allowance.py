@@ -44,28 +44,39 @@ def test_allowance_constant():
     ("anthropic", "claude-opus-4-6", 0), ("anthropic", "claude-sonnet-4-6", 0),
     ("anthropic", "claude-sonnet-4-5", 0), ("anthropic", "claude-haiku-4-5-20251001", 0),
     # OpenAI.
-    ("openai", "gpt-5", A), ("openai", "gpt-5-mini", A), ("openai", "gpt-5.5", A),
+    ("openai", "gpt-5", A), ("openai", "gpt-5-mini", A),
     ("openai", "o4-mini", A), ("openai", "gpt-5-pro", A),
+    # gpt-5.1+ are sent reasoning_effort "none": no thinking, no allowance.
+    ("openai", "gpt-5.1", 0), ("openai", "gpt-5.5", 0),
     ("openai", "gpt-4o-mini", 0), ("openai", "gpt-4.1", 0), ("openai", "gpt-5-chat-latest", 0),
     # Gemini.
     ("gemini", "gemini-2.5-flash", A), ("gemini", "gemini-2.5-pro", A),
     ("gemini", "gemini-3.1-flash-lite", A), ("gemini", "gemini-2.0-flash", 0),
+    ("gemini", "gemini-2.5-flash-lite", 0),
+    ("gemini", "gemini-flash-latest", A), ("gemini", "gemini-pro-latest", A),
     # No change for these.
     ("xai", "grok-4.3", 0), ("minimax", "MiniMax-M2.7", 0), ("local", "gpt-5", 0),
     # OpenRouter by name (catalog not loaded).
     ("openrouter", "openai/gpt-5-mini", A), ("openrouter", "anthropic/claude-opus-5.5", A),
     ("openrouter", "anthropic/claude-sonnet-4.6", 0), ("openrouter", "google/gemini-2.5-pro", A),
     ("openrouter", "openai/gpt-4o-mini", 0), ("openrouter", "qwen/qwen3.8-2.4t-a95b", 0),
+    ("openrouter", "openai/gpt-5.1", 0), ("openrouter", "openai/gpt-5-chat", 0),
+    ("openrouter", "openai/gpt-5-pro", A), ("openrouter", "openai/o3-pro", A),
 ])
 def test_thinking_allowance_by_family(provider, model, expected):
     assert thinking_allowance(provider, model) == expected
 
 
-def test_openrouter_catalog_flag_wins_over_name_rules():
+def test_openrouter_catalog_flag_wins_over_name_rules_except_for_openai():
     llm_providers.register_runtime_reasoning("qwen/qwen3.8-2.4t-a95b", capable=True)
     assert thinking_allowance("openrouter", "qwen/qwen3.8-2.4t-a95b") == A
+    llm_providers.register_runtime_reasoning("anthropic/claude-opus-5.5", capable=False)
+    assert thinking_allowance("openrouter", "anthropic/claude-opus-5.5") == 0
+    # openai/* always follows the direct OpenAI rules, so both paths agree.
     llm_providers.register_runtime_reasoning("openai/gpt-5-mini", capable=False)
-    assert thinking_allowance("openrouter", "openai/gpt-5-mini") == 0
+    assert thinking_allowance("openrouter", "openai/gpt-5-mini") == A
+    llm_providers.register_runtime_reasoning("openai/gpt-5.1", capable=True)
+    assert thinking_allowance("openrouter", "openai/gpt-5.1") == 0
 
 
 @pytest.mark.parametrize("model,provider", [
@@ -94,6 +105,12 @@ def test_parse_openrouter_reasoning():
         {"id": "acme/optional", "reasoning": {"supported_efforts": ["low"], "default_enabled": False,
                                               "default_effort": "none"}},
         {"id": "openai/gpt-4o-mini", "supported_parameters": ["temperature"]},
+        # Reasoning object with NO default signal (only efforts): known
+        # vendors fall back to the name rules instead of reading it as "off".
+        {"id": "anthropic/claude-opus-5.5", "reasoning": {"supported_efforts": ["low", "high"]}},
+        {"id": "anthropic/claude-opus-4.8", "reasoning": {"supported_efforts": ["low", "high"]}},
+        # Unknown vendor with only efforts listed: it can reason, assume it does.
+        {"id": "acme/efforts-only", "reasoning": {"supported_efforts": ["low"]}},
     ]}
     info = provider_models.parse_openrouter_reasoning(body)
     assert info["qwen/qwen3.8-2.4t-a95b"]["capable"] is True
@@ -102,25 +119,31 @@ def test_parse_openrouter_reasoning():
     assert info["acme/always"] == {"capable": True, "efforts": ["none", "low", "high"], "mandatory": True}
     assert info["acme/optional"]["capable"] is False
     assert info["openai/gpt-4o-mini"]["capable"] is False
+    assert info["anthropic/claude-opus-5.5"]["capable"] is True
+    assert info["anthropic/claude-opus-4.8"]["capable"] is False
+    assert info["acme/efforts-only"]["capable"] is True
 
 
 # ---- CostGuard reservation --------------------------------------------------
 #
-# 12 agents. Input = 12 x 600 fixed + 66 x max_tokens of transcript growth
-# (reasoning is not in the transcript, so growth stays on max_tokens).
-# Output = 12 x (max_tokens + allowance).
+# 12 agents, per-agent output limit P = max_tokens + allowance.
+# Output = 12 x P. Input = 12 x 600 fixed + 66 x P of transcript growth: the
+# provider doesn't split P between thinking and answer, so a model that
+# thinks little can return all of P as visible text, which later agents read.
 
 
 @pytest.mark.parametrize("model,provider,expected", [
-    ("claude-fable-5-2", "anthropic", 1.0368),     # 8/40, thinks
-    ("claude-opus-5-5", "anthropic", 0.5184),      # 4/20, thinks
-    ("claude-sonnet-5-5", "anthropic", 0.2592),    # 2/10, thinks
-    ("claude-haiku-5-5", "anthropic", 0.0648),     # 0.5/2.5 ceiling row, thinks
+    ("claude-fable-5-2", "anthropic", 1.6704),     # 8/40, thinks
+    ("claude-fable-5", "anthropic", 2.088),        # 10/50, thinks
+    ("claude-opus-5-5", "anthropic", 0.8352),      # 4/20, thinks
+    ("claude-sonnet-5-5", "anthropic", 0.4176),    # 2/10, thinks
+    ("claude-haiku-5-5", "anthropic", 0.1044),     # 0.5/2.5 ceiling row, thinks
     ("claude-opus-4-8", "anthropic", 0.288),       # 5/25, no allowance
-    ("gpt-5", "openai", 0.8448),                   # 8/30, reasons
-    ("gpt-5.5", "openai", 1.104),                  # 10/40, reasons
+    ("gpt-5", "openai", 1.4784),                   # 8/30, reasons
+    ("gpt-5.1", "openai", 0.792),                  # gpt ceiling 15/60, effort none
+    ("gpt-5.5", "openai", 0.528),                  # 10/40, effort none
     ("openai/gpt-4o-mini", "openrouter", 0.00792), # first-party row, no allowance
-    ("claude-opus-9", "anthropic", 1.944),         # unknown 15/75 reasoning model
+    ("claude-opus-9", "anthropic", 3.132),         # unknown 15/75 reasoning model
 ])
 def test_reservation_numbers_at_400(model, provider, expected):
     est = worst_case_reservation(model=model, auth_kind="api_key", max_tokens=400, provider=provider)
@@ -131,17 +154,17 @@ def test_reservation_without_provider_infers_it():
     with_p = worst_case_reservation(model="claude-opus-5-5", auth_kind="api_key", max_tokens=400,
                                     provider="anthropic")
     without = worst_case_reservation(model="claude-opus-5-5", auth_kind="api_key", max_tokens=400)
-    assert with_p == without == pytest.approx(0.5184)
+    assert with_p == without == pytest.approx(0.8352)
 
 
-def test_allowance_is_output_only():
-    # Same model with and without the allowance: the difference is exactly
-    # 12 x 1200 output tokens at the output rate (4/20 -> $20 per 1M).
+def test_allowance_adds_output_and_transcript_growth():
+    # Same model with and without the allowance (4/20 per 1M): the difference
+    # is 12 x 1200 extra output tokens plus 66 x 1200 extra input tokens.
     base = worst_case_reservation(model="claude-opus-5-5", auth_kind="api_key", max_tokens=400,
                                   provider="xai")  # provider with no allowance
     full = worst_case_reservation(model="claude-opus-5-5", auth_kind="api_key", max_tokens=400,
                                   provider="anthropic")
-    assert full - base == pytest.approx(12 * A * 20 / 1_000_000)
+    assert full - base == pytest.approx((12 * A * 20 + 66 * A * 4) / 1_000_000)
 
 
 def test_oauth_and_local_still_zero():
@@ -162,15 +185,15 @@ def client(tmp_db):
 
 def test_reserve_endpoint_with_and_without_provider(client):
     body = {"model": "anthropic/claude-opus-5.5", "auth_kind": "api_key", "max_tokens": 400}
-    # Opus 5.5 via OpenRouter: first-party row 4/20, reasons -> $0.5184.
+    # Opus 5.5 via OpenRouter: first-party row 4/20, reasons -> $0.8352.
     without = client.post("/cost-guard/reserve", json=body)
     assert without.status_code == 200
-    assert without.json()["est_cost_usd"] == pytest.approx(0.5184)
+    assert without.json()["est_cost_usd"] == pytest.approx(0.8352)
     # (override: the first reservation is still pending, and two of these
     # would exceed the $1.00 daily default.)
     with_p = client.post("/cost-guard/reserve", json={**body, "provider": "openrouter", "override": True})
     assert with_p.status_code == 200
-    assert with_p.json()["est_cost_usd"] == pytest.approx(0.5184)
+    assert with_p.json()["est_cost_usd"] == pytest.approx(0.8352)
     # An explicit provider that has no allowance changes the number.
     xai = client.post("/cost-guard/check", json={**body, "model": "grok-4.3", "provider": "xai"})
     assert xai.status_code == 200
@@ -183,7 +206,7 @@ def test_check_endpoint_reports_allowance_and_blocks_a_pricey_reasoning_run(clie
     body = {"model": "claude-fable-5-2", "auth_kind": "api_key", "max_tokens": 400,
             "provider": "anthropic"}
     res = client.post("/cost-guard/check", json=body).json()
-    assert res["est_reservation_usd"] == pytest.approx(1.0368)
+    assert res["est_reservation_usd"] == pytest.approx(1.6704)
     # Above the shipped $1.00 daily cap: blocked unless the user overrides.
     assert res["allow"] is False and res["over_dimension"] == "daily"
 

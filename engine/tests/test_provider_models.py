@@ -467,8 +467,8 @@ def test_costguard_worst_case_numbers_for_a_15_75_model():
     # At the engine's 800-token hard cap: 60,000 in + 9,600 out.
     assert worst_case_reservation(model="mystery/model", auth_kind="api_key", max_tokens=800) == pytest.approx(1.62)
     # An unknown Claude Mythos-class model reasons (thinking allowance):
-    # 33,600 in + 12 x (400 + 1200) = 19,200 out -> $1.944.
-    assert worst_case_reservation(model="claude-mythos-1", auth_kind="api_key", max_tokens=400) == pytest.approx(1.944)
+    # 12 x 600 + 66 x 1600 = 112,800 in; 12 x 1600 = 19,200 out -> $3.132.
+    assert worst_case_reservation(model="claude-mythos-1", auth_kind="api_key", max_tokens=400) == pytest.approx(3.132)
 
 
 # ---- Review follow-ups ------------------------------------------------------
