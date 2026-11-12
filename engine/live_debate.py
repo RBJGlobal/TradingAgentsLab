@@ -609,6 +609,12 @@ async def live_debate(
                     max_tokens=config.max_tokens,
                 )
             except Exception as exc:  # noqa: BLE001 — convert any provider error into a stream event
+                # Some failures still consumed billed tokens (e.g. a
+                # reasoning model that spent its budget and returned no text,
+                # see ReasoningBudgetExhausted). Count them so the logged cost
+                # and the CostGuard finalize are not understated.
+                state.input_tokens += int(getattr(exc, "input_tokens", 0) or 0)
+                state.output_tokens += int(getattr(exc, "output_tokens", 0) or 0)
                 yield {
                     "type": "agent.message",
                     "agent": agent.name,
@@ -655,7 +661,8 @@ async def live_debate(
                 0.0
                 if free
                 else estimate_cost(
-                    config.model, state.input_tokens, state.output_tokens
+                    config.model, state.input_tokens, state.output_tokens,
+                    provider=config.provider,
                 )
             )
             yield {
@@ -666,7 +673,10 @@ async def live_debate(
                 "free": free,
             }
 
-        cost = estimate_cost(config.model, state.input_tokens, state.output_tokens)
+        cost = estimate_cost(
+            config.model, state.input_tokens, state.output_tokens,
+            provider=config.provider,
+        )
         duration = time.time() - started_at
         sys.stderr.write(
             f"[live_debate] provider={config.provider} auth={config.auth_kind} "
@@ -727,12 +737,15 @@ async def live_debate(
                 from . import cost_guard as _cost_guard
 
                 # Bill the actual partial cost on early exit; full cost on
-                # normal completion. OAuth always finalizes at 0.0.
+                # normal completion. OAuth and local always finalize at 0.0
+                # (local was $0 before only because its model names had no
+                # price row; now that unknown names get a ceiling, say so).
                 final_cost = (
                     0.0
-                    if config.auth_kind == "oauth"
+                    if config.auth_kind in ("oauth", "local")
                     else estimate_cost(
-                        config.model, state.input_tokens, state.output_tokens
+                        config.model, state.input_tokens, state.output_tokens,
+                        provider=config.provider,
                     )
                 )
                 _cost_guard.finalize_reservation(

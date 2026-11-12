@@ -50,7 +50,8 @@ The engine computes a per-session cost using a static **cost rate table** (`engi
 | API-key on any per-token-billed provider | Real token usage × rate table. Logged on `session.complete`. |
 | **OpenAI OAuth** (ChatGPT subscription) | **$0**. Subscription billing happens outside our app; we record 0 so the cost ledger only reflects per-token API spend. |
 | **Local LLM** (Ollama / LM Studio) | **$0**. Local sessions cost nothing in real dollars. |
-| **OpenRouter** | Recorded as `0.0` since model rates vary by underlying model and we don't track them. The rate cap (sessions-per-day) is what you'd use to discipline OpenRouter usage. |
+| **OpenRouter** | Priced at the rate OpenRouter publishes for that model, read when the model list loads. Before the list has loaded (for example right after the app starts), the model is priced from our own rate for the same vendor model, or from a deliberately high estimate if we have none. |
+| **A model newer than your copy of the app** | Priced from its model family at a deliberately high estimate (for example, $15 / $75 per million input / output tokens for an unknown Claude Opus class model). Never `0.0`: an unpriced model can make Cost Guard stop sooner, never later. A dated model name (such as `claude-haiku-4-5-20251001`) uses the rate of its plain name. |
 
 OAuth and Local sessions **skip** the three USD caps but **do count** against the sessions-per-day rate cap, even free runs benefit from quota discipline on runaway debate counts.
 

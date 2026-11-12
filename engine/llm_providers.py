@@ -73,13 +73,35 @@ _COST_PER_M_TOKENS: dict[str, dict[str, float]] = {
     "gpt-5-mini":          {"input": 1.00, "output": 4.00},
     "gpt-5":               {"input": 8.00, "output": 30.00},
     "gpt-5.5":             {"input": 10.00, "output": 40.00},
-    # Anthropic (refreshed 2026-07-30)
-    "claude-haiku-4-5":    {"input": 1.00,  "output": 5.00},
-    "claude-sonnet-4-5":   {"input": 3.00,  "output": 15.00},
+    # Anthropic first-party prices, refreshed 2026-11-11 from Anthropic's
+    # models reference (as of 2026-11-03). Ids are the aliases; a DATED id the
+    # API may return (e.g. claude-haiku-4-5-20251001) resolves to its alias
+    # row through `rates_for` below, so dated ids are never "unknown".
+    # Mythos 5.x is priced like Fable 5.x (per the coordinator's review,
+    # same reference). Mythos Preview is deprecated and believed to be priced
+    # ABOVE our 15/75 Claude ceiling (25/125, unverified), so it gets an
+    # explicit row and is excluded from discovery (provider_models).
+    "claude-mythos-preview": {"input": 25.00, "output": 125.00},
+    "claude-mythos-5-2":   {"input": 8.00,  "output": 40.00},
+    "claude-mythos-5-1":   {"input": 10.00, "output": 50.00},
+    "claude-mythos-5":     {"input": 10.00, "output": 50.00},
+    "claude-fable-5-2":    {"input": 8.00,  "output": 40.00},
+    "claude-fable-5-1":    {"input": 10.00, "output": 50.00},
+    "claude-fable-5":      {"input": 10.00, "output": 50.00},
+    "claude-opus-5-5":     {"input": 4.00,  "output": 20.00},
+    "claude-opus-5":       {"input": 5.00,  "output": 25.00},
+    "claude-opus-4-8":     {"input": 5.00,  "output": 25.00},
+    "claude-opus-4-7":     {"input": 5.00,  "output": 25.00},  # kept for saved preferences
+    "claude-opus-4-6":     {"input": 5.00,  "output": 25.00},
+    "claude-sonnet-5-5":   {"input": 2.00,  "output": 10.00},
+    "claude-sonnet-5":     {"input": 2.00,  "output": 10.00},
     "claude-sonnet-4-6":   {"input": 3.00,  "output": 15.00},
-    "claude-opus-4-7":     {"input": 15.00, "output": 75.00},  # kept for backward compat
-    "claude-opus-4-8":     {"input": 15.00, "output": 75.00},  # conservative ceiling; verify vs billing
-    "claude-fable-5":      {"input": 15.00, "output": 75.00},  # new model; conservative ceiling
+    "claude-sonnet-4-5":   {"input": 3.00,  "output": 15.00},  # deprecated, retires 2026-11-30
+    # Haiku 5.5 bills $0.10/$0.50 normally but $0.50/$2.50 above 100K-token
+    # prompts. We store the higher tier: this table is a ceiling, and a
+    # ceiling has to hold for the expensive case too.
+    "claude-haiku-5-5":    {"input": 0.50,  "output": 2.50},
+    "claude-haiku-4-5":    {"input": 1.00,  "output": 5.00},
     # Google Gemini
     "gemini-2.0-flash":    {"input": 0.10, "output": 0.40},
     "gemini-2.5-flash":    {"input": 0.30, "output": 2.50},
@@ -104,14 +126,170 @@ _COST_PER_M_TOKENS: dict[str, dict[str, float]] = {
     "MiniMax-M2.7":            {"input": 1.00, "output": 3.00},
     "MiniMax-M2.7-highspeed":  {"input": 1.00, "output": 3.00},
     "MiniMax-M2.5":            {"input": 1.00, "output": 3.00},
-    # OpenRouter (passthrough — actual cost depends on the underlying model;
-    # we record the model string with no rate and the engine logs zero,
-    # which the UI surfaces as "unknown".)
+    # OpenRouter ids ("vendor/model") are NOT listed here. Their price comes
+    # from OpenRouter's own catalog at discovery time (`register_runtime_rates`)
+    # or, failing that, from the vendor rules in `rates_for` below.
 }
 
 
-def estimate_cost(model: str, in_tokens: int, out_tokens: int) -> float:
+# ---- Rate resolution (one resolver for logging AND CostGuard) -------------
+#
+# Why one shared resolver: the cost log (`estimate_cost`) and the spend cap
+# (`cost_guard.worst_case_reservation`) used to look models up in the table
+# independently, and both returned $0 for anything missing. Live model
+# discovery makes "a model we have never priced" the normal case, so a $0
+# fallback would let a newly listed model walk straight past the spend cap.
+# Every unknown model now resolves to a conservative CEILING instead.
+# Over-estimating is the safe direction: CostGuard stops sooner, never later.
+
+# Prices learned from OpenRouter's /models catalog during discovery, keyed by
+# the exact OpenRouter id. In memory only: an engine restart empties it, and
+# the vendor rules below cover that gap until the next discovery call.
+_RUNTIME_RATES: dict[str, dict[str, float]] = {}
+
+# Family ceilings for models with no row. Deliberately at or above the most
+# expensive current model in each family.
+_CEIL_CLAUDE_TOP = {"input": 15.00, "output": 75.00}   # opus / fable / mythos / unrecognised claude
+_CEIL_CLAUDE_MID = {"input": 5.00, "output": 25.00}    # sonnet, haiku
+_CEIL_OPENAI = {"input": 15.00, "output": 60.00}       # gpt-*, o1/o3/o4...
+_CEIL_OPENAI_LEGACY_GPT4 = {"input": 60.00, "output": 120.00}  # gpt-4 / gpt-4-32k (pre-turbo)
+_CEIL_OPENAI_PREMIUM = {"input": 150.00, "output": 600.00}     # *-pro, deep-research, gpt-4.5
+_CEIL_GEMINI = {"input": 5.00, "output": 20.00}
+_CEIL_GROK = {"input": 5.00, "output": 15.00}
+# Anything else we cannot place (an unfamiliar OpenRouter vendor, a renamed
+# MiniMax model). Same as the most expensive family.
+_CEIL_UNKNOWN = {"input": 15.00, "output": 75.00}
+
+# OpenRouter vendor prefixes whose model part follows the first-party naming.
+_OPENROUTER_VENDORS = {"anthropic", "openai", "google", "x-ai"}
+
+_DATE_SUFFIX = re.compile(r"-\d{8}$")  # Anthropic-style snapshot: -20251001
+
+
+def normalize_model_id(model: str) -> str:
+    """Strip a trailing ``-YYYYMMDD`` snapshot date and a trailing ``-latest``.
+
+    ``claude-haiku-4-5-20251001`` -> ``claude-haiku-4-5``. Only the 8-digit
+    form is stripped on purpose: OpenAI's ``gpt-4o-2024-05-13`` style dates
+    can point at OLDER snapshots priced above the alias, so mapping them to the
+    alias row could under-reserve. Those fall to the family ceiling instead.
+    """
+    m = (model or "").strip()
+    if m.endswith("-latest"):
+        m = m[: -len("-latest")]
+    return _DATE_SUFFIX.sub("", m)
+
+
+def register_runtime_rates(model: str, *, input_per_m: float, output_per_m: float) -> None:
+    """Record a price learned at runtime (OpenRouter discovery)."""
+    _RUNTIME_RATES[model] = {"input": float(input_per_m), "output": float(output_per_m)}
+
+
+def _family_ceiling(model: str) -> Optional[dict[str, float]]:
+    """Conservative per-family ceiling for a model with no exact price row."""
+    m = model.lower()
+    if m.startswith("claude-"):
+        if "haiku" in m or "sonnet" in m:
+            return _CEIL_CLAUDE_MID
+        # opus, fable, mythos, and any Claude name we don't recognise yet.
+        return _CEIL_CLAUDE_TOP
+    # The original gpt-4 (and its -0613 / -0314 snapshots and -32k variant)
+    # costs MORE than every newer OpenAI chat model: $30/$60 per 1M, and
+    # $60/$120 for 32k. OpenAI still lists it, so the generic gpt ceiling
+    # would under-reserve it. (Found by scanning OpenRouter's catalog.)
+    if m == "gpt-4" or m.startswith("gpt-4-0") or m.startswith("gpt-4-32k"):
+        return _CEIL_OPENAI_LEGACY_GPT4
+    if m.startswith("gpt-") or re.match(r"^o\d", m):
+        # Premium tiers (gpt-5.5-pro at 30/180, o1-pro at 150/600, gpt-4.5
+        # at 75/150, deep-research...) cost far more than the generic gpt
+        # ceiling. Discovery filters them out of the picker, but a saved id,
+        # a Telegram config or a direct reserve call can still carry one, so
+        # the resolver itself must be safe for them.
+        if "-pro" in m or "deep-research" in m or m.startswith("gpt-4.5"):
+            return _CEIL_OPENAI_PREMIUM
+        return _CEIL_OPENAI
+    if m.startswith("gemini-"):
+        return _CEIL_GEMINI
+    if m.startswith("grok-"):
+        return _CEIL_GROK
+    return None
+
+
+def _table_lookup(model: str) -> Optional[dict[str, float]]:
+    """Exact row, then the date/-latest-normalized row."""
     rates = _COST_PER_M_TOKENS.get(model)
+    if rates is None:
+        rates = _COST_PER_M_TOKENS.get(normalize_model_id(model))
+    return rates
+
+
+def _openrouter_rates(model: str) -> dict[str, float]:
+    """Price an OpenRouter id (``vendor/model[:variant]``) we have no
+    catalog price for (e.g. right after an engine restart).
+
+    OpenRouter bills the vendor's own price, so for the four vendors we also
+    support first-party we reuse our first-party row (itself a ceiling).
+    Without this, the default ``openai/gpt-4o-mini`` would be priced at the
+    15/60 family ceiling, about 100x its real cost, and one run would eat the
+    daily cap. Unrecognised vendors get the top ceiling.
+    """
+    vendor, _, name = model.partition("/")
+    vendor = vendor.lower()
+    name = name.split(":", 1)[0]  # ":free" / ":beta" style variants
+    if vendor not in _OPENROUTER_VENDORS or not name:
+        return _CEIL_UNKNOWN
+    rates = _table_lookup(name)
+    if rates is None and vendor == "anthropic":
+        # OpenRouter writes Claude versions with dots (claude-sonnet-4.6);
+        # Anthropic's own ids use dashes (claude-sonnet-4-6).
+        rates = _table_lookup(name.replace(".", "-"))
+    if rates is not None:
+        return rates
+    return _family_ceiling(name) or _CEIL_UNKNOWN
+
+
+def rates_for(model: str, provider: Optional[str] = None) -> Optional[dict[str, float]]:
+    """Per-1M-token ``{"input", "output"}`` USD rates for ``model``, or None.
+
+    Resolution order (first hit wins):
+
+    1. exact row in ``_COST_PER_M_TOKENS``
+    2. the row for the date/-latest-normalized id
+    3. a price learned from OpenRouter's catalog (exact OpenRouter id)
+    4. ceilings: OpenRouter vendor rules for ``vendor/model`` ids, else the
+       model-family ceiling (claude / gpt / o-series / gemini / grok)
+
+    Returns None only when ``provider == "local"`` (on-device, always $0), or
+    when nothing matches AND no cloud ``provider`` is given. Callers that
+    know the run is per-token billed (``worst_case_reservation``, or
+    ``estimate_cost`` with a cloud provider) treat None as the top ceiling,
+    never as $0. OAuth runs are handled by the callers before this is reached
+    (subscription billed, $0).
+    """
+    if provider == "local":
+        return None
+    model = (model or "").strip()
+    rates = _table_lookup(model)
+    if rates is not None:
+        return rates
+    if model in _RUNTIME_RATES:
+        return _RUNTIME_RATES[model]
+    if "/" in model:
+        return _openrouter_rates(model)
+    rates = _family_ceiling(model)
+    if rates is not None:
+        return rates
+    return _CEIL_UNKNOWN if provider else None
+
+
+def estimate_cost(
+    model: str, in_tokens: int, out_tokens: int, *, provider: Optional[str] = None
+) -> float:
+    """USD estimate for a finished (or partial) run. Pass ``provider`` so an
+    unrecognised cloud model is priced at the ceiling instead of $0; local
+    runs are $0. Without a provider, a model nothing matches logs $0 (the
+    historical behaviour, kept for callers that cannot say)."""
+    rates = rates_for(model, provider)
     if rates is None:
         return 0.0
     return (in_tokens * rates["input"] + out_tokens * rates["output"]) / 1_000_000
@@ -286,6 +464,157 @@ def default_model_for(provider: str) -> str:
     return _DEFAULT_MODELS.get(provider, _DEFAULT_MODELS["openai"])
 
 
+# ---- Sampling parameters per model family ---------------------------------
+#
+# Why this exists: we used to send `temperature=0.7` to every model. Newer
+# models reject sampling parameters outright (HTTP 400), so a model the user
+# picked from the live list would fail on the very first agent. The rule is
+# an ALLOWLIST of older families that still accept temperature; anything
+# unknown or new gets the provider's default sampling (we omit the param).
+# Omitting is always accepted; sending is what breaks.
+
+_TEMPERATURE = 0.7
+
+# Anthropic: per Anthropic's API reference, Opus 4.7 and later, Fable 5.x,
+# Sonnet 5 / 5.5 and Haiku 5.5 reject (or only accept the default) sampling
+# params. These older ids still accept temperature. Compared after
+# `normalize_model_id`, so dated snapshots (claude-haiku-4-5-20251001) match.
+_ANTHROPIC_TEMPERATURE_OK = frozenset({
+    "claude-sonnet-4-6",
+    "claude-sonnet-4-5",
+    "claude-haiku-4-5",
+    "claude-opus-4-6",
+    "claude-opus-4-5",
+    "claude-opus-4-1",
+    "claude-opus-4-0",
+    "claude-opus-4",
+    "claude-sonnet-4-0",
+    "claude-sonnet-4",
+})
+
+
+def anthropic_accepts_temperature(model: str) -> bool:
+    m = normalize_model_id(model).lower()
+    # The whole Claude 3 generation (claude-3-5-haiku, claude-3-7-sonnet...).
+    return m in _ANTHROPIC_TEMPERATURE_OK or m.startswith("claude-3-")
+
+
+def openai_is_classic_chat_model(model: str) -> bool:
+    """gpt-4o / gpt-4.1 / gpt-4-turbo / gpt-3.5 style: accept `temperature`
+    and `max_tokens`. The gpt-5 family and the o-series are reasoning models:
+    they reject a non-default temperature and reject `max_tokens` in favour of
+    `max_completion_tokens` (the pinned openai SDK documents `max_tokens` as
+    "not compatible with o-series models")."""
+    m = (model or "").strip().lower()
+    return m.startswith("gpt-4") or m.startswith("gpt-3.5")
+
+
+def openai_reasoning_effort(model: str) -> Optional[str]:
+    """Lowest `reasoning_effort` an OpenAI reasoning model accepts, or None
+    to leave the parameter out.
+
+    Why: reasoning models spend hidden reasoning tokens out of the SAME
+    `max_completion_tokens` budget as the visible answer. With our small
+    per-agent budget (400 by default) a model on its default ("medium")
+    effort can spend everything on reasoning and return no text at all.
+    Asking for the least reasoning keeps the budget for the answer.
+
+    Per the pinned openai SDK (2.36) docs for `reasoning_effort`:
+    - models before gpt-5.1 default to "medium" and do NOT support "none";
+      the gpt-5 family (gpt-5, -mini, -nano) has "minimal";
+    - gpt-5.1 supports "none" (its default). We send "none" for gpt-5.1 and
+      later too (gpt-5.2+, gpt-6+): an assumption, since the SDK docs only
+      name gpt-5.1. If a later model rejects it, the run fails loudly with
+      a 400 rather than quietly;
+    - the o-series predates "minimal", so it gets "low";
+    - gpt-5-pro supports only "high" (its default), and the "-chat" models
+      are not reasoning models: leave the parameter out for both.
+    """
+    m = (model or "").strip().lower()
+    if "-pro" in m or "chat" in m:
+        return None
+    if re.match(r"^o\d", m):
+        return "low"
+    version = re.match(r"^gpt-(\d+)(?:\.(\d+))?", m)
+    if not version:
+        return None
+    major, minor = int(version.group(1)), int(version.group(2) or 0)
+    if major < 5:
+        return None
+    if major == 5 and minor == 0:
+        return "minimal"
+    return "none"
+
+
+def openai_sampling_kwargs(model: str, max_tokens: int) -> dict[str, Any]:
+    """Kwargs for direct OpenAI Chat Completions."""
+    if openai_is_classic_chat_model(model):
+        return {"max_tokens": max_tokens, "temperature": _TEMPERATURE}
+    out: dict[str, Any] = {"max_completion_tokens": max_tokens}
+    effort = openai_reasoning_effort(model)
+    if effort is not None:
+        out["reasoning_effort"] = effort
+    return out
+
+
+def _classic_sampling_kwargs(model: str, max_tokens: int) -> dict[str, Any]:
+    """The original shape, unchanged, for xAI / MiniMax / local runtimes."""
+    del model  # same for every model on these endpoints
+    return {"max_tokens": max_tokens, "temperature": _TEMPERATURE}
+
+
+def openrouter_sampling_kwargs(model: str, max_tokens: int) -> dict[str, Any]:
+    """OpenRouter forwards sampling params to the vendor, so a vendor that
+    rejects temperature rejects it here too. Apply the vendor's own rule to
+    the part after the slash. OpenRouter itself accepts `max_tokens` for
+    every model (its catalog lists it for openai/gpt-5 too), so the token
+    kwarg stays `max_tokens`."""
+    vendor, _, name = (model or "").partition("/")
+    vendor = vendor.lower()
+    name = name.split(":", 1)[0]
+    if vendor == "anthropic":
+        ok = anthropic_accepts_temperature(name.replace(".", "-"))
+    elif vendor == "openai":
+        ok = openai_is_classic_chat_model(name)
+    else:
+        ok = True  # other vendors: unchanged behaviour
+    out: dict[str, Any] = {"max_tokens": max_tokens}
+    if ok:
+        out["temperature"] = _TEMPERATURE
+    # Same reasoning-budget problem as direct OpenAI (see
+    # `openai_reasoning_effort`). OpenRouter's catalog lists
+    # `reasoning_effort` as supported for openai/gpt-5, -5-mini, -5.1 and
+    # -5.5, so we pass it for the gpt-5+ line only. The o-series on OpenRouter
+    # does not consistently list it (o3-pro doesn't), so it is left out there.
+    if vendor == "openai" and name.lower().startswith("gpt-"):
+        effort = openai_reasoning_effort(name)
+        if effort is not None:
+            out["reasoning_effort"] = effort
+    return out
+
+
+class ReasoningBudgetExhausted(RuntimeError):
+    """A reasoning model spent its whole output budget on hidden reasoning
+    and returned no visible text.
+
+    Raised instead of returning "" so the turn fails visibly (the debate
+    shows a "[live debate error]" message, and a first-agent failure aborts
+    the run) rather than "completing" with blank agents and a default
+    neutral stance. Carries the token usage, because those reasoning tokens
+    were still billed and CostGuard must count them.
+    """
+
+    USER_MESSAGE = (
+        "The model used its whole output budget on internal reasoning and "
+        "returned no text. Try a non-reasoning model."
+    )
+
+    def __init__(self, input_tokens: int = 0, output_tokens: int = 0) -> None:
+        super().__init__(self.USER_MESSAGE)
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+
+
 # ---- Adapter Protocol -----------------------------------------------------
 
 
@@ -348,6 +677,16 @@ class OpenAIAdapter:
                 pass
             self._client = None
 
+    def _sampling_kwargs(self, model: str, max_tokens: int) -> dict[str, Any]:
+        """Token-limit + sampling kwargs for direct OpenAI (api.openai.com).
+
+        Subclasses that talk to other OpenAI-compatible endpoints override
+        this (see `_classic_sampling_kwargs`), because those endpoints have
+        their own rules and the OpenAI-specific ones below must not leak
+        into them.
+        """
+        return openai_sampling_kwargs(model, max_tokens)
+
     async def complete(
         self,
         *,
@@ -360,17 +699,21 @@ class OpenAIAdapter:
             raise RuntimeError("adapter not opened")
         resp = await self._client.chat.completions.create(
             model=model,
-            max_tokens=max_tokens,
-            temperature=0.7,
+            **self._sampling_kwargs(model, max_tokens),
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
         )
-        choice = resp.choices[0].message.content or ""
+        first = resp.choices[0]
+        choice = first.message.content or ""
         usage = resp.usage
         in_tok = getattr(usage, "prompt_tokens", 0) if usage else 0
         out_tok = getattr(usage, "completion_tokens", 0) if usage else 0
+        if not choice.strip() and getattr(first, "finish_reason", None) == "length":
+            # Empty text AND cut off at the token limit: a reasoning model
+            # used the whole budget thinking. Fail the turn loudly.
+            raise ReasoningBudgetExhausted(in_tok, out_tok)
         return choice.strip(), in_tok, out_tok
 
 
@@ -385,6 +728,9 @@ class OpenRouterAdapter(OpenAIAdapter):
         "HTTP-Referer": "https://github.com/RBJGlobal/TradingAgentsLab",
         "X-Title": "TradingAgentsLab",
     }
+
+    def _sampling_kwargs(self, model: str, max_tokens: int) -> dict[str, Any]:
+        return openrouter_sampling_kwargs(model, max_tokens)
 
 
 # ---- xAI Grok + MiniMax adapters (OpenAI-compatible, API key only) --------
@@ -403,6 +749,10 @@ class XaiAdapter(OpenAIAdapter):
     # Own the dict per class so an in-place mutation never leaks across
     # providers via the shared OpenAIAdapter default. xAI needs no extras.
     _extra_headers: dict[str, str] = {}
+
+    def _sampling_kwargs(self, model: str, max_tokens: int) -> dict[str, Any]:
+        # xAI's own rules, not OpenAI's: keep the original request shape.
+        return _classic_sampling_kwargs(model, max_tokens)
 
 
 def _strip_think_blocks(text: str) -> str:
@@ -449,6 +799,9 @@ class MiniMaxAdapter(OpenAIAdapter):
     # Own the dict per class (see XaiAdapter). MiniMax needs no extra headers.
     _extra_headers: dict[str, str] = {}
 
+    def _sampling_kwargs(self, model: str, max_tokens: int) -> dict[str, Any]:
+        return _classic_sampling_kwargs(model, max_tokens)
+
     async def complete(
         self,
         *,
@@ -480,9 +833,8 @@ class LocalLLMAdapter(OpenAIAdapter):
     `__init__(base_url=...)`.
 
     Cost note: local LLM cost is treated as $0 by the engine (CostGuard
-    short-circuits the same way as OAuth). The estimate table in
-    `_COST_PER_M_TOKENS` doesn't carry an entry for the dynamic model
-    string a runtime returns, so `estimate_cost` returns 0.0 naturally.
+    short-circuits the same way as OAuth, and `rates_for(...,
+    provider="local")` returns None so `estimate_cost` logs 0.0).
     """
 
     name = "local"
@@ -496,6 +848,11 @@ class LocalLLMAdapter(OpenAIAdapter):
         # checks the instance dict first, so `open()` reading `self._base_url`
         # picks this up without further changes.
         self._base_url = base_url
+
+    def _sampling_kwargs(self, model: str, max_tokens: int) -> dict[str, Any]:
+        # Ollama / LM Studio: keep the original shape (some local runtimes
+        # don't understand `max_completion_tokens`).
+        return _classic_sampling_kwargs(model, max_tokens)
 
 
 # ---- OpenAI Codex adapter (OAuth / ChatGPT-subscription path) -------------
@@ -736,14 +1093,18 @@ class AnthropicAdapter:
         if self._client is None:
             raise RuntimeError("adapter not opened")
         # Anthropic puts the system prompt at the top level, NOT in messages.
-        # `max_tokens` is required (not optional like OpenAI).
-        resp = await self._client.messages.create(
-            model=model,
-            max_tokens=max_tokens,
-            temperature=0.7,
-            system=system,
-            messages=[{"role": "user", "content": user}],
-        )
+        # `max_tokens` is required (not optional like OpenAI). Temperature is
+        # sent only to older models that accept it; newer ones return HTTP
+        # 400 for sampling params (see `anthropic_accepts_temperature`).
+        kwargs: dict[str, Any] = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+        }
+        if anthropic_accepts_temperature(model):
+            kwargs["temperature"] = _TEMPERATURE
+        resp = await self._client.messages.create(**kwargs)
         # `resp.content` is a list of content blocks. For non-tool responses
         # we expect a single TextBlock; concatenate all text blocks defensively.
         parts: list[str] = []

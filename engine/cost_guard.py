@@ -62,7 +62,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterator, Literal, Optional
 
-from .llm_providers import _COST_PER_M_TOKENS
+from .llm_providers import _CEIL_UNKNOWN, rates_for
 from .live_debate import MAX_AGENTS_PER_SESSION
 
 
@@ -203,9 +203,12 @@ def worst_case_reservation(
     """Conservative upper-bound USD estimate for a single live debate.
 
     OAuth sessions always return 0.0 — they bill via subscription, not
-    per-token. Unknown models (e.g. OpenRouter passthrough) also return
-    0.0 so the cost cap doesn't block what we can't price; the rate cap
-    can still be set if the user wants quota discipline there.
+    per-token. Local runs are $0 too. Every per-token (api_key) model gets a
+    NON-ZERO estimate, including models we have never priced: live model
+    discovery means users can pick models released after this build, and a
+    $0 reservation would let them walk past the spend cap. `rates_for`
+    resolves an exact row, a dated-id alias, an OpenRouter catalog price, or
+    a conservative family ceiling; if even that fails we use the top ceiling.
 
     For known per-token models: assumes all 12 agents max out their output
     cap (the expensive direction) AND the input transcript grows
@@ -216,9 +219,7 @@ def worst_case_reservation(
     # local runs entirely on the user's machine. Skip the USD math.
     if auth_kind in ("oauth", "local"):
         return 0.0
-    rates = _COST_PER_M_TOKENS.get(model)
-    if rates is None:
-        return 0.0
+    rates = rates_for(model) or _CEIL_UNKNOWN
     n = MAX_AGENTS_PER_SESSION
     # Output: every agent maxes its budget. (Worst case.)
     max_out_tokens = n * max_tokens

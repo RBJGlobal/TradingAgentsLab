@@ -12,9 +12,9 @@ Trading Agents Lab supports seven LLM provider families. All seven can drive a r
 
 | Provider | Auth options | Default model | Notes |
 |---|---|---|---|
-| **OpenAI** | API key **or** ChatGPT OAuth | `gpt-4o-mini` (key) / `gpt-5.4` (OAuth) | OAuth routes through your ChatGPT subscription, not per-token API billing, see [oauth.md](oauth.md). |
+| **OpenAI** | API key **or** ChatGPT OAuth | `gpt-4o-mini` (key) / your account's current default (OAuth) | OAuth routes through your ChatGPT subscription, not per-token API billing, see [oauth.md](oauth.md). |
 | **Anthropic** | API key only | `claude-haiku-4-5` | OAuth is **not** supported, banned by Anthropic Terms of Service. |
-| **OpenRouter** | API key | `openrouter/auto` | One key, hundreds of models. Useful as a single-key multi-model fallback. |
+| **OpenRouter** | API key | `openai/gpt-4o-mini` | One key, hundreds of models. Useful as a single-key multi-model fallback. |
 | **Google Gemini** | API key | `gemini-2.0-flash` | Gemini 2.x and 3.x; 3.1 Flash-Lite is the GA cost-efficient pick. |
 | **xAI Grok** | API key | `grok-4.3` | Grok 4.3 plus the Grok 4.20 family. |
 | **MiniMax** | API key | `MiniMax-M2.7-highspeed` | MiniMax M2.x (Global region, 204K context). |
@@ -72,7 +72,21 @@ For the full OAuth flow + Codex backend technical details, see [oauth.md](oauth.
 
 When multiple providers are configured, the **Analyze page header** shows a "Run with" dropdown listing every connected provider plus the OpenAI OAuth row when present. The dropdown selection persists across sessions in `localStorage`.
 
-Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI account (OAuth) · gpt-5.4" and back will restore your previous picks for each.
+Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI account (OAuth) · gpt-6.1-sol" and back will restore your previous picks for each.
+
+### The model list is live
+
+The model dropdown shows the models your provider offers **right now**, not a list fixed when the app was built. When you open Analyze with an API-key provider selected (OpenAI, Anthropic, OpenRouter, Google Gemini, or xAI Grok), the app asks that provider for its current model list, so new models appear without an app update.
+
+- **Recommended** at the top: a short list we picked for the debate, limited to models the provider still offers. The model marked *(recommended)* is the one used when you have not chosen one.
+- **All available** below: every other text model the provider lists. OpenRouter lists hundreds.
+- A line under the dropdown says where the list came from: *live from* the provider, a *saved list* from the last time it loaded (with the reason, if the latest attempt failed), or the *built-in list* if the provider has never been reached (with the reason). **Refresh** asks the provider again.
+- Your chosen model is **never switched for you**. If the provider's list no longer shows it (for example, it now lists the same model under a dated name), it stays selected and appears at the top as *your saved choice*, or as *saved, not listed by provider* when the provider lists no model by that name at all (runs with it may then fail).
+- **Reasoning models** (such as OpenAI's gpt-5 line) are asked for their lowest reasoning effort, so the short per-agent answer budget goes to the answer. If a model still uses its whole budget on internal reasoning, that turn shows an error instead of a blank answer; pick a non-reasoning model in that case.
+- The request goes from the app's local engine straight to the provider you configured, with your own key, and only for the provider selected in the dropdown. Nothing is sent anywhere else, and the key is not stored by the engine.
+- **MiniMax** keeps its built-in list. **Local** runtimes list whatever you have installed (see [local-llm.md](local-llm.md)). The **OpenAI account (OAuth)** path has its own live list from your ChatGPT account (see [oauth.md](oauth.md)).
+
+Cost Guard still applies to a model that is newer than your copy of the app. Models the app has no price for are budgeted at a deliberately high estimate, so a new model can make Cost Guard stop sooner, never later. OpenRouter models are budgeted at the price OpenRouter publishes for them. See [cost-guard.md](cost-guard.md).
 
 If no provider is configured, the dropdown is disabled and debates run in **stub mode** (canned debate using real yfinance data, see [how-it-works.md](how-it-works.md)).
 
@@ -112,7 +126,7 @@ OAuth credentials are stored under a separate `oauth:openai` key prefix, with th
 | OpenAI OAuth · any Codex model | $0 (per-token) | Routes through your ChatGPT subscription. Subject to subscription rate limits, your plan tier determines how many debates per hour you can run. |
 | Anthropic · `claude-haiku-4-5` | ~$0.005-$0.01 | Cheap baseline. |
 | Anthropic · `claude-sonnet-4-6` | ~$0.03-$0.06 | Deeper reasoning. |
-| OpenRouter · `openrouter/auto` | varies | Auto-routes to cheapest capable model. |
+| OpenRouter · any model | varies | Budgeted at OpenRouter's published price for that model. |
 | Gemini · `gemini-3.0-flash` | ~$0.001-$0.005 | Cheap baseline. |
 
 The `session.complete` event in live mode carries `estimated_cost_usd`, `input_tokens`, and `output_tokens` for cost tracking. OAuth sessions report `estimated_cost_usd: 0` since billing is via subscription.
