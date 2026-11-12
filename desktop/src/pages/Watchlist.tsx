@@ -168,7 +168,7 @@ function Watchlist() {
           <h2 className={styles.emptyTitle}>Empty watchlist</h2>
           <p className={styles.emptyBody}>
             Add a ticker above to track it. The watchlist is local: it lives in{' '}
-            <code className={styles.code}>data/sessions.db</code> and never leaves
+            <code className={styles.code}>sessions.db</code> on this computer and never leaves
             your machine.
           </p>
         </div>

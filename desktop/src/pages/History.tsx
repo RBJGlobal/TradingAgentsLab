@@ -287,8 +287,8 @@ function History() {
         <h1 className={styles.pageTitle}>History</h1>
         <p className={styles.pageSubtitle}>
           Past debates the engine has saved. Each row is a completed session;
-          aborted runs are not stored. Sessions live in <code className={styles.code}>data/sessions.db</code>{' '}
-          next to the engine.
+          aborted runs are not stored. Sessions are saved on this computer in{' '}
+          <code className={styles.code}>sessions.db</code>, which is kept when the app updates.
         </p>
       </header>
 

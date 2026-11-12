@@ -38,7 +38,7 @@ CORS uses `allow_origins=["*"]` (see `engine/server.py`). This is intentional an
 }
 ```
 
-`engine_state` describes engine *capability*, not the most recent session: it is `"ready"` whenever the server is up. Whether a given session ran a stub or a live debate is reported per-session in the `session.complete` event (see WS contract below). `data_provider` reports the active `BaseDataProvider.name`. `live_supported` indicates the engine can run real-LLM debates when given a `provider_config`. `live_providers` is the allowlist the engine accepts; `live_default_models` shows the per-provider model the engine assumes when `provider_config` arrives without an explicit `model` field. `storage_path` reports where the engine writes persisted sessions — `<repo>/data/sessions.db` by default, overridable via the `TAL_SESSIONS_DB` env var.
+`engine_state` describes engine *capability*, not the most recent session: it is `"ready"` whenever the server is up. Whether a given session ran a stub or a live debate is reported per-session in the `session.complete` event (see WS contract below). `data_provider` reports the active `BaseDataProvider.name`. `live_supported` indicates the engine can run real-LLM debates when given a `provider_config`. `live_providers` is the allowlist the engine accepts; `live_default_models` shows the per-provider model the engine assumes when `provider_config` arrives without an explicit `model` field. `storage_path` reports where the engine writes persisted sessions: `<repo>/data/sessions.db` by default, overridable via the `TAL_SESSIONS_DB` env var. The packaged desktop app sets that variable, so installed builds report `<userData>/sessions.db`.
 
 ### `GET /data/summary?ticker=<X>&trade_date=<YYYY-MM-DD>`
 
@@ -180,7 +180,7 @@ Deletes a single session row. Returns `{"deleted": true, "id": "..."}` on succes
 
 Persistence is **strictly post-stream**: the engine captures the WS event sequence in memory while it streams, and writes a single SQLite row only after `session.complete` is sent (and only when one is sent — aborted streams via the renderer's Stop button do *not* persist). Failures to write are logged to stderr and silently ignored — the user already saw the debate, so persistence is best-effort, not contract.
 
-Storage backend: SQLite at `<repo>/data/sessions.db` with WAL mode + `PRAGMA synchronous=NORMAL`. Override the path with the `TAL_SESSIONS_DB` env var. The DB file is gitignored. Schema version 1; older schemas are upgraded in place by `_ensure_initialized()`, newer schemas refuse to write (the engine will refuse to clobber a file from a future version).
+Storage backend: SQLite at `<repo>/data/sessions.db` (dev) with WAL mode + `PRAGMA synchronous=NORMAL`. Override the path with the `TAL_SESSIONS_DB` env var. The packaged desktop app sets it to `<userData>/sessions.db` so history survives app updates (see `desktop/electron/sessions-db.ts`; before v1.1.5 the file lived inside the app bundle and was replaced on every update). The DB file is gitignored. Schema version 1; older schemas are upgraded in place by `_ensure_initialized()`, newer schemas refuse to write (the engine will refuse to clobber a file from a future version).
 
 ### `GET /watchlist`
 

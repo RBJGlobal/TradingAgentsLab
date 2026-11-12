@@ -46,7 +46,7 @@ The project also serves as a practical case study for **[Clawdemy.org](https://c
 | History |  |
 |:---:|:---:|
 | ![History](assets/screenshots/history.png) |  |
-| Every debate persisted to local SQLite at `data/sessions.db`. Browse past sessions, replay the full transcript, copy as Markdown. Aborted runs aren't stored. | |
+| Every debate persisted to a local SQLite file (`sessions.db`, kept across app updates). Browse past sessions, replay the full transcript, copy as Markdown. Aborted runs aren't stored. | |
 
 > 📸 *More captures (Analyst phase, Researcher phase, Settings tabs) live in [`assets/screenshots/`](assets/screenshots/) for documentation/marketing reuse. See the [capture spec](assets/screenshots/README.md) if you want to refresh them.*
 
@@ -304,7 +304,7 @@ This is an explicit design principle, not a marketing claim. Verifiable in the s
 - **Engine outbound calls** go only to providers you explicitly configure: Yahoo Finance (yfinance), Alpaca Markets (when keys configured), your chosen LLM provider (when keys configured), and any webhooks you set up in a future release.
 - **One soft external identifier**: when you use OpenRouter, our requests carry their recommended `HTTP-Referer` + `X-Title` courtesy headers (their service identifies our app to *them*; not your data to *us*).
 
-Your debates, your transcripts, your decisions, all stay on your machine in `data/sessions.db` (SQLite, plaintext, file-system-permissioned). Want at-rest encryption for transcripts? Store the repo on an encrypted volume (FileVault, BitLocker, LUKS).
+Your debates, your transcripts, your decisions, all stay on your machine in `sessions.db` (SQLite, plaintext, file-system-permissioned): `~/Library/Application Support/Trading Agents Lab/` for the installed app, `<repo>/data/` when running from source. Want at-rest encryption for transcripts? Keep it on an encrypted volume (FileVault, BitLocker, LUKS).
 
 ## Roadmap
 

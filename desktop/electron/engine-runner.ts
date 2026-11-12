@@ -2,6 +2,11 @@ import { spawn, ChildProcess } from 'node:child_process';
 import { readFileSync, unlinkSync } from 'node:fs';
 import path from 'node:path';
 import { app } from 'electron';
+import {
+  legacyBundleSessionsDbPath,
+  migrateLegacySessionsDb,
+  packagedSessionsDbPath,
+} from './sessions-db';
 
 export interface EngineHandshake {
   port: number;
@@ -105,11 +110,24 @@ export function startEngine(): Promise<EngineHandshake> {
   let engineCmd: string;
   let engineArgs: string[];
   let engineCwd: string;
+  // Extra env for the engine. Packaged builds point the database at userData
+  // so history and the spend ledger survive updates (see sessions-db.ts).
+  const engineEnv: Record<string, string> = {};
   if (app.isPackaged) {
     const engineDir = path.join(process.resourcesPath, 'engine');
     engineCmd = path.join(engineDir, 'tal-engine');
     engineArgs = [];
     engineCwd = engineDir;
+    const dbPath = packagedSessionsDbPath(app.getPath('userData'));
+    try {
+      const result = migrateLegacySessionsDb(legacyBundleSessionsDbPath(engineDir), dbPath);
+      if (result === 'migrated') process.stderr.write('[engine] copied sessions.db out of the app bundle\n');
+    } catch (err) {
+      // A failed copy must not stop the app: the engine starts with a fresh
+      // database in userData, and the bundle copy is left untouched.
+      process.stderr.write(`[engine] sessions.db migration failed: ${(err as Error).message}\n`);
+    }
+    engineEnv.TAL_SESSIONS_DB = dbPath;
   } else {
     const repoRoot = path.resolve(app.getAppPath(), '..');
     engineCmd = path.join(repoRoot, 'engine', '.venv', 'bin', 'python');
@@ -122,7 +140,7 @@ export function startEngine(): Promise<EngineHandshake> {
     cwd: engineCwd,
     stdio: ['ignore', 'pipe', 'pipe'],
     // Hand the engine the pidfile path so it records its own pid for reaping.
-    env: { ...process.env, TAL_ENGINE_PIDFILE: pidfilePath() },
+    env: { ...process.env, ...engineEnv, TAL_ENGINE_PIDFILE: pidfilePath() },
   });
 
   // Capture the spawned child in a local so the exit/timeout closures below

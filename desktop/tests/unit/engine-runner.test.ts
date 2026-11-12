@@ -20,10 +20,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Hoisted holder so the (hoisted) vi.mock factory can reach a per-test spawn
 // implementation set in beforeEach.
-const h = vi.hoisted(() => ({ spawnImpl: (() => {}) as (...a: unknown[]) => unknown }));
+const h = vi.hoisted(() => ({
+  spawnImpl: (() => {}) as (...a: unknown[]) => unknown,
+  isPackaged: false,
+}));
 
 vi.mock('electron', () => ({
   app: {
+    get isPackaged() {
+      return h.isPackaged;
+    },
     getAppPath: () => '/repo/desktop',
     getPath: () => '/tmp/tal-userdata',
   },
@@ -40,6 +46,10 @@ vi.mock('node:fs', () => ({
     throw new Error('ENOENT');
   },
   unlinkSync: () => {},
+  // sessions-db.ts migration: no bundle database exists in tests.
+  existsSync: () => false,
+  copyFileSync: () => {},
+  mkdirSync: () => {},
 }));
 
 interface FakeChild extends EventEmitter {
@@ -67,6 +77,7 @@ beforeEach(() => {
   vi.resetModules(); // fresh module-level state (child, handshakePromise, listeners)
   fakeChild = makeFakeChild();
   h.spawnImpl = () => fakeChild;
+  h.isPackaged = false;
 });
 
 afterEach(() => {
@@ -154,5 +165,36 @@ describe('post-handshake lifecycle', () => {
     // Second call returns the cached promise without spawning again.
     await startEngine();
     expect(spawnCount).toBe(1);
+  });
+});
+
+describe('database location (history must survive updates)', () => {
+  function spawnEnv(): Record<string, string | undefined> {
+    let env: Record<string, string | undefined> = {};
+    h.spawnImpl = (...args: unknown[]) => {
+      env = (args[2] as { env: Record<string, string | undefined> }).env;
+      return fakeChild;
+    };
+    return new Proxy({}, { get: (_t, k: string) => env[k] }) as Record<string, string | undefined>;
+  }
+
+  it('packaged builds point the engine database at userData, not the app bundle', async () => {
+    h.isPackaged = true;
+    (process as unknown as { resourcesPath: string }).resourcesPath = '/Applications/TAL.app/Contents/Resources';
+    const env = spawnEnv();
+    const { startEngine } = await import('../../electron/engine-runner');
+    void startEngine().catch(() => undefined);
+    expect(env.TAL_SESSIONS_DB).toBe('/tmp/tal-userdata/sessions.db');
+    expect(env.TAL_SESSIONS_DB).not.toContain('.app/');
+  });
+
+  it('dev builds leave the database at the repo default (no override)', async () => {
+    const before = process.env.TAL_SESSIONS_DB;
+    delete process.env.TAL_SESSIONS_DB;
+    const env = spawnEnv();
+    const { startEngine } = await import('../../electron/engine-runner');
+    void startEngine().catch(() => undefined);
+    expect(env.TAL_SESSIONS_DB).toBeUndefined();
+    if (before !== undefined) process.env.TAL_SESSIONS_DB = before;
   });
 });

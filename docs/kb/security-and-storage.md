@@ -10,8 +10,8 @@
 |---|---|---|---|
 | API keys | `<userData>/secrets.json` (`llm:*` prefix) | Encrypted ciphertext | OS keychain (safeStorage) |
 | OAuth tokens (OpenAI) | `<userData>/secrets.json` (`oauth:openai` key) | Encrypted JSON blob | OS keychain (safeStorage) |
-| Session history + transcripts | `<repo>/data/sessions.db` | SQLite | File-system permissions only |
-| Watchlist tickers | `<repo>/data/sessions.db` (`watchlist` table) | SQLite | File-system permissions only |
+| Session history + transcripts | `<userData>/sessions.db` (installed app) or `<repo>/data/sessions.db` (running from source) | SQLite | File-system permissions only |
+| Watchlist tickers | same `sessions.db` (`watchlist` table) | SQLite | File-system permissions only |
 | Engine sidecar process | spawned at runtime | n/a | Binds to 127.0.0.1 only; bearer token auth |
 
 ---
@@ -80,7 +80,12 @@ OAuth access tokens are short-lived (typically 1 hour). The OAuth service in the
 
 ## sessions.db: local debate history
 
-The engine writes every completed debate to SQLite at `<repo>/data/sessions.db`. This is **not encrypted**, it lives under your repo directory and is protected only by file-system permissions.
+The engine writes every completed debate to a SQLite file named `sessions.db`. This is **not encrypted** and is protected only by file-system permissions.
+
+- **Installed app (v1.1.5 and later):** `~/Library/Application Support/Trading Agents Lab/sessions.db`, next to `secrets.json`. This folder survives app updates, so your history and the Cost Guard spend record carry over from one version to the next.
+- **Running from source:** `<repo>/data/sessions.db`.
+
+> Before v1.1.5, the installed app kept this file inside the application bundle, so each update replaced it and history started over. v1.1.5 moved it out. History from earlier versions could not be carried over, because the update had already replaced the old file.
 
 What's stored per session:
 
@@ -94,9 +99,9 @@ What's stored per session:
 
 The database also holds your **Watchlist** tickers in a separate table.
 
-If you want this data to be encrypted at rest, store the repo on an encrypted volume (FileVault on macOS, BitLocker on Windows, LUKS on Linux). There is no per-session encryption today.
+If you want this data to be encrypted at rest, keep it on an encrypted volume (FileVault on macOS, BitLocker on Windows, LUKS on Linux). There is no per-session encryption today.
 
-To reset history: delete the `data/sessions.db` file. The engine recreates it on next start.
+To reset history: quit the app, then delete `sessions.db` from the location above, plus any `sessions.db-wal` and `sessions.db-shm` files beside it. The engine recreates it on next start. If you use the Telegram bot, its spend and chat-mode files (`telegram_spend.json`, `telegram_chat_modes.json`) sit in the same folder.
 
 ---
 
@@ -130,7 +135,7 @@ Because `safeStorage` encryption is machine- and user-bound, you cannot copy `se
 1. On your new machine, install Trading Agents Lab from scratch (see [getting-started.md](getting-started.md)).
 2. Open Settings and re-paste each API key from your password manager or the provider's dashboard.
 3. Re-connect OpenAI OAuth via the Connect button.
-4. Optionally, copy `data/sessions.db` from the old machine to preserve history.
+4. Optionally, copy `sessions.db` from the old machine (location above) to preserve history. Quit the app on both machines first.
 
 There is no automated secrets export/import feature today. Manual re-entry is the current migration path.
 
