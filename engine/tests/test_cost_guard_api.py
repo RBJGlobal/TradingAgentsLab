@@ -43,7 +43,7 @@ def test_state_returns_defaults_on_fresh_db(client):
     assert data["spend"]["monthly_usd"] == 0
     assert data["spend"]["sessions_today"] == 0
     assert data["config"]["enabled"] is True
-    assert data["config"]["cap_daily_usd"] == 1.00
+    assert data["config"]["cap_daily_usd"] == 2.00
     assert data["config"]["cap_weekly_usd"] == 5.00
     assert data["config"]["cap_monthly_usd"] == 15.00
 

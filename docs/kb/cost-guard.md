@@ -1,6 +1,6 @@
 # Cost Guard
 
-*Stacked daily / weekly / monthly USD caps and an optional sessions-per-day rate cap. Optional. Off by default. Override per-run.*
+*Stacked daily / weekly / monthly USD caps and an optional sessions-per-day rate cap. On by default ($2.00 a day, $5.00 a week, $15.00 a month for new installs). Override per-run.*
 
 > **For educational research and paper trading. This is not investment advice.**
 

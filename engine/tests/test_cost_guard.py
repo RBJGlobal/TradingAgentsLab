@@ -122,7 +122,7 @@ def test_initialize_seeds_default_config(tmp_db):
     initialize()
     config = get_config()
     assert config.enabled is True
-    assert config.cap_daily_usd == 1.00
+    assert config.cap_daily_usd == 2.00
     assert config.cap_weekly_usd == 5.00
     assert config.cap_monthly_usd == 15.00
     assert config.cap_sessions_per_day == 0
@@ -243,7 +243,7 @@ def test_check_allows_on_fresh_db(tmp_db):
     assert result.allow is True
     assert result.over_dimension is None
     assert result.current.daily_usd == 0
-    assert result.config.cap_daily_usd == 1.00
+    assert result.config.cap_daily_usd == 2.00
 
 
 def test_check_oauth_returns_zero_estimate(tmp_db):

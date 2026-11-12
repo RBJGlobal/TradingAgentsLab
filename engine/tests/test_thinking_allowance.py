@@ -202,12 +202,21 @@ def test_reserve_endpoint_with_and_without_provider(client):
     )
 
 
-def test_check_endpoint_reports_allowance_and_blocks_a_pricey_reasoning_run(client):
+def test_check_endpoint_reports_allowance_and_fits_the_default_cap(client):
     body = {"model": "claude-fable-5-2", "auth_kind": "api_key", "max_tokens": 400,
             "provider": "anthropic"}
     res = client.post("/cost-guard/check", json=body).json()
     assert res["est_reservation_usd"] == pytest.approx(1.6704)
-    # Above the shipped $1.00 daily cap: blocked unless the user overrides.
+    # Fits the shipped $2.00 daily cap (raised from $1.00 for exactly this case).
+    assert res["allow"] is True
+
+
+def test_check_endpoint_blocks_a_reasoning_run_above_the_default_cap(client):
+    body = {"model": "claude-fable-5", "auth_kind": "api_key", "max_tokens": 400,
+            "provider": "anthropic"}
+    res = client.post("/cost-guard/check", json=body).json()
+    assert res["est_reservation_usd"] == pytest.approx(2.088)
+    # Above the $2.00 daily cap: blocked unless the user overrides.
     assert res["allow"] is False and res["over_dimension"] == "daily"
 
 

@@ -77,7 +77,7 @@ _SCHEMA_DDL = """
 CREATE TABLE IF NOT EXISTS cost_guard_config (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     enabled INTEGER NOT NULL DEFAULT 1,
-    cap_daily_usd REAL NOT NULL DEFAULT 1.00,
+    cap_daily_usd REAL NOT NULL DEFAULT 2.00,
     cap_weekly_usd REAL NOT NULL DEFAULT 5.00,
     cap_monthly_usd REAL NOT NULL DEFAULT 15.00,
     cap_sessions_per_day INTEGER NOT NULL DEFAULT 0,
@@ -103,8 +103,12 @@ _SEED_CONFIG_SQL = """
 INSERT OR IGNORE INTO cost_guard_config (
     id, enabled, cap_daily_usd, cap_weekly_usd, cap_monthly_usd,
     cap_sessions_per_day, updated_at
-) VALUES (1, 1, 1.00, 5.00, 15.00, 0, ?);
+) VALUES (1, 1, 2.00, 5.00, 15.00, 0, ?);
 """
+# Default daily cap raised from $1.00 to $2.00 on 2026-11-11 (founder decision)
+# when reasoning models gained a thinking allowance: a single worst-case run on
+# Claude Fable 5.2 or gpt-5 reserves ~$1.5-1.7. INSERT OR IGNORE means this only
+# seeds NEW databases; existing users keep the caps they already have.
 
 
 # Reservations expire after this many seconds. Slowest realistic Anthropic
