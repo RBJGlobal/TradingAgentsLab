@@ -38,7 +38,7 @@ CORS uses `allow_origins=["*"]` (see `engine/server.py`). This is intentional an
 }
 ```
 
-`engine_state` describes engine *capability*, not the most recent session: it is `"ready"` whenever the server is up. Whether a given session ran a stub or a live debate is reported per-session in the `session.complete` event (see WS contract below). `data_provider` reports the active `BaseDataProvider.name`. `live_supported` indicates the engine can run real-LLM debates when given a `provider_config`. `live_providers` is the allowlist the engine accepts; `live_default_models` shows the per-provider model the engine assumes when `provider_config` arrives without an explicit `model` field. `storage_path` reports where the engine writes persisted sessions — `<repo>/data/sessions.db` by default, overridable via the `TAL_SESSIONS_DB` env var.
+`engine_state` describes engine *capability*, not the most recent session: it is `"ready"` whenever the server is up. Whether a given session ran a stub or a live debate is reported per-session in the `session.complete` event (see WS contract below). `data_provider` reports the active `BaseDataProvider.name`. `live_supported` indicates the engine can run real-LLM debates when given a `provider_config`. `live_providers` is the allowlist the engine accepts; `live_default_models` shows the per-provider model the engine assumes when `provider_config` arrives without an explicit `model` field. `storage_path` reports where the engine writes persisted sessions: `<repo>/data/sessions.db` by default, overridable via the `TAL_SESSIONS_DB` env var. The packaged desktop app sets that variable, so installed builds report `<userData>/sessions.db`.
 
 ### `GET /data/summary?ticker=<X>&trade_date=<YYYY-MM-DD>`
 

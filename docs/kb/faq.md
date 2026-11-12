@@ -132,7 +132,7 @@ Yes. Keys are encrypted by your OS keychain (Keychain on macOS, DPAPI on Windows
 
 ### Where is my debate history stored?
 
-Locally, in `<repo>/data/sessions.db` (SQLite). The History page reads from this file. Delete the file to wipe history. It is not encrypted at rest, store the repo on an encrypted volume (FileVault, BitLocker, LUKS) if you want at-rest encryption for transcripts.
+Locally, in a SQLite file named `sessions.db`. The installed app keeps it at `~/Library/Application Support/Trading Agents Lab/sessions.db`, a folder that survives app updates (since v1.1.5). Running from source, it is `<repo>/data/sessions.db`. The History page reads from this file. To wipe history, quit the app and delete `sessions.db` plus any `sessions.db-wal` and `sessions.db-shm` beside it. It is not encrypted at rest; keep it on an encrypted volume (FileVault, BitLocker, LUKS) if you want at-rest encryption for transcripts.
 
 ---
 

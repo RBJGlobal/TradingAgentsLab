@@ -101,7 +101,7 @@ The database also holds your **Watchlist** tickers in a separate table.
 
 If you want this data to be encrypted at rest, keep it on an encrypted volume (FileVault on macOS, BitLocker on Windows, LUKS on Linux). There is no per-session encryption today.
 
-To reset history: quit the app, then delete `sessions.db` from the location above. The engine recreates it on next start.
+To reset history: quit the app, then delete `sessions.db` from the location above, plus any `sessions.db-wal` and `sessions.db-shm` files beside it. The engine recreates it on next start. If you use the Telegram bot, its spend and chat-mode files (`telegram_spend.json`, `telegram_chat_modes.json`) sit in the same folder.
 
 ---
 

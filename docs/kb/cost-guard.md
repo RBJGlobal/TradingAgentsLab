@@ -130,7 +130,7 @@ Spend totals are **rolling windows**, not user-resettable values. They automatic
 - Weekly totals shed entries older than 7 days each midnight.
 - Monthly totals shed entries older than 30 days each midnight.
 
-There is **no manual reset**, by design, so spend history can't be wiped to dodge a cap. If you need to forget historical data entirely, you can delete `<userData>/data/sessions.db` (or specifically the `sessions` table). This is destructive and not recommended; debate history is the same DB.
+There is **no manual reset**, by design, so spend history can't be wiped to dodge a cap. If you need to forget historical data entirely, you can quit the app and delete `sessions.db` (plus any `sessions.db-wal` and `sessions.db-shm` beside it). The installed app keeps it at `~/Library/Application Support/Trading Agents Lab/sessions.db`; running from source, it is `<repo>/data/sessions.db`. See [security-and-storage.md](security-and-storage.md). This is destructive and not recommended; debate history is the same DB.
 
 ---
 

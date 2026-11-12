@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 /**
@@ -59,11 +59,21 @@ export function migrateLegacySessionsDb(legacyPath: string, targetPath: string):
   if (existsSync(targetPath)) return 'already-present';
   if (!existsSync(legacyPath)) return 'nothing-to-migrate';
   mkdirSync(path.dirname(targetPath), { recursive: true });
-  // Side files first, main file last: if we crash midway, the target main file
-  // does not exist yet and the next launch retries the whole copy.
+  // Leftover side files with no main database (e.g. a user deleted only
+  // sessions.db after an unclean quit) belong to a DIFFERENT database. SQLite
+  // would replay that stale WAL into the copy and corrupt it, so clear them.
+  for (const suffix of SQLITE_SIDE_SUFFIXES) {
+    rmSync(targetPath + suffix, { force: true });
+  }
+  // Side files first, main file last, and the main file lands via a temp name
+  // plus rename (atomic on the same filesystem). If we crash midway, the target
+  // main file does not exist yet, so the next launch retries the whole copy
+  // instead of opening a half-written database.
   for (const suffix of SQLITE_SIDE_SUFFIXES) {
     if (existsSync(legacyPath + suffix)) copyFileSync(legacyPath + suffix, targetPath + suffix);
   }
-  copyFileSync(legacyPath, targetPath);
+  const tmpPath = `${targetPath}.migrating`;
+  copyFileSync(legacyPath, tmpPath);
+  renameSync(tmpPath, targetPath);
   return 'migrated';
 }

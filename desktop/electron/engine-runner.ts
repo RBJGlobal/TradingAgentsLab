@@ -121,7 +121,7 @@ export function startEngine(): Promise<EngineHandshake> {
     const dbPath = packagedSessionsDbPath(app.getPath('userData'));
     try {
       const result = migrateLegacySessionsDb(legacyBundleSessionsDbPath(engineDir), dbPath);
-      if (result === 'migrated') process.stderr.write('[engine] moved sessions.db out of the app bundle\n');
+      if (result === 'migrated') process.stderr.write('[engine] copied sessions.db out of the app bundle\n');
     } catch (err) {
       // A failed copy must not stop the app: the engine starts with a fresh
       // database in userData, and the bundle copy is left untouched.

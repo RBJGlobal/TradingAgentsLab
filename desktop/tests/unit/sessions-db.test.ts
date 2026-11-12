@@ -74,6 +74,18 @@ describe('migrateLegacySessionsDb', () => {
     expect(existsSync(target)).toBe(false);
   });
 
+  it('clears stale side files from a different database before copying', () => {
+    const legacy = writeLegacy('history');
+    const target = packagedSessionsDbPath(userData);
+    mkdirSync(userData, { recursive: true });
+    writeFileSync(target + '-wal', 'stale wal from a deleted database');
+
+    expect(migrateLegacySessionsDb(legacy, target)).toBe('migrated');
+    expect(readFileSync(target, 'utf-8')).toBe('history');
+    expect(existsSync(target + '-wal')).toBe(false);
+    expect(existsSync(target + '.migrating')).toBe(false);
+  });
+
   it('is idempotent: a second launch leaves the migrated copy alone', () => {
     const legacy = writeLegacy('history');
     const target = packagedSessionsDbPath(userData);
