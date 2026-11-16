@@ -412,7 +412,7 @@ function SecretRowList({
 /** The two Alpaca rows plus their shared status. The keys are checked with
  * one read-only request when this tab opens and after either key is saved,
  * so "Connected" means Alpaca accepted them, not just that they are stored. */
-function AlpacaRows({
+export function AlpacaRows({
   listingByKey,
   disabled,
   onChange,
@@ -445,8 +445,8 @@ function AlpacaRows({
           ? await testAlpacaConnection({ keyId, secret })
           : ({
               ok: false,
-              status: 'missing',
-              detail: 'The stored keys could not be read. Paste them again.',
+              status: 'unreachable',
+              detail: 'The saved keys could not be read from secure storage.',
             } as const);
       if (!cancelled) setProbe({ phase: 'done', result });
     })();

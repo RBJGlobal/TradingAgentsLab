@@ -934,13 +934,15 @@ class AlpacaTestRequest(BaseModel):
     """The two Alpaca keys, read from the encrypted store by the renderer.
     Used only for the one probe request; never stored or logged."""
 
-    key_id: str = Field(default="", max_length=256)
-    secret: str = Field(default="", max_length=256)
+    # No max_length: FastAPI's 422 body would echo the value back.
+    # probe_alpaca_keys refuses over-long values itself, without echoing.
+    key_id: str = ""
+    secret: str = ""
 
 
 ALPACA_REJECTED_MESSAGE = (
-    "Alpaca rejected your saved keys, so this analysis has no Alpaca price "
-    "card or headlines. Check the keys in Settings, Data Providers."
+    "Alpaca rejected your saved keys, so this analysis runs without Alpaca "
+    "data. Check the keys in Settings, Data Providers."
 )
 
 

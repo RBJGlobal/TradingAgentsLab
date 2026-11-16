@@ -101,6 +101,22 @@ class AlpacaAuthError(DataUnavailable):
     """
 
 
+def _alpaca_keys_refused(status_code: int, body: str) -> bool:
+    """True when an Alpaca answer means the keys themselves were refused.
+
+    401 always is. 403 usually is, but Alpaca also answers 403 when a valid
+    free Basic key asks for SIP data newer than 15 minutes ("subscription does
+    not permit querying recent SIP data"), which can happen when the Mac's
+    clock runs fast. That is not a bad key, so it must not be reported as one.
+    """
+    if status_code == 401:
+        return True
+    if status_code == 403:
+        text = (body or "").lower()
+        return "subscription" not in text and "sip" not in text
+    return False
+
+
 class YFinanceProvider:
     """Default data provider — Yahoo Finance via the `yfinance` package.
 
@@ -371,7 +387,7 @@ class AlpacaProvider:
             ) from exc
         elapsed_ms = int((datetime.now(timezone.utc) - t0).total_seconds() * 1000)
 
-        if resp.status_code == 401 or resp.status_code == 403:
+        if _alpaca_keys_refused(resp.status_code, resp.text):
             sys.stderr.write(
                 f"[alpaca] bars AUTH-FAIL {symbol} status={resp.status_code} "
                 f"in {elapsed_ms}ms\n"
@@ -488,7 +504,7 @@ class AlpacaProvider:
             ) from exc
         elapsed_ms = int((datetime.now(timezone.utc) - t0).total_seconds() * 1000)
 
-        if resp.status_code in (401, 403):
+        if _alpaca_keys_refused(resp.status_code, resp.text):
             sys.stderr.write(
                 f"[alpaca] crypto bars AUTH-FAIL {spec.alpaca_symbol} "
                 f"status={resp.status_code} in {elapsed_ms}ms\n"
@@ -673,6 +689,10 @@ class AlpacaProvider:
         return headlines
 
 
+# Longest value the key check will send. Alpaca keys are far shorter.
+_ALPACA_KEY_MAX_LEN = 256
+
+
 async def probe_alpaca_keys(
     key_id: str, secret: str, *, timeout: float = 8.0
 ) -> dict[str, Any]:
@@ -703,6 +723,14 @@ async def probe_alpaca_keys(
             "status": "missing",
             "detail": "Both the Key ID and the Secret are needed.",
         }
+    if len(key_id) > _ALPACA_KEY_MAX_LEN or len(secret) > _ALPACA_KEY_MAX_LEN:
+        # Real Alpaca keys are a few dozen characters. Answer without a
+        # request, and without echoing the value anywhere.
+        return {
+            "ok": False,
+            "status": "rejected",
+            "detail": "These values are too long to be Alpaca keys.",
+        }
     url = f"{ALPACA_DATA_BASE_URL}/v1beta1/news"
     params = {"limit": "1", "include_content": "false"}
     headers = {
@@ -724,7 +752,7 @@ async def probe_alpaca_keys(
     sys.stderr.write(f"[alpaca] key check status={code}\n")
     if code == 200:
         return {"ok": True, "status": "connected", "detail": "Alpaca accepted the keys."}
-    if code in (401, 403):
+    if _alpaca_keys_refused(code, resp.text):
         return {
             "ok": False,
             "status": "rejected",

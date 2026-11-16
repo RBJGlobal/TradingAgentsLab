@@ -100,7 +100,7 @@ Request body: `{"key_id": "...", "secret": "..."}`. The keys are used for this o
 | `status` | Meaning |
 |---|---|
 | `connected` | Alpaca answered 200. The keys work. |
-| `rejected` | Alpaca answered 401 or 403. The keys do not work. |
+| `rejected` | Alpaca answered 401, or 403 for the keys themselves. The keys do not work. (A 403 about the data subscription, which a free key can get for too-recent prices, counts as `unreachable`.) |
 | `unreachable` | No answer, rate limited (429), or another status. The keys could not be checked, which is not proof they are bad. |
 | `missing` | One or both keys were empty. No request is made. |
 
@@ -363,11 +363,11 @@ Same shape as the `GET /data/summary` body, with a `type: "data.summary"` discri
   "type": "data.warning",
   "source": "alpaca",
   "reason": "rejected",
-  "message": "Alpaca rejected your saved keys, so this analysis has no Alpaca price card or headlines. Check the keys in Settings, Data Providers."
+  "message": "Alpaca rejected your saved keys, so this analysis runs without Alpaca data. Check the keys in Settings, Data Providers."
 }
 ```
 
-Sent in place of `data.summary` when the run's `data_config` is Alpaca and Alpaca answers 401 or 403. Not terminal: the analysis continues. "No bars for this ticker" does not trigger it. Persisted with the session's events.
+Sent in place of `data.summary` when the run's `data_config` is Alpaca and Alpaca refuses the keys (401, or a 403 that is not about the data subscription). Not terminal: the analysis continues. "No bars for this ticker" does not trigger it. Persisted with the session's events.
 
 ##### 3. `news.headlines` (best-effort, omitted if no headlines)
 

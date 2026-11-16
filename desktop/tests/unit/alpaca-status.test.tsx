@@ -93,7 +93,7 @@ describe('data.warning in the stream', () => {
     source: 'alpaca',
     reason: 'rejected',
     message:
-      'Alpaca rejected your saved keys, so this analysis has no Alpaca price card or headlines. Check the keys in Settings, Data Providers.',
+      'Alpaca rejected your saved keys, so this analysis runs without Alpaca data. Check the keys in Settings, Data Providers.',
   };
 
   it('is found among the events', () => {

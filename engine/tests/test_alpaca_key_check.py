@@ -143,6 +143,46 @@ async def test_bars_auth_failure_raises_alpaca_auth_error(ticker):
     assert isinstance(info.value, DataUnavailable)
 
 
+SIP_403 = '{"message":"subscription does not permit querying recent SIP data"}'
+
+
+@pytest.mark.asyncio
+async def test_free_tier_sip_403_is_not_an_auth_error():
+    """A valid free key asking for too-recent SIP bars (e.g. a fast clock)
+    gets 403 'subscription does not permit...'. That is not a bad key."""
+    with _MockAlpaca(lambda r: httpx.Response(403, text=SIP_403)):
+        with pytest.raises(DataUnavailable) as info:
+            await AlpacaProvider(KEY_ID, SECRET).quote_summary(
+                ticker="NVDA", trade_date="2026-11-13"
+            )
+    assert not isinstance(info.value, AlpacaAuthError)
+
+
+@pytest.mark.asyncio
+async def test_probe_subscription_403_is_not_rejected():
+    with _MockAlpaca(lambda r: httpx.Response(403, text=SIP_403)):
+        out = await probe_alpaca_keys(KEY_ID, SECRET)
+    assert out["status"] == "unreachable"
+
+
+@pytest.mark.asyncio
+async def test_probe_refuses_over_long_values_without_a_request():
+    long_value = "K" * 300
+    with _MockAlpaca(lambda r: httpx.Response(200, json={})) as m:
+        out = await probe_alpaca_keys(long_value, SECRET)
+    assert out["status"] == "rejected"
+    assert m.requests == []
+    assert long_value not in repr(out)
+
+
+def test_endpoint_never_echoes_an_over_long_value(client):
+    long_value = "S" * 5000
+    r = client.post("/data/alpaca/test", json={"key_id": KEY_ID, "secret": long_value})
+    assert r.status_code == 200
+    assert long_value not in r.text
+    assert r.json()["status"] == "rejected"
+
+
 @pytest.mark.asyncio
 async def test_no_bars_is_not_an_auth_error():
     with _MockAlpaca(lambda r: httpx.Response(200, json={"bars": []})):

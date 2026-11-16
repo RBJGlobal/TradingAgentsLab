@@ -67,7 +67,7 @@ When both values are saved, and each time you open the Data Providers tab, Tradi
 | **Not checked** | Alpaca could not be reached or asked to slow down, so the keys could not be checked. They may still work. Use **Check again** to retry. |
 | **Needs Secret** / **Needs Key ID** | Only one of the two values is saved. |
 
-If Alpaca rejects the keys during an analysis, the analysis still runs, and a notice at the top says that it has no Alpaca price card or headlines.
+If Alpaca rejects the keys during an analysis, the analysis still runs, and a notice at the top says that it is running without Alpaca data.
 
 ### What changes when Alpaca is connected
 
