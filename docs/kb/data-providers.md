@@ -56,6 +56,19 @@ Alpaca is used **for market data and news only**. The app connects only to Alpac
 
 Both values are stored in your operating system's encrypted credential store, like your LLM keys. See [security-and-storage.md](security-and-storage.md).
 
+### Checking the connection
+
+When both values are saved, and each time you open the Data Providers tab, Trading Agents Lab checks the keys with one read-only request to Alpaca (it costs nothing and works on the free plan). Both Alpaca rows then show the result:
+
+| Label | Meaning |
+|---|---|
+| **Connected ✓** | Alpaca accepted the keys. |
+| **Key rejected** | Alpaca refused the keys. This usually means the pair was regenerated or deleted on the Alpaca dashboard. Generate a new pair and paste both values again. |
+| **Not checked** | Alpaca could not be reached or asked to slow down, so the keys could not be checked. They may still work. Use **Check again** to retry. |
+| **Needs Secret** / **Needs Key ID** | Only one of the two values is saved. |
+
+If Alpaca rejects the keys during an analysis, the analysis still runs, and a notice at the top says that it is running without Alpaca data.
+
 ### What changes when Alpaca is connected
 
 As soon as both the Key ID and the Secret are saved, every new analysis uses Alpaca automatically. There is no separate switch to flip:

@@ -176,6 +176,40 @@
   border-color: rgba(63, 185, 80, 0.4);
 }
 
+/* Alpaca key check results. error = Alpaca rejected the keys (red);
+ * warning = could not check, or one key missing (amber). */
+.pill_error {
+  color: var(--tal-negative);
+  background: rgba(248, 81, 73, 0.12);
+  border-color: rgba(248, 81, 73, 0.4);
+}
+
+.pill_warning {
+  color: #d29922;
+  background: rgba(210, 153, 34, 0.12);
+  border-color: rgba(210, 153, 34, 0.4);
+}
+
+/* One line under the Alpaca rows: the check's explanation + Check again. */
+.alpacaStatus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tal-space-2) var(--tal-space-3);
+  margin-top: var(--tal-space-2);
+  padding: var(--tal-space-2) var(--tal-space-3);
+  border: 1px solid var(--tal-border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: var(--tal-radius-md);
+  font-size: var(--tal-text-sm);
+  color: var(--tal-text-secondary);
+}
+
+.alpacaStatusError {
+  border-color: rgba(248, 81, 73, 0.4);
+  color: var(--tal-text-primary);
+}
+
 .pill_planned {
   color: var(--tal-negative);
   background: rgba(248, 81, 73, 0.08);

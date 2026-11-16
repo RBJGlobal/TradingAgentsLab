@@ -87,6 +87,25 @@ Returns a compact view of recent OHLCV data anchored on `trade_date`. Response s
 
 Empty `headlines` list is a valid 200 response — never 404. 502 on provider errors.
 
+### `POST /data/alpaca/test`
+
+Checks a pair of Alpaca keys with one read-only request (one news item from `data.alpaca.markets`, which the free Basic plan always allows). Settings calls it when the Data Providers tab opens and after either Alpaca key is saved, so the Alpaca rows show **Connected** only when Alpaca accepts the keys.
+
+Request body: `{"key_id": "...", "secret": "..."}`. The keys are used for this one request only; they are never stored or logged by the engine.
+
+```json
+{ "ok": false, "status": "rejected", "detail": "Alpaca rejected these keys (HTTP 401)." }
+```
+
+| `status` | Meaning |
+|---|---|
+| `connected` | Alpaca answered 200. The keys work. |
+| `rejected` | Alpaca answered 401, or 403 for the keys themselves. The keys do not work. (A 403 about the data subscription, which a free key can get for too-recent prices, counts as `unreachable`.) |
+| `unreachable` | No answer, rate limited (429), or another status. The keys could not be checked, which is not proof they are bad. |
+| `missing` | One or both keys were empty. No request is made. |
+
+Always 200 (the result is in the body), except 401 without the bearer token.
+
 ### `POST /analyze`
 
 Phase 2/3 stub: returns a deterministic neutral committee assessment regardless of input.
@@ -336,6 +355,19 @@ Each line is a JSON object with a `type` discriminator. Order is deterministic.
 ##### 2. `data.summary` (best-effort, omitted if data fetch fails)
 
 Same shape as the `GET /data/summary` body, with a `type: "data.summary"` discriminator added.
+
+##### 2a. `data.warning` (only when the saved Alpaca keys are rejected)
+
+```json
+{
+  "type": "data.warning",
+  "source": "alpaca",
+  "reason": "rejected",
+  "message": "Alpaca rejected your saved keys, so this analysis runs without Alpaca data. Check the keys in Settings, Data Providers."
+}
+```
+
+Sent in place of `data.summary` when the run's `data_config` is Alpaca and Alpaca refuses the keys (401, or a 403 that is not about the data subscription). Not terminal: the analysis continues. "No bars for this ticker" does not trigger it. Persisted with the session's events.
 
 ##### 3. `news.headlines` (best-effort, omitted if no headlines)
 

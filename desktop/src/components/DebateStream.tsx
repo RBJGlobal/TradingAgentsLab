@@ -4,6 +4,7 @@ import type {
   AnalyzeDecision,
   QuoteSummary,
   Headline,
+  DataWarningEvent,
   NewsHeadlinesEvent,
 } from '../lib/engine-client';
 import Markdown from './Markdown';
@@ -106,6 +107,13 @@ function findSummary(events: DebateEvent[]): QuoteSummary | null {
     return summary as QuoteSummary;
   }
   return null;
+}
+
+/** The engine's notice when the saved Alpaca keys were rejected for this
+ * run. Exported for tests. */
+export function findDataWarning(events: DebateEvent[]): DataWarningEvent | null {
+  const ev = events.find((e) => e.type === 'data.warning');
+  return ev && ev.type === 'data.warning' ? ev : null;
 }
 
 function findHeadlines(events: DebateEvent[]): NewsHeadlinesEvent | null {
@@ -222,6 +230,7 @@ function DebateStream({ events, isStreaming }: DebateStreamProps) {
   const start = findStart(events);
   const summary = findSummary(events);
   const news = findHeadlines(events);
+  const dataWarning = findDataWarning(events);
   const groups = groupByPhase(events);
   const decision = findDecision(events);
   const meta = findDecisionMeta(events);
@@ -293,6 +302,12 @@ function DebateStream({ events, isStreaming }: DebateStreamProps) {
             </div>
           )}
         </header>
+      )}
+
+      {dataWarning && (
+        <div className={styles.dataWarning} role="status" data-testid="data-warning">
+          {dataWarning.message}
+        </div>
       )}
 
       {summary && (
