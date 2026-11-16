@@ -24,7 +24,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from datetime import date as date_t, datetime, timedelta, timezone
-from typing import Optional, Protocol
+from typing import Any, Optional, Protocol
 
 import httpx
 
@@ -89,6 +89,16 @@ class BaseDataProvider(Protocol):
 
 class DataUnavailable(RuntimeError):
     """Upstream data source returned no usable data for the request."""
+
+
+class AlpacaAuthError(DataUnavailable):
+    """Alpaca refused the stored keys (HTTP 401 or 403).
+
+    A subclass, so every existing `except DataUnavailable` still catches it.
+    It exists so a run can tell "your keys were rejected" apart from "no bars
+    for this ticker", and say so to the user instead of silently showing an
+    empty data card.
+    """
 
 
 class YFinanceProvider:
@@ -366,7 +376,7 @@ class AlpacaProvider:
                 f"[alpaca] bars AUTH-FAIL {symbol} status={resp.status_code} "
                 f"in {elapsed_ms}ms\n"
             )
-            raise DataUnavailable(
+            raise AlpacaAuthError(
                 f"alpaca rejected credentials ({resp.status_code}). "
                 "Check that you pasted PAPER keys (TradingAgentsLab connects only "
                 "to data.alpaca.markets — live keys won't work here)."
@@ -483,7 +493,7 @@ class AlpacaProvider:
                 f"[alpaca] crypto bars AUTH-FAIL {spec.alpaca_symbol} "
                 f"status={resp.status_code} in {elapsed_ms}ms\n"
             )
-            raise DataUnavailable(
+            raise AlpacaAuthError(
                 f"alpaca rejected credentials ({resp.status_code}) for crypto. "
                 "Check that you pasted PAPER keys."
             )
@@ -661,6 +671,76 @@ class AlpacaProvider:
             f"{len(headlines)} headlines in {elapsed_ms}ms\n"
         )
         return headlines
+
+
+async def probe_alpaca_keys(
+    key_id: str, secret: str, *, timeout: float = 8.0
+) -> dict[str, Any]:
+    """Check a pair of Alpaca keys with one read-only request.
+
+    Settings calls this (via POST /data/alpaca/test) so the Alpaca row shows
+    whether the keys actually work, not just that something is stored.
+
+    The request is the smallest one the free Basic tier always allows: one
+    news item from `data.alpaca.markets` (the same data-only base URL the
+    rest of this module uses; no trading or account endpoint is touched).
+    Bars are deliberately not used: a free key asking for recent SIP bars is
+    refused, which would make a valid key look rejected.
+
+    Returns {"ok", "status", "detail"} where status is:
+      - "connected":   Alpaca answered 200, the keys work.
+      - "rejected":    Alpaca answered 401/403, the keys do not work.
+      - "unreachable": no answer, rate limited, or an unexpected status, so
+                       the keys could not be checked (not proof they are bad).
+      - "missing":     one or both keys are empty.
+    Key values never appear in the result or in the log line.
+    """
+    key_id = (key_id or "").strip()
+    secret = (secret or "").strip()
+    if not key_id or not secret:
+        return {
+            "ok": False,
+            "status": "missing",
+            "detail": "Both the Key ID and the Secret are needed.",
+        }
+    url = f"{ALPACA_DATA_BASE_URL}/v1beta1/news"
+    params = {"limit": "1", "include_content": "false"}
+    headers = {
+        "APCA-API-KEY-ID": key_id,
+        "APCA-API-SECRET-KEY": secret,
+        "Accept": "application/json",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.get(url, params=params, headers=headers)
+    except Exception as exc:  # noqa: BLE001 — any network failure is "unreachable"
+        sys.stderr.write(f"[alpaca] key check UNREACHABLE ({type(exc).__name__})\n")
+        return {
+            "ok": False,
+            "status": "unreachable",
+            "detail": "Could not reach Alpaca to check the keys.",
+        }
+    code = resp.status_code
+    sys.stderr.write(f"[alpaca] key check status={code}\n")
+    if code == 200:
+        return {"ok": True, "status": "connected", "detail": "Alpaca accepted the keys."}
+    if code in (401, 403):
+        return {
+            "ok": False,
+            "status": "rejected",
+            "detail": f"Alpaca rejected these keys (HTTP {code}).",
+        }
+    if code == 429:
+        return {
+            "ok": False,
+            "status": "unreachable",
+            "detail": "Alpaca is rate limiting requests. Try again in a minute.",
+        }
+    return {
+        "ok": False,
+        "status": "unreachable",
+        "detail": f"Alpaca returned HTTP {code}, so the keys could not be checked.",
+    }
 
 
 def provider_from_data_config(

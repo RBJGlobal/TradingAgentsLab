@@ -40,6 +40,7 @@ import {
   refreshTelegramBotCredentials,
   startTelegramBot,
   stopTelegramBot,
+  testAlpacaConnection,
   testLLMConnection,
   type LLMProvider,
   type LLMTestResult,
@@ -47,6 +48,7 @@ import {
   type TelegramBotStatus,
   type TelegramPendingApproval,
 } from '../lib/engine-client';
+import { alpacaStatus, type AlpacaProbeState, type AlpacaStatus } from '../lib/alpaca-status';
 import {
   loadLocalConfig,
   saveLocalConfig,
@@ -88,7 +90,7 @@ const TABS: TabDef[] = [
     id: 'data',
     label: 'Data Providers',
     description:
-      'Where market data comes from. yfinance is the free default, no key required. Optionally connect Alpaca Markets for higher-quality real-time data.',
+      'Where market data comes from. yfinance is the free default, no key required. Optionally connect a free Alpaca Markets account for fuller news and a second price source.',
   },
   {
     id: 'webhooks',
@@ -204,9 +206,12 @@ const LLM_PROVIDERS: SecretRow[] = [
 // to go in our code: pasting a live key here will store it but the system
 // will error out at request time. Defense-in-depth via endpoint constants,
 // not a guard flag.
+const ALPACA_KEY_ID_SECRET = 'data:alpaca-key-id';
+const ALPACA_SECRET_SECRET = 'data:alpaca-secret';
+
 const DATA_PROVIDERS: SecretRow[] = [
   {
-    secretKey: 'data:alpaca-key-id',
+    secretKey: ALPACA_KEY_ID_SECRET,
     name: 'Alpaca Markets: Key ID',
     note: 'Public key for high-quality market data (APCA-API-KEY-ID). Looks like PKxxxxxxxxxxxxxxxx. Paste alongside the Secret below. Use a paper-trading key. Trading Agents Lab connects only to data + paper-read endpoints; live keys will not function.',
     pillLabel: 'Key ID',
@@ -214,7 +219,7 @@ const DATA_PROVIDERS: SecretRow[] = [
     placeholder: 'PKxxxxxxxxxxxxxxxx',
   },
   {
-    secretKey: 'data:alpaca-secret',
+    secretKey: ALPACA_SECRET_SECRET,
     name: 'Alpaca Markets: Secret',
     note: 'Data secret (APCA-API-SECRET-KEY). Shown once at key generation on the Alpaca dashboard. Regenerate the pair if you missed it.',
     pillLabel: 'Secret',
@@ -352,8 +357,7 @@ function Settings() {
           {active === 'data' && (
             <>
               <YfinanceRow />
-              <SecretRowList
-                rows={DATA_PROVIDERS}
+              <AlpacaRows
                 listingByKey={listingByKey}
                 disabled={!availability?.available}
                 onChange={refresh}
@@ -377,9 +381,18 @@ interface SecretRowListProps {
   listingByKey: Map<string, SecretListing>;
   disabled: boolean;
   onChange: () => void;
+  /** Replaces every row's pill (used by the Alpaca pair, whose status comes
+   * from a real key check rather than "a value is stored"). */
+  pillOverride?: Pill | null;
 }
 
-function SecretRowList({ rows, listingByKey, disabled, onChange }: SecretRowListProps) {
+function SecretRowList({
+  rows,
+  listingByKey,
+  disabled,
+  onChange,
+  pillOverride,
+}: SecretRowListProps) {
   return (
     <ul className={styles.list}>
       {rows.map((row) => (
@@ -389,9 +402,96 @@ function SecretRowList({ rows, listingByKey, disabled, onChange }: SecretRowList
           listing={listingByKey.get(row.secretKey) ?? null}
           disabled={disabled}
           onChange={onChange}
+          pillOverride={pillOverride}
         />
       ))}
     </ul>
+  );
+}
+
+/** The two Alpaca rows plus their shared status. The keys are checked with
+ * one read-only request when this tab opens and after either key is saved,
+ * so "Connected" means Alpaca accepted them, not just that they are stored. */
+function AlpacaRows({
+  listingByKey,
+  disabled,
+  onChange,
+}: Omit<SecretRowListProps, 'rows' | 'pillOverride'>) {
+  const keyIdListing = listingByKey.get(ALPACA_KEY_ID_SECRET) ?? null;
+  const secretListing = listingByKey.get(ALPACA_SECRET_SECRET) ?? null;
+  const bothStored = keyIdListing !== null && secretListing !== null;
+  const [probe, setProbe] = useState<AlpacaProbeState>({ phase: 'idle' });
+  const [nonce, setNonce] = useState(0);
+
+  // Re-check whenever either stored value changes (save, replace, delete) or
+  // the user asks. `updatedAt` changes on every save, so a replaced key is
+  // checked again without a page reload.
+  const keyIdStamp = keyIdListing?.updatedAt ?? null;
+  const secretStamp = secretListing?.updatedAt ?? null;
+  useEffect(() => {
+    if (!bothStored) {
+      setProbe({ phase: 'idle' });
+      return;
+    }
+    let cancelled = false;
+    setProbe({ phase: 'checking' });
+    void (async () => {
+      const [keyId, secret] = await Promise.all([
+        getSecret(ALPACA_KEY_ID_SECRET).catch(() => null),
+        getSecret(ALPACA_SECRET_SECRET).catch(() => null),
+      ]);
+      const result =
+        keyId && secret
+          ? await testAlpacaConnection({ keyId, secret })
+          : ({
+              ok: false,
+              status: 'missing',
+              detail: 'The stored keys could not be read. Paste them again.',
+            } as const);
+      if (!cancelled) setProbe({ phase: 'done', result });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [bothStored, keyIdStamp, secretStamp, nonce]);
+
+  const status: AlpacaStatus | null = alpacaStatus(
+    keyIdListing !== null,
+    secretListing !== null,
+    probe,
+  );
+
+  return (
+    <>
+      <SecretRowList
+        rows={DATA_PROVIDERS}
+        listingByKey={listingByKey}
+        disabled={disabled}
+        onChange={onChange}
+        pillOverride={status ? { label: status.label, variant: status.variant } : null}
+      />
+      {status && (status.detail || bothStored) && (
+        <div
+          className={`${styles.alpacaStatus} ${
+            status.variant === 'error' ? styles.alpacaStatusError : ''
+          }`}
+          data-testid="alpaca-status"
+          data-variant={status.variant}
+        >
+          {status.detail && <span>{status.detail}</span>}
+          {bothStored && (
+            <button
+              className={styles.rowAction}
+              onClick={() => setNonce((n) => n + 1)}
+              disabled={probe.phase === 'checking'}
+              type="button"
+            >
+              {probe.phase === 'checking' ? 'Checking…' : 'Check again'}
+            </button>
+          )}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -400,9 +500,11 @@ interface SecretRowItemProps {
   listing: SecretListing | null;
   disabled: boolean;
   onChange: () => void;
+  pillOverride?: Pill | null;
 }
 
-function SecretRowItem({ row, listing, disabled, onChange }: SecretRowItemProps) {
+function SecretRowItem({ row, listing, disabled, onChange, pillOverride }: SecretRowItemProps) {
+  const pill = pillOverride ?? pillState(row, listing);
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState('');
   const [busy, setBusy] = useState(false);
@@ -532,8 +634,11 @@ function SecretRowItem({ row, listing, disabled, onChange }: SecretRowItemProps)
         )}
       </div>
       <div className={styles.rowAside}>
-        <span className={`${styles.pill} ${styles[`pill_${pillState(row, listing).variant}`]}`}>
-          {pillState(row, listing).label}
+        <span
+          className={`${styles.pill} ${styles[`pill_${pill.variant}`]}`}
+          data-testid={`pill-${row.secretKey}`}
+        >
+          {pill.label}
         </span>
         {!editing && (
           <>
@@ -1219,10 +1324,14 @@ function AboutTab({ availability, secretsCount }: AboutTabProps) {
  * - listing != null otherwise → "Connected ✓" in green pill_success.
  * - listing == null → static label/variant from the row definition.
  */
-function pillState(
-  row: SecretRow,
-  listing: SecretListing | null,
-): { label: string; variant: 'default' | 'planned' | 'optional' | 'success' } {
+type PillVariant = 'default' | 'planned' | 'optional' | 'success' | 'error' | 'warning';
+
+interface Pill {
+  label: string;
+  variant: PillVariant;
+}
+
+function pillState(row: SecretRow, listing: SecretListing | null): Pill {
   if (!listing) {
     return { label: row.pillLabel, variant: row.pillVariant };
   }

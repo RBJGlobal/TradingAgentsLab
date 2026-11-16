@@ -31,11 +31,13 @@ from pydantic import BaseModel, Field
 
 from . import __version__
 from .data_providers import (
+    AlpacaAuthError,
     BaseDataProvider,
     DataUnavailable,
     Headline,
     QuoteSummary,
     default_provider,
+    probe_alpaca_keys,
     provider_from_data_config,
 )
 from .live_debate import ProviderConfig, SentimentBlock, live_debate
@@ -307,6 +309,16 @@ def build_app(*, token: str) -> FastAPI:
                 await adapter.close()
             except Exception:  # noqa: BLE001 — best-effort cleanup
                 pass
+
+    @app.post("/data/alpaca/test", dependencies=bearer)
+    async def alpaca_test(req: AlpacaTestRequest) -> dict[str, Any]:
+        """Check the user's Alpaca keys with one read-only data request.
+
+        Settings calls this when it opens and after either Alpaca key is
+        saved, so the row shows Connected only when Alpaca accepts the keys.
+        See `probe_alpaca_keys` for the request and the status values.
+        """
+        return await probe_alpaca_keys(req.key_id, req.secret)
 
     @app.post("/llm/models", dependencies=bearer)
     async def llm_models(req: LLMModelsRequest) -> dict[str, Any]:
@@ -593,11 +605,22 @@ def build_app(*, token: str) -> FastAPI:
             )
 
             # Best-effort data fetch; debate degrades gracefully if it fails.
+            summary_errors: list[BaseException] = []
             summary = await _fetch_summary_safe(
-                ticker=ticker, trade_date=trade_date, provider=data_provider
+                ticker=ticker,
+                trade_date=trade_date,
+                provider=data_provider,
+                errors=summary_errors,
             )
             if summary is not None:
                 evt = {"type": "data.summary", **_summary_to_dict(summary)}
+                await ws.send_json(evt)
+                captured_events.append(evt)
+            elif any(isinstance(e, AlpacaAuthError) for e in summary_errors):
+                # The user saved Alpaca keys and Alpaca refused them. Say so
+                # instead of leaving the data card silently empty. Not a
+                # terminal event: the analysis still runs.
+                evt = alpaca_rejected_warning()
                 await ws.send_json(evt)
                 captured_events.append(evt)
 
@@ -803,13 +826,19 @@ async def _fetch_summary_safe(
     ticker: str,
     trade_date: str,
     provider: BaseDataProvider | None = None,
+    errors: list[BaseException] | None = None,
 ) -> QuoteSummary | None:
+    """Fetch the quote summary, never raising. When `errors` is given, the
+    swallowed exception is appended to it so the caller can tell a rejected
+    Alpaca key (AlpacaAuthError) apart from "no data for this ticker"."""
     if not ticker or not trade_date:
         return None
     p = provider or default_provider
     try:
         return await p.quote_summary(ticker=ticker, trade_date=trade_date)
-    except Exception:  # noqa: BLE001 — never let data issues break the stream
+    except Exception as exc:  # noqa: BLE001 — never let data issues break the stream
+        if errors is not None:
+            errors.append(exc)
         return None
 
 
@@ -899,6 +928,30 @@ class LLMModelsRequest(BaseModel):
 
     provider_config: dict[str, Any]
     refresh: bool = False
+
+
+class AlpacaTestRequest(BaseModel):
+    """The two Alpaca keys, read from the encrypted store by the renderer.
+    Used only for the one probe request; never stored or logged."""
+
+    key_id: str = Field(default="", max_length=256)
+    secret: str = Field(default="", max_length=256)
+
+
+ALPACA_REJECTED_MESSAGE = (
+    "Alpaca rejected your saved keys, so this analysis has no Alpaca price "
+    "card or headlines. Check the keys in Settings, Data Providers."
+)
+
+
+def alpaca_rejected_warning() -> dict[str, Any]:
+    """The non-terminal stream event shown when Alpaca refuses the keys."""
+    return {
+        "type": "data.warning",
+        "source": "alpaca",
+        "reason": "rejected",
+        "message": ALPACA_REJECTED_MESSAGE,
+    }
 
 
 class LLMTestRequest(BaseModel):

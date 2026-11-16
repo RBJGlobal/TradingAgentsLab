@@ -401,8 +401,18 @@ export interface CostUsageEvent {
   free: boolean;
 }
 
+/** Non-terminal notice: the run's saved Alpaca keys were rejected, so it has
+ * no Alpaca price card or headlines. The analysis still runs. */
+export interface DataWarningEvent {
+  type: 'data.warning';
+  source: 'alpaca';
+  reason: 'rejected';
+  message: string;
+}
+
 export type DebateEvent =
   | { type: 'session.start'; ticker: string; trade_date: string }
+  | DataWarningEvent
   | ({ type: 'data.summary' } & QuoteSummary)
   | NewsHeadlinesEvent
   | { type: 'agent.message'; agent: string; phase: string; content: string }
@@ -671,6 +681,59 @@ export interface LocalRuntime {
   runtime: string;
   base_url: string;
   models: string[];
+}
+
+/** Result of POST /data/alpaca/test. `status` drives the Alpaca rows' pill in
+ * Settings: connected (green), rejected (red), unreachable (could not check),
+ * missing (one or both keys empty). `detail` is a user-facing sentence. */
+export interface AlpacaTestResult {
+  ok: boolean;
+  status: 'connected' | 'rejected' | 'unreachable' | 'missing';
+  detail: string;
+}
+
+/** 12s cap: the engine's own Alpaca timeout is 8s, plus handshake slack. */
+const ALPACA_TEST_TIMEOUT_MS = 12000;
+
+/**
+ * Check the user's Alpaca keys with one read-only data request (one news
+ * item from data.alpaca.markets). No cost; the free Basic tier allows it.
+ * Never throws: a failure to reach the engine or Alpaca is "unreachable".
+ */
+export async function testAlpacaConnection(args: {
+  keyId: string;
+  secret: string;
+}): Promise<AlpacaTestResult> {
+  const unreachable = (detail: string): AlpacaTestResult => ({
+    ok: false,
+    status: 'unreachable',
+    detail,
+  });
+  try {
+    const { port, token } = await handshake();
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ALPACA_TEST_TIMEOUT_MS);
+    try {
+      const res = await fetchWithTimeout(`http://127.0.0.1:${port}/data/alpaca/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ key_id: args.keyId, secret: args.secret }),
+        signal: controller.signal,
+      });
+      if (!res.ok) return unreachable(`The engine returned ${res.status} for the key check.`);
+      return (await res.json()) as AlpacaTestResult;
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      return unreachable('The key check timed out.');
+    }
+    return unreachable('Could not run the key check.');
+  }
 }
 
 export interface LLMTestResult {

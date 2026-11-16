@@ -75,6 +75,19 @@
   50% { opacity: 0.5; transform: scale(0.85); }
 }
 
+/* Non-terminal notice where the data card would be: the saved Alpaca keys
+   were rejected, so the run has no Alpaca data. Amber, not red: the
+   analysis still runs. */
+.dataWarning {
+  padding: var(--tal-space-3) var(--tal-space-4);
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  border-left-width: 3px;
+  border-radius: var(--tal-radius-md);
+  background: rgba(210, 153, 34, 0.08);
+  color: var(--tal-text-primary);
+  font-size: var(--tal-text-sm);
+}
+
 .summaryStrip {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
