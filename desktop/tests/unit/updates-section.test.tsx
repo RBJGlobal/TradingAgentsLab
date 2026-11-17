@@ -76,3 +76,38 @@ describe('UpdatesSection', () => {
     expect(await screen.findByText(/Update ready \(v0\.2\.0\)/)).toBeTruthy();
   });
 });
+
+describe('UpdatesSection when update checks are refused', () => {
+  it('says the check is not available and disables the button', async () => {
+    stub({ supported: true });
+    const bridge = (window as unknown as {
+      tradingAgentsLab: { updates: { getState: () => Promise<unknown> } };
+    }).tradingAgentsLab.updates;
+    bridge.getState = () =>
+      Promise.resolve({ autoUpdate: true, currentVersion: '1.1.6', supported: true, checksUnavailable: true });
+    render(<UpdatesSection />);
+    await waitFor(() => expect(screen.getByText(/Update check not available/)).toBeTruthy());
+    expect((screen.getByRole('button', { name: 'Check for updates' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/Update check not available/).textContent).not.toMatch(/[–—]/);
+  });
+
+  it('shows the refusal when main reports it as a status', async () => {
+    const { emit } = stub({ supported: true });
+    render(<UpdatesSection />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Check for updates' })).toBeTruthy());
+    act(() => emit({ state: 'unavailable', message: 'x' }));
+    expect(screen.getByText(/Update check not available/)).toBeTruthy();
+  });
+});
+
+describe('UpdatesSection disclosure', () => {
+  it('says what an update check sends, as ruled against the wire run', async () => {
+    stub({ supported: true });
+    render(<UpdatesSection />);
+    const text = await screen.findByText(/asks GitHub whether a newer version exists/);
+    expect(text.textContent).toContain('carries no ID for you or your install');
+    expect(text.textContent).toContain('your IP address and carries your system language');
+    expect(text.textContent).toContain('the download can name the version you have now');
+    expect(text.textContent).not.toMatch(/no identifiers|no information about you|[–—]/);
+  });
+});

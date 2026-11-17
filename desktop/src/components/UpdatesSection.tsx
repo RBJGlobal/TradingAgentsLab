@@ -14,6 +14,8 @@ interface UpdatesState {
   autoUpdate: boolean;
   currentVersion: string;
   supported: boolean;
+  /** True when the updater privacy hardening did not hold: every check is refused. */
+  checksUnavailable?: boolean;
 }
 interface UpdateStatus {
   state:
@@ -24,14 +26,27 @@ interface UpdateStatus {
     | 'downloading'
     | 'downloaded'
     | 'error'
-    | 'dev';
+    | 'dev'
+    | 'unavailable';
   version?: string;
   percent?: number;
   message?: string;
 }
 
-function statusLabel(status: UpdateStatus | null, supported: boolean): string {
+/** What an update check sends (wording ruled 2026-11-17 against the wire run). */
+export const UPDATE_CHECK_DISCLOSURE =
+  'Trading Agents Lab asks GitHub whether a newer version exists. The request carries no ID for you or your install, and it does not send the version you have. Like any web request it reaches GitHub from your IP address and carries your system language. When an update is downloaded, the download can name the version you have now.';
+
+export const UNAVAILABLE_LABEL =
+  'Update check not available. To update, download the latest version from tradingagentslab.ai.';
+
+function statusLabel(
+  status: UpdateStatus | null,
+  supported: boolean,
+  unavailable: boolean,
+): string {
   if (!supported) return 'Updates apply to the installed app (not this dev build).';
+  if (unavailable || status?.state === 'unavailable') return UNAVAILABLE_LABEL;
   switch (status?.state) {
     case 'checking':
       return 'Checking for updates…';
@@ -99,8 +114,9 @@ export default function UpdatesSection() {
   }, []);
 
   const supported = state?.supported ?? false;
-  const downloaded = status?.state === 'downloaded';
-  const label = statusLabel(status, supported);
+  const unavailable = state?.checksUnavailable === true || status?.state === 'unavailable';
+  const downloaded = status?.state === 'downloaded' && !unavailable;
+  const label = statusLabel(status, supported, unavailable);
 
   return (
     <div className={styles.section}>
@@ -109,14 +125,12 @@ export default function UpdatesSection() {
           type="checkbox"
           checked={state?.autoUpdate ?? true}
           onChange={onToggle}
-          disabled={!state}
+          disabled={!state || unavailable}
         />
         <span>Automatically check for updates</span>
       </label>
       <p className={styles.hint}>
-        The app checks our GitHub releases for a newer version. This is the only
-        update-related network call, it sends no information about you, and you
-        can turn it off here.
+        {UPDATE_CHECK_DISCLOSURE} You can turn the automatic check off here.
       </p>
       <div className={styles.actions}>
         {downloaded ? (
@@ -127,7 +141,7 @@ export default function UpdatesSection() {
           <button
             type="button"
             onClick={onCheck}
-            disabled={busy || !supported}
+            disabled={busy || !supported || unavailable}
             className={styles.checkBtn}
           >
             {busy ? 'Checking…' : 'Check for updates'}
