@@ -7,9 +7,15 @@
  * when the user's `autoUpdate` preference is on (default on). A manual
  * "Check for updates" works regardless of the auto setting (still packaged-only).
  *
- * Privacy: the only thing this does is an anonymous GET of our public release
- * manifest on GitHub. No identifiers are sent. Disclosed in the KB + the
- * first-launch consent gate. The user can disable the automatic check.
+ * Privacy: electron-updater 6.8.9 would make a random ID per install, keep it
+ * in <userData>/.updaterId, and send it as the header x-user-staging-id on
+ * every check. hardenUpdaterPrivacy (updater-privacy.ts, ported unchanged from
+ * Clawless Computer) removes that before anything else touches the updater:
+ * fixed all-zero ID that is never stored, header dropped from every request.
+ * If the hardening does not hold, this module refuses every check, download
+ * and install and tells the user (fail closed, never a silent skip). Disclosed
+ * in the KB + the first-launch consent gate. The user can disable the
+ * automatic check.
  *
  * NOTE: the actual update flow can only be exercised once CI publishes the
  * first release (Phase 7c.5). This module wires + guards it; it is a safe no-op
@@ -18,8 +24,14 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import electronUpdater from 'electron-updater';
 import { getAutoUpdate, setAutoUpdate } from './prefs';
+import { hardenUpdaterPrivacy } from './updater-privacy';
+import { removeLeftoverUpdaterIdFile } from './updater-id-file';
 
 const { autoUpdater } = electronUpdater;
+
+/** Shown when the privacy hardening did not hold and update checks are refused. */
+export const UPDATES_UNAVAILABLE_MESSAGE =
+  'Update checks are not available in this build. To update, download the latest version from tradingagentslab.ai.';
 
 type UpdateState =
   | 'idle'
@@ -29,7 +41,8 @@ type UpdateState =
   | 'downloading'
   | 'downloaded'
   | 'error'
-  | 'dev';
+  | 'dev'
+  | 'unavailable';
 
 let getWin: (() => BrowserWindow | null) | null = null;
 
@@ -43,8 +56,21 @@ function send(state: UpdateState, extra: Record<string, unknown> = {}): void {
 export function registerUpdater(getWindow: () => BrowserWindow | null): void {
   getWin = getWindow;
 
-  autoUpdater.autoDownload = true;
-  autoUpdater.autoInstallOnAppQuit = true;
+  // First, before any other updater setting or check: take the per-install ID
+  // out of every update request. If that does not hold, no update traffic runs.
+  const privacy = hardenUpdaterPrivacy(autoUpdater);
+  const checksUnavailable = !privacy.ok;
+  if (checksUnavailable) {
+    console.warn(`[updater] update checks refused: ${privacy.missing.join('; ')}`);
+  } else if (app.isPackaged) {
+    // An older build may have left the ID file; it is never read now, but a
+    // downgrade would send it again, so remove it.
+    removeLeftoverUpdaterIdFile(app.getPath('userData'));
+  }
+  const refuse = () => send('unavailable', { message: UPDATES_UNAVAILABLE_MESSAGE });
+
+  autoUpdater.autoDownload = !checksUnavailable;
+  autoUpdater.autoInstallOnAppQuit = !checksUnavailable;
   autoUpdater.on('checking-for-update', () => send('checking'));
   autoUpdater.on('update-available', (info) =>
     send('available', { version: info.version }),
@@ -69,7 +95,7 @@ export function registerUpdater(getWindow: () => BrowserWindow | null): void {
         'Restart now to update, or it will install automatically the next time you quit.',
     };
     const onChoice = (result: Electron.MessageBoxReturnValue) => {
-      if (result.response === 0) autoUpdater.quitAndInstall();
+      if (result.response === 0 && !checksUnavailable) autoUpdater.quitAndInstall();
     };
     const win = getWin?.();
     const prompt = win
@@ -85,6 +111,7 @@ export function registerUpdater(getWindow: () => BrowserWindow | null): void {
     autoUpdate: getAutoUpdate(),
     currentVersion: app.getVersion(),
     supported: app.isPackaged,
+    checksUnavailable,
   }));
   ipcMain.handle('updates:set-auto', (_e, enabled: boolean) =>
     setAutoUpdate(Boolean(enabled)),
@@ -93,6 +120,10 @@ export function registerUpdater(getWindow: () => BrowserWindow | null): void {
     if (!app.isPackaged) {
       send('dev');
       return { ok: false, reason: 'dev' };
+    }
+    if (checksUnavailable) {
+      refuse();
+      return { ok: false, reason: 'unavailable' };
     }
     try {
       await autoUpdater.checkForUpdates();
@@ -107,13 +138,19 @@ export function registerUpdater(getWindow: () => BrowserWindow | null): void {
     // downloaded update, and relaunches. The generic in-app Restart / Shut down
     // do NOT apply an update (only a true quit triggers autoInstallOnAppQuit),
     // which is confusing — so the UI offers an explicit "Restart & install".
+    if (checksUnavailable) {
+      refuse();
+      return;
+    }
     autoUpdater.quitAndInstall();
   });
 
   // Auto-check on launch AND periodically, when packaged and not opted out.
   // (Checking only at launch means a long-running app never notices updates.)
   // autoDownload pulls it in the background; update-downloaded pops the prompt.
-  if (app.isPackaged) {
+  if (app.isPackaged && checksUnavailable) {
+    refuse();
+  } else if (app.isPackaged) {
     const check = () => {
       if (!getAutoUpdate()) return;
       autoUpdater

@@ -17,6 +17,8 @@ export interface UpdatesStateBridge {
   currentVersion: string;
   /** False in dev/unpackaged — auto-update only works in a packaged app. */
   supported: boolean;
+  /** True when the updater privacy hardening did not hold: every check is refused. */
+  checksUnavailable?: boolean;
 }
 
 export type UpdateStatusState =
@@ -27,7 +29,8 @@ export type UpdateStatusState =
   | 'downloading'
   | 'downloaded'
   | 'error'
-  | 'dev';
+  | 'dev'
+  | 'unavailable';
 
 export interface UpdatesStatusBridge {
   state: UpdateStatusState;
