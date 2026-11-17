@@ -108,7 +108,10 @@ export function hardenUpdaterPrivacy(updater: unknown): UpdaterPrivacyResult {
   } catch (err) {
     // A library that throws on a read or refuses a change (a frozen object, a throwing getter) is a refusal,
     // never an exception in the caller: the caller's start-up must go on with update checks off.
-    missing.push(`updater: could not be changed (${err instanceof Error ? err.message : String(err)})`);
+    // Building the text can throw too (a message getter that throws, a thrown object with no prototype).
+    let why = 'unreadable error';
+    try { why = err instanceof Error ? String(err.message) : String(err); } catch { /* keep the fixed text */ }
+    missing.push(`updater: could not be changed (${why})`);
     return { ok: false, applied: { id: false, rollout: false, headers: false }, missing };
   }
 }

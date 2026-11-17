@@ -121,7 +121,7 @@ export default function UpdatesSection() {
           type="checkbox"
           checked={state?.autoUpdate ?? true}
           onChange={onToggle}
-          disabled={!state}
+          disabled={!state || unavailable}
         />
         <span>Automatically check for updates</span>
       </label>

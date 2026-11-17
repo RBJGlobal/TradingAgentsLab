@@ -9,7 +9,12 @@ const order: string[] = [];
 
 const fakeUpdater = {
   _autoDownload: false,
-  set autoDownload(v: boolean) { order.push('autoDownload'); this._autoDownload = v; },
+  _throwOnSet: false,
+  set autoDownload(v: boolean) {
+    order.push('autoDownload');
+    if (this._throwOnSet) throw new Error('frozen');
+    this._autoDownload = v;
+  },
   get autoDownload() { return this._autoDownload; },
   autoInstallOnAppQuit: false,
   on: vi.fn(),
@@ -23,7 +28,7 @@ const app = { isPackaged: true, getVersion: () => '1.1.6', getPath: () => '/fake
 
 vi.mock('electron', () => ({
   app,
-  dialog: { showMessageBox: vi.fn() },
+  dialog: { showMessageBox: vi.fn(() => Promise.resolve({ response: 0 })) },
   ipcMain: { handle: (ch: string, fn: (...a: unknown[]) => unknown) => handlers.set(ch, fn) },
   BrowserWindow: class {},
 }));
@@ -51,6 +56,7 @@ beforeEach(() => {
   sent.length = 0;
   order.length = 0;
   vi.clearAllMocks();
+  fakeUpdater._throwOnSet = false;
   vi.useFakeTimers();
 });
 afterEach(() => {
@@ -93,5 +99,28 @@ describe('registerUpdater', () => {
     expect(fakeUpdater.quitAndInstall).not.toHaveBeenCalled();
     expect(await handlers.get('updates:get-state')!()).toMatchObject({ checksUnavailable: true });
     expect(mod.UPDATES_UNAVAILABLE_MESSAGE).not.toMatch(/[–—]/);
+  });
+
+  it('when the hardening does not hold: the Restart now dialog cannot install', async () => {
+    harden.mockReturnValue({ ok: false, applied: { id: false, rollout: true, headers: true }, missing: ['x'] });
+    await register();
+    const onDownloaded = fakeUpdater.on.mock.calls.find((c) => c[0] === 'update-downloaded')?.[1] as
+      | ((info: { version: string }) => void)
+      | undefined;
+    expect(onDownloaded).toBeTypeOf('function');
+    onDownloaded!({ version: '9.9.9' });
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+    expect(fakeUpdater.quitAndInstall).not.toHaveBeenCalled();
+  });
+
+  it('a library object that refuses the updater settings is refused, not a crash', async () => {
+    harden.mockReturnValue({ ok: true, applied: { id: true, rollout: true, headers: true }, missing: [] });
+    fakeUpdater._throwOnSet = true;
+    await expect(register()).resolves.toBeDefined();
+    expect(fakeUpdater.checkForUpdates).not.toHaveBeenCalled();
+    expect(removeId).not.toHaveBeenCalled();
+    expect(sent.at(-1)?.payload.state).toBe('unavailable');
+    expect(await handlers.get('updates:get-state')!()).toMatchObject({ checksUnavailable: true });
   });
 });

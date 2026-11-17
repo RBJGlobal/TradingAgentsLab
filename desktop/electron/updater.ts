@@ -59,18 +59,25 @@ export function registerUpdater(getWindow: () => BrowserWindow | null): void {
   // First, before any other updater setting or check: take the per-install ID
   // out of every update request. If that does not hold, no update traffic runs.
   const privacy = hardenUpdaterPrivacy(autoUpdater);
-  const checksUnavailable = !privacy.ok;
+  let checksUnavailable = !privacy.ok;
+  const why = [...privacy.missing];
+  try {
+    autoUpdater.autoDownload = !checksUnavailable;
+    autoUpdater.autoInstallOnAppQuit = !checksUnavailable;
+  } catch {
+    // A library object that refuses these settings (frozen, a throwing
+    // setter) takes the refusal branch instead of throwing at start-up.
+    checksUnavailable = true;
+    why.push('autoDownload or autoInstallOnAppQuit could not be set');
+  }
   if (checksUnavailable) {
-    console.warn(`[updater] update checks refused: ${privacy.missing.join('; ')}`);
+    console.warn(`[updater] update checks refused: ${why.join('; ')}`);
   } else if (app.isPackaged) {
     // An older build may have left the ID file; it is never read now, but a
     // downgrade would send it again, so remove it.
     removeLeftoverUpdaterIdFile(app.getPath('userData'));
   }
   const refuse = () => send('unavailable', { message: UPDATES_UNAVAILABLE_MESSAGE });
-
-  autoUpdater.autoDownload = !checksUnavailable;
-  autoUpdater.autoInstallOnAppQuit = !checksUnavailable;
   autoUpdater.on('checking-for-update', () => send('checking'));
   autoUpdater.on('update-available', (info) =>
     send('available', { version: info.version }),

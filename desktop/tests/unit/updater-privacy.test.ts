@@ -166,6 +166,15 @@ describe('hardenUpdaterPrivacy', () => {
     expect(r.applied).toEqual({ id: false, rollout: false, headers: false });
     expect(r.missing.join(' ')).toContain('boom');
 
+    // Re-read LOW A on 15ca9a0: an error whose own text cannot be read is still a refusal.
+    for (const thrown of [Object.create(null), Object.defineProperty(new Error('x'), 'message', { get() { throw new Error('again'); } })]) {
+      const odd: any = shaped().u;
+      Object.defineProperty(odd, 'httpExecutor', { get() { throw thrown; } });
+      r = hardenUpdaterPrivacy(odd);
+      expect(r.ok).toBe(false);
+      expect(r.missing).toEqual(['updater: could not be changed (unreadable error)']);
+    }
+
     const setterThrows: any = shaped().u;
     Object.defineProperty(setterThrows, 'isUserWithinRollout', { get() { return () => false; }, set() { throw new Error('no'); }, configurable: true });
     r = hardenUpdaterPrivacy(setterThrows);
