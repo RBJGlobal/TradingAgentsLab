@@ -115,11 +115,12 @@ WebSocket authentication uses a query parameter (`?token=…`) because browsers 
 
 ## Update checks
 
-The installed app can check for new versions automatically. This is the one network call the app itself initiates (separate from the data and LLM providers you configure with your own keys):
+The installed app can check for new versions automatically. This is the one network call the app itself initiates (separate from the data and LLM providers you configure with your own keys).
 
-- It is an anonymous GET of our public release manifest on GitHub. It sends **no information about you**: no identifiers, no usage, no telemetry.
+Update checks. Trading Agents Lab asks GitHub whether a newer version exists. Like any web request it reaches GitHub from your IP address and carries your system language. In Lite up to 1.1.5 and Pro up to 1.1.8 the request also carries a random ID made for your install by the update library; we do not use it. From Lite 1.1.6 and Pro 1.1.9 the request carries no ID for you or your install, and it does not send the version you have. When an update is downloaded, the download can name the version you have now. You can turn the automatic check off in Settings, About.
+
 - If a newer version exists, it downloads in the background and installs when you quit.
-- You can turn it off in **Settings, About, Automatically check for updates**. A manual "Check for updates" button is there too.
+- The switch is **Settings, About, Automatically check for updates**. A manual "Check for updates" button is there too.
 - Updates apply to the installed app only. The dev build does not auto-update.
 
 ---
