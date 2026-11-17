@@ -33,6 +33,10 @@ interface UpdateStatus {
   message?: string;
 }
 
+/** What an update check sends (wording ruled 2026-11-17 against the wire run). */
+export const UPDATE_CHECK_DISCLOSURE =
+  'Trading Agents Lab asks GitHub whether a newer version exists. The request carries no ID for you or your install, and it does not send the version you have. Like any web request it reaches GitHub from your IP address and carries your system language. When an update is downloaded, the download can name the version you have now.';
+
 export const UNAVAILABLE_LABEL =
   'Update check not available. To update, download the latest version from tradingagentslab.ai.';
 
@@ -126,9 +130,7 @@ export default function UpdatesSection() {
         <span>Automatically check for updates</span>
       </label>
       <p className={styles.hint}>
-        The app checks our GitHub releases for a newer version. This is the only
-        update-related network call, it sends no information about you, and you
-        can turn it off here.
+        {UPDATE_CHECK_DISCLOSURE} You can turn the automatic check off here.
       </p>
       <div className={styles.actions}>
         {downloaded ? (

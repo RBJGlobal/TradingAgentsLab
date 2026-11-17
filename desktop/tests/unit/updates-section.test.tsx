@@ -99,3 +99,15 @@ describe('UpdatesSection when update checks are refused', () => {
     expect(screen.getByText(/Update check not available/)).toBeTruthy();
   });
 });
+
+describe('UpdatesSection disclosure', () => {
+  it('says what an update check sends, as ruled against the wire run', async () => {
+    stub({ supported: true });
+    render(<UpdatesSection />);
+    const text = await screen.findByText(/asks GitHub whether a newer version exists/);
+    expect(text.textContent).toContain('carries no ID for you or your install');
+    expect(text.textContent).toContain('your IP address and carries your system language');
+    expect(text.textContent).toContain('the download can name the version you have now');
+    expect(text.textContent).not.toMatch(/no identifiers|no information about you|[–—]/);
+  });
+});

@@ -68,9 +68,9 @@ export default function ConsentGate({ children }: { children: React.ReactNode })
             provided without warranty of any kind.
           </p>
           <p>
-            <strong>Zero data collection.</strong> Nothing about you leaves your machine. The only
-            outbound calls the app initiates are an optional update check and the data and LLM
-            providers you configure with your own keys.
+            <strong>Zero data collection.</strong> The app collects nothing about you. The only
+            outbound calls it makes are an optional update check to GitHub, which carries no ID for
+            you or your install, and the data and LLM providers you configure with your own keys.
           </p>
           <p className={styles.links}>
             Full terms:{' '}
