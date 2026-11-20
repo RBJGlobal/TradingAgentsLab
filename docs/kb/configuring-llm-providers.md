@@ -15,7 +15,7 @@ Trading Agents Lab supports seven LLM provider families. All seven can drive a r
 | **OpenAI** | API key **or** ChatGPT OAuth | `gpt-4o-mini` (key) / your account's current default (OAuth) | OAuth routes through your ChatGPT subscription, not per-token API billing, see [oauth.md](oauth.md). |
 | **Anthropic** | API key only | `claude-haiku-4-5` | OAuth is **not** supported, banned by Anthropic Terms of Service. |
 | **OpenRouter** | API key | `openai/gpt-4o-mini` | One key, hundreds of models. Useful as a single-key multi-model fallback. |
-| **Google Gemini** | API key | `gemini-2.0-flash` | Gemini 2.x and 3.x; 3.1 Flash-Lite is the GA cost-efficient pick. |
+| **Google Gemini** | API key | `gemini-3.1-flash-lite` | Gemini 2.5 and 3.x. Gemini 2.0 Flash was retired by Google; a saved 2.0 Flash choice moves to 3.1 Flash-Lite. |
 | **xAI Grok** | API key | `grok-4.3` | Grok 4.3 plus the Grok 4.20 family. |
 | **MiniMax** | API key | `MiniMax-M2.7-highspeed` | MiniMax M2.x (Global region, 204K context). |
 | **Local LLM** | Auto-detect (no key) | Dynamic, whatever your runtime exposes | Ollama, LM Studio, or any OpenAI-compatible localhost server. Free, private, $0. See [local-llm.md](local-llm.md). |

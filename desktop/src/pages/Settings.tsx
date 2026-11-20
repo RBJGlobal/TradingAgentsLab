@@ -2123,7 +2123,7 @@ const BOT_PROVIDER_DEFAULT_MODEL: Record<BotProvider, string> = {
   openai:     'gpt-4o-mini',
   anthropic:  'claude-haiku-4-5',
   openrouter: 'openai/gpt-4o-mini',
-  gemini:     'gemini-2.0-flash',
+  gemini:     'gemini-3.1-flash-lite',
   // Fast/cheap defaults, matching the Analyze picker + engine _DEFAULT_MODELS.
   xai:        'grok-4.3',
   minimax:    'MiniMax-M2.7-highspeed',

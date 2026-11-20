@@ -69,7 +69,8 @@ export const PROVIDER_DEFAULT_MODEL: Record<LLMProvider, string> = {
   openai: 'gpt-4o-mini',
   anthropic: 'claude-haiku-4-5',
   openrouter: 'openai/gpt-4o-mini',
-  gemini: 'gemini-2.0-flash',
+  // gemini-2.0-flash was retired by Google (checked 2026-11-20).
+  gemini: 'gemini-3.1-flash-lite',
   // xAI and MiniMax default to the current fast/cheap flagship. Must match
   // the engine's _DEFAULT_MODELS. grok-4.3 is xAI's current recommended model
   // (the old grok-4-fast-* IDs were deprecated 2026-05-15).
@@ -147,8 +148,7 @@ export const PROVIDER_MODELS: Record<LLMProvider, ModelChoice[]> = {
   gemini: [
     { id: 'gemini-2.5-pro',        label: 'Gemini 2.5 Pro',        note: 'Most capable' },
     { id: 'gemini-2.5-flash',      label: 'Gemini 2.5 Flash',      note: 'Balanced' },
-    { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', note: 'Most cost-efficient (GA)' },
-    { id: 'gemini-2.0-flash',      label: 'Gemini 2.0 Flash',      note: 'Cheapest', recommended: true },
+    { id: 'gemini-3.1-flash-lite', label: 'Gemini 3.1 Flash Lite', note: 'Most cost-efficient (GA)', recommended: true },
   ],
   xai: [
     { id: 'grok-4.3',                label: 'Grok 4.3',                  note: 'Current flagship, fastest', recommended: true },

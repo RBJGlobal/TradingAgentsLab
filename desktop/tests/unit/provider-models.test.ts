@@ -26,7 +26,7 @@ import {
   useProviderModels,
   withSavedChoice,
 } from '../../src/lib/provider-models';
-import { PROVIDER_MODELS, type LLMProvider } from '../../src/lib/engine-client';
+import { PROVIDER_DEFAULT_MODEL, PROVIDER_MODELS, type LLMProvider } from '../../src/lib/engine-client';
 
 const FAKE_KEY = 'sk-fake-test-key';
 
@@ -125,6 +125,13 @@ describe('migrateSavedModel', () => {
     // Same string under another provider is not touched.
     expect(migrateSavedModel('gemini', 'google/gemini-2.0-flash')).toBe('google/gemini-2.0-flash');
     expect(migrateSavedModel('anthropic', 'claude-opus-4-8')).toBe('claude-opus-4-8');
+  });
+
+  it('moves a saved retired gemini-2.0-flash to the new default, once', () => {
+    expect(migrateSavedModel('gemini', 'gemini-2.0-flash')).toBe('gemini-3.1-flash-lite');
+    expect(migrateSavedModel('gemini', 'gemini-3.1-flash-lite')).toBe('gemini-3.1-flash-lite');
+    expect(migrateSavedModel('gemini', 'gemini-2.5-flash')).toBe('gemini-2.5-flash');
+    expect(PROVIDER_DEFAULT_MODEL.gemini).toBe('gemini-3.1-flash-lite');
   });
 });
 

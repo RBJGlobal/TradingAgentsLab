@@ -87,8 +87,9 @@ export function mergeWithCurated(
 }
 
 /**
- * One-time fix for three OpenRouter ids our built-in list used to offer but
- * OpenRouter never had (checked against its catalog on 2026-11-11). OpenRouter
+ * One-time fix for ids our built-in list used to offer that no longer work.
+ * OpenRouter: three ids OpenRouter never had (checked against its catalog on
+ * 2026-11-11). OpenRouter
  * writes Claude versions with dots, so the dashed Claude ids were typos for
  * models that DO exist in dot form; gemini-2.0-flash is not in OpenRouter's
  * catalog at all, so it moves to the curated Gemini entry. Without this, a
@@ -103,6 +104,12 @@ const RETIRED_STATIC_IDS: Partial<Record<LLMProvider, Record<string, string>>> =
     'anthropic/claude-opus-4-8': 'anthropic/claude-opus-4.8',
     'anthropic/claude-sonnet-4-6': 'anthropic/claude-sonnet-4.6',
     'google/gemini-2.0-flash': 'google/gemini-2.5-flash',
+  },
+  // Google retired gemini-2.0-flash (404 "no longer available", checked with
+  // a real key 2026-11-20). It was our built-in Gemini default, so a saved
+  // pick of it moves to the new default instead of failing every run.
+  gemini: {
+    'gemini-2.0-flash': 'gemini-3.1-flash-lite',
   },
 };
 

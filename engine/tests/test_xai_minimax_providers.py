@@ -193,3 +193,17 @@ def test_new_provider_models_are_priced():
         assert estimate_cost(model, 1000, 400) > 0.0
         est = worst_case_reservation(model=model, auth_kind="api_key", max_tokens=800)
         assert 0.0 < est < 1.0, f"{model} worst-case ${est:.4f} out of range"
+
+
+def test_gemini_default_is_not_the_retired_2_0_flash():
+    # Google retired gemini-2.0-flash (404 "no longer available", checked
+    # with a real key 2026-11-20). The default must be a live, priced model
+    # that is also the recommended static pick.
+    from engine.llm_providers import _COST_PER_M_TOKENS as PRICES
+    from engine.provider_models import STATIC_MODELS
+
+    assert default_model_for("gemini") == "gemini-3.1-flash-lite"
+    assert "gemini-3.1-flash-lite" in PRICES
+    gem = STATIC_MODELS["gemini"]
+    assert "gemini-2.0-flash" not in [m["id"] for m in gem]
+    assert [m["id"] for m in gem if m.get("recommended")] == ["gemini-3.1-flash-lite"]

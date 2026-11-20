@@ -449,7 +449,10 @@ _DEFAULT_MODELS: dict[str, str] = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-haiku-4-5",
     "openrouter": "openai/gpt-4o-mini",
-    "gemini": "gemini-2.0-flash",
+    # gemini-2.0-flash was retired by Google (404 "no longer available",
+    # checked with a real key 2026-11-20). 3.1 Flash-Lite is the GA
+    # cost-efficient model; its cost row above is a ceiling.
+    "gemini": "gemini-3.1-flash-lite",
     # xAI Grok and MiniMax are both OpenAI-compatible (API key only). The
     # default leans to a fast/cheap model so a misconfigured run isn't an
     # expensive surprise. See XaiAdapter / MiniMaxAdapter below.

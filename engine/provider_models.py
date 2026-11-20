@@ -114,9 +114,7 @@ STATIC_MODELS: dict[str, list[dict[str, Any]]] = {
         {"id": "gemini-2.5-pro", "label": "Gemini 2.5 Pro", "note": "Most capable"},
         {"id": "gemini-2.5-flash", "label": "Gemini 2.5 Flash", "note": "Balanced"},
         {"id": "gemini-3.1-flash-lite", "label": "Gemini 3.1 Flash Lite",
-         "note": "Most cost-efficient (GA)"},
-        {"id": "gemini-2.0-flash", "label": "Gemini 2.0 Flash", "note": "Cheapest",
-         "recommended": True},
+         "note": "Most cost-efficient (GA)", "recommended": True},
     ],
     "xai": [
         {"id": "grok-4.3", "label": "Grok 4.3", "note": "Current flagship, fastest",
