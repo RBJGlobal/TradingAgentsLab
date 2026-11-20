@@ -139,9 +139,9 @@ def test_parse_openrouter_reasoning():
     ("claude-sonnet-5-5", "anthropic", 0.4176),    # 2/10, thinks
     ("claude-haiku-5-5", "anthropic", 0.1044),     # 0.5/2.5 ceiling row, thinks
     ("claude-opus-4-8", "anthropic", 0.288),       # 5/25, no allowance
-    ("gpt-5", "openai", 1.4784),                   # 8/30, reasons
+    ("gpt-5", "openai", 0.333),                    # 1.25/10, reasons
     ("gpt-5.1", "openai", 0.792),                  # gpt ceiling 15/60, effort none
-    ("gpt-5.5", "openai", 0.528),                  # 10/40, effort none
+    ("gpt-5.5", "openai", 0.312),                  # 5/30, effort none
     ("openai/gpt-4o-mini", "openrouter", 0.00792), # first-party row, no allowance
     ("claude-opus-9", "anthropic", 3.132),         # unknown 15/75 reasoning model
 ])

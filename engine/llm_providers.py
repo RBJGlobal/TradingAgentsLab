@@ -64,15 +64,15 @@ _COST_PER_M_TOKENS: dict[str, dict[str, float]] = {
     "gpt-4-turbo":         {"input": 10.00, "output": 30.00},
     "gpt-4.1-mini":        {"input": 0.40, "output": 1.60},
     "gpt-4.1":             {"input": 2.00, "output": 8.00},
-    # gpt-5 family: conservative ceilings. Verified 2026-05-28 against OpenAI's
-    # published API pricing — gpt-5.5 is $5/$30 per 1M (shipped 2026-04-24), so
-    # our $10/$40 is a ~2x ceiling; gpt-5 and gpt-5-mini are likewise priced
-    # above their real rates. Over-estimating is the safe direction (CostGuard
-    # reserves more, stops sooner). Previously absent, so a gpt-5 run logged $0
-    # (the "unknown model" path) — these rows close that.
-    "gpt-5-mini":          {"input": 1.00, "output": 4.00},
-    "gpt-5":               {"input": 8.00, "output": 30.00},
-    "gpt-5.5":             {"input": 10.00, "output": 40.00},
+    # gpt-5 family: real list prices, refreshed 2026-11-20 from OpenRouter's
+    # public catalog, which bills OpenAI's own rates for openai/* ids
+    # (previously 2x to 8x ceilings, which over-reserved and could block a
+    # second run under the daily cap). Lookup is exact-id only: gpt-5-pro,
+    # gpt-5.5-pro and other premium tiers never match these rows and resolve
+    # to the premium ceiling in _family_ceiling.
+    "gpt-5-mini":          {"input": 0.25, "output": 2.00},
+    "gpt-5":               {"input": 1.25, "output": 10.00},
+    "gpt-5.5":             {"input": 5.00, "output": 30.00},
     # Anthropic first-party prices, refreshed 2026-11-11 from Anthropic's
     # models reference (as of 2026-11-03). Ids are the aliases; a DATED id the
     # API may return (e.g. claude-haiku-4-5-20251001) resolves to its alias
