@@ -37,6 +37,7 @@ OpenRouter's real rate instead of the ceiling.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import re
 import sys
@@ -114,9 +115,7 @@ STATIC_MODELS: dict[str, list[dict[str, Any]]] = {
         {"id": "gemini-2.5-pro", "label": "Gemini 2.5 Pro", "note": "Most capable"},
         {"id": "gemini-2.5-flash", "label": "Gemini 2.5 Flash", "note": "Balanced"},
         {"id": "gemini-3.1-flash-lite", "label": "Gemini 3.1 Flash Lite",
-         "note": "Most cost-efficient (GA)"},
-        {"id": "gemini-2.0-flash", "label": "Gemini 2.0 Flash", "note": "Cheapest",
-         "recommended": True},
+         "note": "Most cost-efficient (GA)", "recommended": True},
     ],
     "xai": [
         {"id": "grok-4.3", "label": "Grok 4.3", "note": "Current flagship, fastest",
@@ -547,6 +546,41 @@ async def list_provider_models(
     # Count only: never the key, and the ids are long for OpenRouter.
     sys.stderr.write(f"[provider-models] OK provider={provider} models={len(models)}\n")
     return [dict(m) for m in models]
+
+
+# How long a reserve may wait for OpenRouter's catalog before it gives up and
+# prices at the ceiling. Short on purpose: the ceiling is the safe answer, so a
+# slow catalog only costs accuracy, never a blocked or hung run start.
+_PRIME_TIMEOUT_S = 4.0
+
+
+async def prime_openrouter_rates(provider: str, model: str, api_key: str) -> bool:
+    """Learn OpenRouter's real price for ``model`` before a Cost Guard reserve.
+
+    Prices for OpenRouter ids are only known once the catalog has been fetched
+    (``_fetch_openrouter`` registers them). The Analyze picker fetches it, but
+    a run that starts without the picker, such as a Telegram bot run right
+    after an engine restart, would otherwise reserve a vendor we don't price
+    first-party (e.g. ``deepseek/*``) at the 15/75 ceiling. That over-counts
+    the ledger and can block later runs under the daily cap.
+
+    Returns True when a catalog price for ``model`` is known afterwards. Never
+    raises: any failure or timeout leaves the ceiling in place (safe side).
+    Uses the 15-minute cache, so repeated runs make no extra requests.
+    """
+    if provider != "openrouter" or not api_key or "/" not in (model or ""):
+        return False
+    from .llm_providers import _RUNTIME_RATES
+
+    if model in _RUNTIME_RATES:
+        return True
+    try:
+        await asyncio.wait_for(list_provider_models("openrouter", api_key), _PRIME_TIMEOUT_S)
+    except Exception as exc:  # noqa: BLE001 - priming must never block a run
+        # Exception TYPE only: messages can carry URLs.
+        sys.stderr.write(f"[provider-models] openrouter price prime skipped: {type(exc).__name__}\n")
+        return False
+    return model in _RUNTIME_RATES
 
 
 def _reset_cache_for_tests() -> None:

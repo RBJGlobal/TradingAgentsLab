@@ -525,3 +525,72 @@ def test_endpoint_unexpected_parser_error_falls_back_without_500(client, monkeyp
     assert body["models"] == provider_models.STATIC_MODELS["openai"]
     assert body["error"] == "unexpected error: TypeError"
     assert calls["n"] == 1
+
+
+# ---- prime_openrouter_rates (reserve before the picker ever fetched) -------
+
+_DEEPSEEK_LIST = {
+    "data": [
+        {"id": "deepseek/deepseek-v4", "name": "DeepSeek V4",
+         "architecture": {"output_modalities": ["text"]},
+         "pricing": {"prompt": "0.0000003", "completion": "0.0000012"}},
+    ]
+}
+
+
+@pytest.mark.asyncio
+async def test_prime_learns_catalog_price_so_reserve_drops_below_ceiling(monkeypatch):
+    calls = []
+
+    def handler(request):
+        calls.append(str(request.url))
+        return httpx.Response(200, json=_DEEPSEEK_LIST)
+
+    _mock_async_client(monkeypatch, handler)
+    ceiling = worst_case_reservation(model="deepseek/deepseek-v4", auth_kind="api_key",
+                                     max_tokens=400, provider="openrouter")
+    assert await provider_models.prime_openrouter_rates(
+        "openrouter", "deepseek/deepseek-v4", "sk-or-test") is True
+    priced = worst_case_reservation(model="deepseek/deepseek-v4", auth_kind="api_key",
+                                    max_tokens=400, provider="openrouter")
+    assert priced < ceiling / 10
+    # Already known: no second request.
+    assert await provider_models.prime_openrouter_rates(
+        "openrouter", "deepseek/deepseek-v4", "sk-or-test") is True
+    assert len(calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_prime_failure_keeps_ceiling_and_never_raises(monkeypatch):
+    _mock_async_client(monkeypatch, lambda request: httpx.Response(503))
+    assert await provider_models.prime_openrouter_rates(
+        "openrouter", "deepseek/deepseek-v4", "sk-or-test") is False
+    assert rates_for("deepseek/deepseek-v4", "openrouter") == llm_providers._CEIL_UNKNOWN
+
+
+@pytest.mark.asyncio
+async def test_prime_times_out_to_ceiling(monkeypatch):
+    import asyncio
+
+    async def slow(client, api_key):
+        await asyncio.sleep(5)
+        return []
+
+    monkeypatch.setattr(provider_models, "_PRIME_TIMEOUT_S", 0.05)
+    monkeypatch.setitem(provider_models._FETCHERS, "openrouter", slow)
+    assert await provider_models.prime_openrouter_rates(
+        "openrouter", "deepseek/deepseek-v4", "sk-or-test") is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("provider,model,key", [
+    ("anthropic", "claude-haiku-4-5", "sk-ant"),   # not OpenRouter
+    ("openrouter", "deepseek/deepseek-v4", ""),    # no key
+    ("openrouter", "no-slash-id", "sk-or"),        # not an OpenRouter id
+])
+async def test_prime_is_a_no_op_outside_openrouter_api_key(monkeypatch, provider, model, key):
+    def boom(request):
+        raise AssertionError("no request expected")
+
+    _mock_async_client(monkeypatch, boom)
+    assert await provider_models.prime_openrouter_rates(provider, model, key) is False

@@ -32,7 +32,7 @@ CORS uses `allow_origins=["*"]` (see `engine/server.py`). This is intentional an
     "openai": "gpt-4o-mini",
     "anthropic": "claude-haiku-4-5",
     "openrouter": "openai/gpt-4o-mini",
-    "gemini": "gemini-2.0-flash"
+    "gemini": "gemini-3.1-flash-lite"
   },
   "storage_path": "/Users/jay/Projects/TradingAgents/data/sessions.db"
 }

@@ -857,6 +857,18 @@ class TelegramBot:
         # cost when the stream ends. OAuth/local runs reserve $0 (worst-case
         # cost is zero), so they never block here — matching the WS path.
         reservation_id: Optional[str] = None
+        # Price an OpenRouter model from its catalog first. The bot can run
+        # before the Analyze picker ever fetched it (engine just restarted),
+        # and without it the reserve uses the ceiling (see
+        # provider_models.prime_openrouter_rates). Never raises.
+        if provider_config.auth_kind == "api_key":
+            from . import provider_models
+
+            await provider_models.prime_openrouter_rates(
+                provider_config.provider,
+                provider_config.model,
+                str(provider_config.auth.get("api_key") or ""),
+            )
         try:
             reservation = cost_guard.reserve(
                 model=provider_config.model,
