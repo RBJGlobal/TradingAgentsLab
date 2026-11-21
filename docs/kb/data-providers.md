@@ -69,6 +69,8 @@ When both values are saved, and each time you open the Data Providers tab, Tradi
 
 If Alpaca rejects the keys during an analysis, the analysis still runs, and a notice at the top says that it is running without Alpaca data.
 
+> **Pro** In Trading Agents Lab Pro the analysts read prices from Yahoo Finance either way, and the News analyst switches to Yahoo Finance news when Alpaca rejects the keys, so the analysis itself still has news. The notice says so.
+
 ### What changes when Alpaca is connected
 
 As soon as both the Key ID and the Secret are saved, every new analysis uses Alpaca automatically. There is no separate switch to flip:
