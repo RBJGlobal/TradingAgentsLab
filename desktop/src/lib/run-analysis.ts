@@ -14,6 +14,7 @@
 
 import {
   PROVIDER_SECRET_KEY,
+  listProviderModels,
   streamDebate,
   type DebateEvent,
   type LLMProvider,
@@ -90,6 +91,7 @@ export async function runAnalysis(
 
   let reservationId: string | undefined;
   if (providerConfig) {
+    await primeOpenRouterCatalog(providerConfig);
     const cgModel = providerConfig.model ?? '';
     const reserveReq = {
       model: cgModel,
@@ -145,6 +147,24 @@ export async function runAnalysis(
     callbacks.onError,
   );
   return { kind: 'streaming', handle };
+}
+
+/**
+ * OpenRouter only: make sure the engine has OpenRouter's catalog (prices and
+ * reasoning flags) BEFORE reserving. Both the reservation and every request
+ * in the run read those flags; if the catalog first arrived mid-run (engine
+ * restart, a batch run started before the Analyze picker loaded), later
+ * turns could ask for a thinking allowance the reservation did not cover.
+ * The engine caches the catalog for 15 minutes, so this is usually instant.
+ * Failure is ignored: the reservation then uses the ceiling price.
+ */
+async function primeOpenRouterCatalog(providerConfig: ProviderConfig): Promise<void> {
+  if (providerConfig.provider !== 'openrouter' || providerConfig.auth.type !== 'api_key') return;
+  try {
+    await listProviderModels(providerConfig);
+  } catch {
+    /* never block a run on the catalog */
+  }
 }
 
 async function resolveProviderConfig(
