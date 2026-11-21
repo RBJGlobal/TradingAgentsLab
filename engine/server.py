@@ -691,6 +691,16 @@ def build_app(*, token: str) -> FastAPI:
                 # and close — renderer can surface this as a "configure caps
                 # in Settings" hint.
                 if not reservation_id:
+                    if config.auth_kind == "api_key":
+                        from . import provider_models
+
+                        # OpenRouter catalog price before reserving; ceiling on
+                        # any failure. See prime_openrouter_rates.
+                        await provider_models.prime_openrouter_rates(
+                            config.provider,
+                            config.model,
+                            str(config.auth.get("api_key") or ""),
+                        )
                     try:
                         auto = cost_guard.reserve(
                             model=config.model,
