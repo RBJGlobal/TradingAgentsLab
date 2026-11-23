@@ -84,10 +84,6 @@ A three-second anti-tamper countdown disables the Override button on first appea
 
 ---
 
-## The mid-run stop
-
----
-
 ## The TOCTOU-safe reservation
 
 Cost Guard uses a **time-of-check-to-time-of-use safe** reservation pattern: the database insert of the reservation row is the atomic check. Two simultaneous debates cannot both squeeze under the same cap, the first to insert wins; the second sees the bumped totals and gets blocked.

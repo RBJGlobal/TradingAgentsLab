@@ -86,8 +86,6 @@ Live mode bounds:
 
 The `session.complete` event in live mode carries `live: true`, the model name, input/output token counts, and an estimated USD cost. OAuth-routed sessions report `estimated_cost_usd: 0` since they bill via subscription, not per token.
 
-### Full analysis and Quick analysis
-
 ---
 
 ## Phase 1: Analysts

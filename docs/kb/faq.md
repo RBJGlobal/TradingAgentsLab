@@ -20,8 +20,8 @@ The app is designed to help you understand how AI agents reason about market dat
 
 ### Can I use it to trade real money?
 
-You can connect a live Alpaca account, but:
-- Live trading is intentionally restricted in the current distribution.
+No. Trading Agents Lab places no orders of any kind:
+- Alpaca is used for market data and news only. The app connects only to Alpaca's data service (`data.alpaca.markets`), never to its trading service, whatever keys you paste.
 - The app produces AI-generated analytical assessments, not financial advice.
 - Any real-money trading decision is entirely your own. Trading Agents Lab is not a registered investment advisor.
 
