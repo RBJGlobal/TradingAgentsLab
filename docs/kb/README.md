@@ -19,8 +19,8 @@ Trading Agents Lab is a standalone trading companion for [Clawless Computer](htt
 | [configuring-llm-providers.md](configuring-llm-providers.md) | Add API keys for OpenAI, Anthropic, OpenRouter, Google Gemini; model picker; how keys are stored |
 | [local-llm.md](local-llm.md) | Auto-detected Ollama / LM Studio / llama.cpp runtimes, free + private debates |
 | [oauth.md](oauth.md) | ChatGPT subscription routing via OAuth, what it is, how it works, plan-tier detection |
-| [pro.md](pro.md) | Trading Agents Lab Pro: the free, open-source full-pipeline companion app, free-vs-Pro comparison, API key vs OAuth guidance |
-| [data-providers.md](data-providers.md) | yfinance (free default) and Alpaca (optional, free); news sources, including the Pro News source setting |
+| [pro.md](pro.md) | What Trading Agents Lab Pro adds, and where the Pro docs live |
+| [data-providers.md](data-providers.md) | yfinance (free default) and Alpaca (optional, free); news sources |
 | [crypto-tickers.md](crypto-tickers.md) | BTC, ETH, BTC/USD, etc, how crypto tickers are normalized and routed |
 | [sentiment.md](sentiment.md) | StockTwits + Reddit pre-fetch for the sentiment_analyst |
 | [cost-guard.md](cost-guard.md) | Daily / weekly / monthly USD caps + rate cap; per-run override flow |

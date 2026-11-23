@@ -1,89 +1,24 @@
+---
+order: 60
+---
+
 # Trading Agents Lab Pro
 
-*What the Pro desktop app is, how it differs from the Lite app (Trading Agents Lab itself), and how to choose between an API key and ChatGPT OAuth for full-depth analysis.*
+*What the Pro desktop app adds, and where its documentation lives.*
 
 > **For educational research and paper trading. This is not investment advice.**
 
 ---
 
-## How Pro content is marked in this knowledge base
+Trading Agents Lab Pro is a separate desktop app from the same maker. Like this one, it is **free and open source** under AGPL-3.0, with no subscriptions, no paywalls and no telemetry. Its source is at [github.com/RBJGlobal/TradingAgentsLab-Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro), and a signed macOS download is on the [download page](https://tradingagentslab.ai/download/).
 
-Most of this knowledge base applies to the Lite app. Where a section describes something that exists only in Trading Agents Lab Pro, it is marked with a **Pro** callout like this:
+Pro keeps the interface you know from the Lite app and adds a **Full analysis** mode that runs the complete upstream TradingAgents research graph:
 
-> **Pro** This feature is part of Trading Agents Lab Pro, the full-depth companion app.
+- analysts that call data tools during the run instead of reading one pre-fetched summary;
+- a multi-round bull and bear debate, ruled on by a research manager;
+- a trader and an aggressive, conservative and neutral risk debate;
+- a portfolio manager assessment with a modeled scenario range, a time horizon and a written thesis.
 
-If a page has no Pro callouts, everything on it applies to both apps.
+Pro also has a **Quick analysis** mode, the shorter single-pass debate this app uses.
 
----
-
-## What Trading Agents Lab Pro is
-
-Trading Agents Lab Pro is a separate desktop application from the same maker, and it is **free and open source** under AGPL-3.0, just like this app. Its source lives at [github.com/RBJGlobal/TradingAgentsLab-Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro). It shares the desktop interface you know from this app, but wires it to the full research-grade multi-agent pipeline from the upstream TradingAgents project, the same code that this repository bundles under `tradingagents/` and that this app deliberately simplifies.
-
-Concretely, a Full analysis in Pro runs:
-
-- **Tool-using analysts.** The market, sentiment, news, and fundamentals analysts call real data tools mid-run (price history, indicator series, fundamentals, news) and iterate on the results, rather than working from a single pre-fetched summary.
-- **Multi-round researcher debate.** A bull researcher and a bear researcher argue the case in turns, and a research manager rules on the debate with an explicit rationale.
-- **A trader and a three-voice risk debate.** Aggressive, conservative, and neutral risk analysts stress-test the trader's plan before anything is finalized.
-- **A portfolio manager verdict.** The final assessment lands on one of five analytical stances (Bullish, Moderately bullish, Neutral, Moderately bearish, Bearish), a modeled scenario range, a time horizon, and a written investment thesis.
-- **Deep and quick model roles.** The upstream graph has a deep role (the research manager and portfolio manager) and a quick role (every other step). In Trading Agents Lab Pro both roles run on the model you pick on Analyze.
-- **Cross-run memory.** Past decisions on the same ticker are surfaced to the agents as context for the next run.
-
-A Full analysis typically takes 8 to 15 minutes depending on provider, models, debate rounds, and how many analysts you select. Smaller, faster models can finish in a few minutes.
-
----
-
-## Full analysis and Quick analysis
-
-> **Pro** The **Mode** picker on Analyze chooses how Trading Agents Lab Pro runs an analysis.
->
-> - **Full analysis** (the default) runs the complete upstream graph described above, using the analyst, round, effort and token cap settings under Settings.
-> - **Quick analysis** runs the shorter single-pass debate the Lite app uses: twelve agents on the model you picked. It usually finishes in about a minute and costs less. The Full analysis settings do not apply to it.
->
-> History marks each saved run as **Full** or **Quick**, and the mode you pick is remembered. See [How it works](how-it-works.md#full-analysis-and-quick-analysis) and [Cost Guard](cost-guard.md) for how each mode is estimated.
-
----
-
-## Lite app vs Pro at a glance
-
-| | Lite app | Trading Agents Lab Pro |
-|---|---|---|
-| License | AGPL-3.0, open source | AGPL-3.0, open source |
-| Engine | Simplified single-pass debate | Full upstream LangGraph graph (Full analysis), or the single-pass debate (Quick analysis) |
-| Analysts | Pre-fetched data summary | Tool-using, iterate mid-run |
-| Researcher debate | Single exchange | Multi-round with a ruling research manager |
-| Risk phase | Single pass | Aggressive / conservative / neutral debate |
-| Decision | Committee assessment: stance + conviction + strengths + reasoning | Adds the full five-stance scale, modeled scenario range, time horizon, investment thesis |
-| Typical runtime | Under a minute | Full: 8 to 15 minutes. Quick: about a minute |
-| Transcript export | Copy as Markdown | Copy as Markdown, plus a full-page HTML reading view |
-| Cost controls | CostGuard caps | Same CostGuard caps |
-| Privacy posture | Zero data collection | Same: zero data collection, keys stay in the OS-encrypted store |
-
-The Lite app is not a demo. It is a complete educational lab. Pro exists for users who want the full-depth pipeline the upstream research project describes. Both apps are free, open source, and collect zero data.
-
----
-
-## LLM providers in Pro
-
-> **Pro** This section describes provider behavior in Trading Agents Lab Pro.
-
-Pro runs on your own credentials, exactly like the Lite app. Two paths are supported:
-
-1. **API keys** for OpenAI, Anthropic, OpenRouter, or Google Gemini. Per-token billing against your provider account. The model picker lists the models your provider offers right now, and falls back to a built-in list if that list cannot be loaded.
-2. **OpenAI OAuth** through your paid ChatGPT subscription. No per-token charges; runs bill against your plan's rate limits.
-
-Both paths drive the same full pipeline, including the analysts' tool calls. The differences that matter when choosing are documented in [oauth.md](oauth.md#oauth-in-trading-agents-lab-pro), including what we observed running the two side by side on the same ticker and date.
-
-CostGuard applies to Pro runs the same way it applies to runs in the Lite app. OAuth and local runs meter at $0; API-key runs reserve against your configured daily, weekly, and monthly caps before the run starts.
-
----
-
-## Availability
-
-The Pro source code is public at [github.com/RBJGlobal/TradingAgentsLab-Pro](https://github.com/RBJGlobal/TradingAgentsLab-Pro), and a signed, notarized macOS download with automatic updates is available on the [download page](https://tradingagentslab.ai/download/). You can also build and run it from source.
-
----
-
-## Are both apps really free?
-
-Yes. Both applications are free and open source under AGPL-3.0, with no subscriptions, no paywalls, no feature gates, and no telemetry in either. This project is an educational contribution; it is how we build trust, not revenue.
+Pro has its own complete set of docs: start with [Getting started with Pro](https://tradingagentslab.ai/docs/pro/getting-started/).

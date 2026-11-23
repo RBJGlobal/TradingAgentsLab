@@ -1,3 +1,7 @@
+---
+order: 90
+---
+
 # Social sentiment (StockTwits + Reddit)
 
 *The sentiment_analyst agent grounds its analysis in real social data, bullish/bearish ratios from StockTwits and recent discussion from finance subreddits. No API key required.*

@@ -1,3 +1,7 @@
+---
+order: 70
+---
+
 # Data Providers
 
 *Where market data and news come from, what the engine fetches, and how to connect a free Alpaca account for fuller news coverage.*
@@ -30,7 +34,7 @@ The Settings page shows **Yahoo Finance, Active · default** in the Data Provide
   - Average daily volume
   - Session count
 
-- **News headlines:** up to 5 recent headlines from Yahoo Finance's news feed for the ticker. Each headline has a title, publisher, publication date, URL, and summary.
+- **News headlines:** up to 4 recent headlines from Yahoo Finance's news feed for the ticker. Each headline has a title, publisher, publication date, URL, and summary.
 
 ### Limitations
 
@@ -69,8 +73,6 @@ When both values are saved, and each time you open the Data Providers tab, Tradi
 
 If Alpaca rejects the keys during an analysis, the analysis still runs, and a notice at the top says that it is running without Alpaca data.
 
-> **Pro** In Trading Agents Lab Pro the analysts read prices from Yahoo Finance either way, and the News analyst switches to Yahoo Finance news when Alpaca rejects the keys, so the analysis itself still has news. The notice says so.
-
 ### What changes when Alpaca is connected
 
 As soon as both the Key ID and the Secret are saved, every new analysis uses Alpaca automatically. There is no separate switch to flip:
@@ -94,16 +96,6 @@ There are two news feeds the app can use:
 For crypto tickers, if Alpaca returns no headlines the engine falls back to Yahoo Finance's crypto news so the News card is not left empty. See [crypto-tickers.md](crypto-tickers.md).
 
 The News card in the debate view always shows which source supplied its headlines.
-
-### News source in Trading Agents Lab Pro
-
-> **Pro** In Trading Agents Lab Pro, the news analyst looks up news itself during the run, and you can choose where it looks. Go to **Settings → Analysis → News source**:
->
-> - **Auto (Alpaca when connected, else Yahoo)**: the default. Uses Alpaca (Benzinga) when your Alpaca keys are saved, otherwise Yahoo Finance.
-> - **Alpaca (Benzinga)**: always tries Alpaca first. If Alpaca is not connected or returns nothing, the analyst falls back to Yahoo Finance.
-> - **Yahoo Finance**: Yahoo Finance only.
->
-> Whenever Alpaca is in use, Yahoo Finance stays as the fallback, so an empty result from one source never leaves the news analyst with no news at all. The News card in the debate view follows the same rule as the Lite app (Alpaca when connected, otherwise Yahoo).
 
 ---
 

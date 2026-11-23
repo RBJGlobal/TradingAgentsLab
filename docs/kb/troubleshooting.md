@@ -1,3 +1,7 @@
+---
+order: 150
+---
+
 # Troubleshooting
 
 *Common problems and how to fix them.*

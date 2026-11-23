@@ -1,3 +1,7 @@
+---
+order: 110
+---
+
 # Webhooks
 
 Push every completed debate's committee assessment to your own systems, Telegram, Slack, Discord, or any HTTPS endpoint. Useful for getting notified on a phone while an overnight analysis runs, logging assessments to a spreadsheet for backtesting later, or bridging the analysis output to your own broker via a small script.
@@ -78,42 +82,33 @@ if not hmac.compare_digest(sig, expected):
     return 403
 ```
 
-### Bridge to your own broker (illustrative)
+### Building your own rule on top (illustrative)
 
-The assessment is analysis, not an instruction: nothing in the payload tells any system to trade, and the app never will. If you choose to build automation on top of it, that mapping from stance to action is a rule **you** define, running on **your** receiver, executing on a regulated platform under **your** credentials and authority. Example of such a user-defined rule as a Cloudflare Worker:
+The assessment is analysis, not an instruction: nothing in the payload tells any system to trade, and the app never will. If you choose to build automation on top of it, that mapping from stance to action is a rule **you** define, running on **your** receiver, under **your** credentials and authority. Example of such a rule, a Cloudflare Worker that keeps your own research log:
 
 ```ts
 export default {
   async fetch(req: Request, env: Env) {
     if (req.method !== 'POST') return new Response('only POST', { status: 405 });
-    const body = await req.json<TalDecision>();
+    const body = await req.json<TalAssessment>();
 
-    // Filter is also enforced in TAL; this is belt-and-braces.
+    // Your own rule: keep only bullish assessments with conviction of 75% or more.
     if (!['bullish', 'moderately_bullish'].includes(body.decision.stance)) return new Response('skip');
     if (body.decision.conviction < 0.75) return new Response('skip');
 
-    // Place the order with YOUR brokerage credentials, not TAL's.
-    await fetch('https://api.alpaca.markets/v2/orders', {
-      method: 'POST',
-      headers: {
-        'APCA-API-KEY-ID': env.ALPACA_KEY_ID,
-        'APCA-API-SECRET-KEY': env.ALPACA_SECRET,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        symbol: body.ticker,
-        qty: 1,
-        side: 'buy',
-        type: 'market',
-        time_in_force: 'gtc',
-      }),
-    });
+    // Append a row to your own research log (a KV namespace you created).
+    const key = `${body.ticker}:${body.trade_date}`;
+    await env.RESEARCH_LOG.put(key, JSON.stringify({
+      stance: body.decision.stance,
+      conviction: body.decision.conviction,
+      received_at: new Date().toISOString(),
+    }));
     return new Response('ok');
   },
 };
 ```
 
-The trade lives on Alpaca's books. TAL never sees your broker credentials and doesn't know whether you executed.
+What you do with your own log is up to you. The app does not see your receiver's data and does not know whether you acted on an assessment.
 
 ## Mechanics
 
@@ -132,6 +127,6 @@ The trade lives on Alpaca's books. TAL never sees your broker credentials and do
 ## What v1 doesn't do
 
 - No retry queue. If a webhook fails, it fails for that debate.
-- No batch / summary webhooks across multiple tickers, fires per single ticker. Multi-ticker batch runner is Phase 8b.
-- No per-receiver custom payload template, Telegram/Slack/Discord get short-form text; Generic gets the full JSON. Phase 8b candidate.
+- No batch / summary webhook across multiple tickers. The Watchlist **Run all** batch runs each ticker in turn, and each ticker fires your configured webhooks as its own debate finishes, so receivers get one payload per ticker.
+- No per-receiver custom payload template, Telegram/Slack/Discord get short-form text; Generic gets the full JSON.
 - No scheduled / cron-style runs. Set this up via your own watchlist + cron + the engine HTTP API if you want morning auto-analysis today.

@@ -1,3 +1,7 @@
+---
+order: 50
+---
+
 # ChatGPT OAuth
 
 *Use your paid ChatGPT subscription to power Trading Agents Lab debates, no API key, no per-token billing.*
@@ -25,7 +29,7 @@ The result: $0 per debate (within your subscription's rate limits), with the dee
 5. Approve the OAuth scope request.
 6. The row updates to show your email and plan tier.
 
-You're connected. The Analyze-page "Run with" dropdown now lists *"OpenAI account (OAuth)"* as an option, with a separate model dropdown showing the Codex-supported model list.
+You're connected. The Analyze-page "Run with" dropdown now lists *"OpenAI (OAuth)"* as an option, with a separate model dropdown showing the Codex-supported model list.
 
 To disconnect, click **Disconnect** on the same row. Both access and refresh tokens are wiped from the encrypted store.
 
@@ -96,43 +100,6 @@ Unlike the API-key path, you cannot pick `gpt-4o`, `gpt-4o-mini`, or older model
 ## Anthropic and others
 
 OAuth is **OpenAI only**. Anthropic explicitly bans OAuth flows in their Terms of Service, Trading Agents Lab respects this and only offers API-key auth for Anthropic. OpenRouter and Gemini are also API-key only (neither has a comparable subscription-routing mechanism today).
-
----
-
-## OAuth in Trading Agents Lab Pro
-
-> **Pro** This section describes Trading Agents Lab Pro, the full-depth companion app (free and open source). See [pro.md](pro.md) for what Pro is.
-
-In Trading Agents Lab Pro, OAuth drives the **entire full-depth pipeline**, including the analysts' live tool calls (price history, indicators, fundamentals, news). The Codex backend speaks the same Responses API wire format the full engine already uses, so an OAuth run and an API-key run execute the identical twelve-role debate: same agents, same tools, same market data, same decision contract.
-
-That makes the choice between an API key and OAuth a real decision in Pro, so here is an honest account of what actually differs.
-
-### What is the same on both paths
-
-- The engine, the agent roster, the debate structure, and the tool calls.
-- The market data. Both paths fetch from the same sources for the same ticker and date.
-- The committee assessment fields: stance, conviction, bull strength, bear strength, risk level, reasoning (plus Pro's modeled scenario range, time horizon, and written thesis).
-- CostGuard, history, transcripts, and webhooks.
-
-### What differs
-
-| | API key | ChatGPT OAuth |
-|---|---|---|
-| Cost per run | Per-token, real money | $0 within your plan's rate limits |
-| Model choice | Full API catalog, plus Anthropic, OpenRouter, and Gemini entirely | The models your ChatGPT account can use with Codex (live list) only |
-| Rate limits | API tier limits, predictable | Subscription rolling windows, not publicly documented |
-| Endpoint | Official, versioned API | The Codex backend, an unofficial surface that OpenAI can change without notice |
-| Provider style | You can pick a provider whose output style you prefer | OpenAI models only |
-
-The "provider style" row deserves a plain explanation. We ran the same ticker on the same date through Pro twice, once over OAuth (OpenAI models) and once over an Anthropic API key, and compared the transcripts end to end. Both runs reached the **same committee assessment** at the same conviction level, grounded in the same market data with no numeric discrepancies. The differences were stylistic and structural: one run leaned harder on multi-year financial framing and produced more prescriptive risk parameters (specific allocation sizes, stop levels, hedge structures), the other was tighter, more hedged, and more explicit about the limits of its own sourcing. Neither style is objectively better; which one you prefer is a genuine matter of taste and workflow.
-
-### Choosing, in practice
-
-- **Prefer an API key** if you want the widest model and provider choice (including Anthropic and Gemini), predictable rate limits, or the specific analytical style of a non-OpenAI model. Analysts who treat the transcript as a research document to mine often land here.
-- **Prefer OAuth** if you already pay for ChatGPT Plus or Pro and want full-depth runs at no marginal cost. A full Pro run makes dozens of model calls; on per-token billing that is real money per run, on OAuth it is covered by the subscription you already have.
-- **You can keep both connected** and switch per run from the provider dropdown. Many users run OAuth day to day and switch to an API key when they want a second opinion in a different model's voice.
-
-One practical caution: a twelve-role Pro run consumes a meaningful slice of a ChatGPT plan's rolling rate window. If you run several analyses back to back on OAuth, you may hit the window and see 429 errors until it resets. The API-key path is the escape hatch for the rest of the day.
 
 ---
 

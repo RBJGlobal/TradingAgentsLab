@@ -1,3 +1,7 @@
+---
+order: 30
+---
+
 # Configuring LLM Providers
 
 *How to connect OpenAI, Anthropic, OpenRouter, Google Gemini, xAI Grok, and MiniMax; how to pick which provider and model each debate uses; how keys are stored.*
@@ -70,9 +74,9 @@ For the full OAuth flow + Codex backend technical details, see [oauth.md](oauth.
 
 ## Picking which provider runs your debate
 
-When multiple providers are configured, the **Analyze page header** shows a "Run with" dropdown listing every connected provider plus the OpenAI OAuth row when present. The dropdown selection persists across sessions in `localStorage`.
+When multiple providers are configured, the **Analyze page header** shows a "Run with" dropdown listing every connected provider with the OpenAI entry labeled "OpenAI (OAuth)" when you signed in with ChatGPT. The dropdown selection persists across sessions in `localStorage`.
 
-Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI account (OAuth) · gpt-6.1-sol" and back will restore your previous picks for each.
+Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI (OAuth) · gpt-6.1-sol" and back will restore your previous picks for each.
 
 ### The model list is live
 
@@ -84,7 +88,6 @@ The model dropdown shows the models your provider offers **right now**, not a li
 - Your chosen model is **never switched for you**. If the provider's list no longer shows it (for example, it now lists the same model under a dated name), it stays selected and appears at the top as *your saved choice*, or as *saved, not listed by provider* when the provider lists no model by that name at all (runs with it may then fail).
 - **Reasoning models** think before they answer: OpenAI's gpt-5 line and o-series, the newer Claude models (Opus 5 and 5.5, Sonnet 5 and 5.5, Haiku 5.5, Fable, Mythos), Gemini 2.5 and 3.x, and OpenRouter models whose catalog entry says they reason. Each agent gets **extra room to think** (1,200 tokens on top of its answer budget) and is asked for a low reasoning effort. Thinking is billed by the provider as output, so it costs more than a non-reasoning model of the same price, and Cost Guard counts it before the run starts. If a model still uses all of that room thinking, the turn shows an error instead of a blank answer; pick a non-reasoning model in that case.
 
-> **Pro** Trading Agents Lab Pro runs each analysis with a **deep** model (research manager and portfolio manager) and a **quick** model (every other step). Both use the model picked in this dropdown, so they come from the same live list and follow the same rules: your choice is never switched for you, and a saved Gemini 2.0 Flash choice moves to Gemini 3.1 Flash-Lite. Anthropic reasoning effort (Settings, Analysis) is sent only when the model accepts it: Claude Opus 4.5 and later, Sonnet 4.6 and later, and Fable 5 and later. Haiku models never accept it.
 - The request goes from the app's local engine straight to the provider you configured, with your own key, and only for the provider selected in the dropdown. Nothing is sent anywhere else, and the key is not stored by the engine.
 - **MiniMax** keeps its built-in list. **Local** runtimes list whatever you have installed (see [local-llm.md](local-llm.md)). The **OpenAI account (OAuth)** path has its own live list from your ChatGPT account (see [oauth.md](oauth.md)).
 
@@ -92,7 +95,7 @@ Cost Guard still applies to a model that is newer than your copy of the app. Mod
 
 If no provider is configured, the dropdown is disabled and debates run in **stub mode** (canned debate using real yfinance data, see [how-it-works.md](how-it-works.md)).
 
-The default-active provider when you have multiple keys: first in the priority list (OpenAI → Anthropic → OpenRouter → Gemini). Use **Reset overrides** under the dropdown to clear manual selections and fall back to the recommended pre-selection.
+The default-active provider when you have multiple keys: first in the priority list (OpenAI → Anthropic → OpenRouter → Gemini). Use the **Reset** button next to the dropdowns (it appears once you have changed the provider or model) to clear manual selections and fall back to the recommended pre-selection.
 
 ---
 
@@ -133,7 +136,7 @@ OAuth credentials are stored under a separate `oauth:openai` key prefix, with th
 
 The `session.complete` event in live mode carries `estimated_cost_usd`, `input_tokens`, and `output_tokens` for cost tracking. OAuth sessions report `estimated_cost_usd: 0` since billing is via subscription.
 
-A future **Cost Guard** feature will let you set per-day / per-week / per-month budget caps to prevent runaway spend.
+**Cost Guard** lets you set per-day / per-week / per-month budget caps to prevent runaway spend. See [cost-guard.md](cost-guard.md).
 
 To keep costs low:
 

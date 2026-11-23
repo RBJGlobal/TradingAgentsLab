@@ -1,3 +1,7 @@
+---
+order: 160
+---
+
 # Frequently Asked Questions
 
 *Posture, license, what Trading Agents Lab is and is not, and the relationship with the upstream project.*
@@ -16,8 +20,8 @@ The app is designed to help you understand how AI agents reason about market dat
 
 ### Can I use it to trade real money?
 
-You can connect a live Alpaca account, but:
-- Live trading is intentionally restricted in the current distribution.
+No. Trading Agents Lab places no orders of any kind:
+- Alpaca is used for market data and news only. The app connects only to Alpaca's data service (`data.alpaca.markets`), never to its trading service, whatever keys you paste.
 - The app produces AI-generated analytical assessments, not financial advice.
 - Any real-money trading decision is entirely your own. Trading Agents Lab is not a registered investment advisor.
 
@@ -58,11 +62,11 @@ The `tradingagents/` directory contains code from Tauric Research's TradingAgent
 
 ### What is Trading Agents Lab Pro?
 
-Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. It also offers a Quick analysis, the shorter single-pass debate, which usually finishes in about a minute. The source is public at github.com/RBJGlobal/TradingAgentsLab-Pro, and a signed macOS download is available on the [download page](https://tradingagentslab.ai/download/). See [pro.md](pro.md).
+Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. It also offers a Quick analysis, the shorter single-pass debate, which usually finishes in about a minute. The source is public at github.com/RBJGlobal/TradingAgentsLab-Pro, and a signed macOS download is available on the [download page](https://tradingagentslab.ai/download/). See [pro.md](pro.md) and the [Pro docs](https://tradingagentslab.ai/docs/pro/getting-started/).
 
 ### Does the Lite app stay free?
 
-Yes. The Lite app remains AGPL-3.0 and free, with no feature removals and no telemetry. Pro is a separate application, not a paywall inside this one. Content in this knowledge base that applies only to Pro is marked with a **Pro** callout; everything unmarked applies to both.
+Yes. The Lite app remains AGPL-3.0 and free, with no feature removals and no telemetry. Pro is a separate application, not a paywall inside this one. These docs describe the Lite app; Pro has its own set of docs.
 
 ---
 
@@ -90,7 +94,7 @@ Trading Agents Lab works fully on its own and does not connect to Clawless Compu
 
 ### Does Trading Agents Lab require Clawless Computer?
 
-No. Trading Agents Lab runs entirely on its own. An earlier version of Settings showed a placeholder for an optional Clawless Computer gateway connector; it was never functional and has been removed. If a gateway integration ships in the future it will be announced in the release notes.
+No. Trading Agents Lab runs entirely on its own. An earlier version of Settings showed a placeholder for an optional Clawless Computer gateway connector; it was never functional and has been removed.
 
 ---
 

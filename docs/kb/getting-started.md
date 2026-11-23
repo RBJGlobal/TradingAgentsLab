@@ -1,3 +1,7 @@
+---
+order: 10
+---
+
 # Getting Started
 
 *How to clone the repo, set up the engine, install the desktop, and run Trading Agents Lab for the first time.*
@@ -89,7 +93,7 @@ This:
 2. Launches Electron, which opens the app window.
 3. Electron's main process spawns the Python engine sidecar automatically, reads `{port, token}` from its stdout, and makes the handshake available to the renderer.
 
-When the app opens, the Analyze page loads. The **Engine** status card in the middle of the page should flip from "Starting…" to "Running" (green dot) within 2-3 seconds.
+When the app opens, the Analyze page loads. The **Engine** pill in the status strip at the top of the window should change from "starting…" to a green dot within 2-3 seconds.
 
 ---
 
