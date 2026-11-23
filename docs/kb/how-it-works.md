@@ -84,13 +84,6 @@ The `session.complete` event in live mode carries `live: true`, the model name, 
 
 ### Full analysis and Quick analysis
 
-> **Pro** Trading Agents Lab Pro has a **Mode** picker on the Analyze page, next to the provider and model:
->
-> - **Full analysis** (the default) runs the complete research graph: the analyst team calls data tools, bull and bear researchers debate, then the trader, the risk team and the portfolio manager. It uses your deep and quick models and the analyst, round, effort and token cap settings under Settings. Cost Guard uses the Pro full-graph estimate and stops the run mid-way if a cap would be passed.
-> - **Quick analysis** runs the shorter debate described above under Live mode: twelve agents on the one model you picked, in a single pass. It finishes faster and costs less, and the Full analysis settings do not apply to it. Cost Guard reserves the same worst-case estimate the Lite app uses.
->
-> History marks each saved run as **Full** or **Quick**. Runs saved before this version show no mode. The mode you pick is remembered and also applies to batch runs.
-
 ---
 
 ## Phase 1: Analysts
@@ -170,8 +163,6 @@ At `session.complete`, the engine sends:
 
 The UI renders the committee assessment with color coding: green for bullish stances, red for bearish stances, amber for neutral.
 
-> **Pro** In a Full analysis the assessment comes from the upstream graph's portfolio manager, which writes a five-step rating. Trading Agents Lab Pro shows it as an analytical stance, never as an instruction: Bullish, Moderately bullish, Neutral, Moderately bearish or Bearish, with a conviction set by that step. When the portfolio manager names a price level, it is shown as a **modeled scenario** with its horizon, an output of the simulated committee and not a target to act on. A Quick analysis produces the assessment described above.
-
 ---
 
 ## Data flow on the wire
@@ -209,8 +200,6 @@ The renderer accumulates events and renders them progressively. You see agent me
 ## Upstream relationship
 
 Trading Agents Lab is forked from [Tauric Research's TradingAgents](https://github.com/TauricResearch/TradingAgents), which implements a full LangGraph-based multi-agent pipeline. The current engine borrows the agent roles and phase structure from upstream but uses a simpler sequential orchestration rather than LangGraph. Full upstream-graph integration is a later phase; the sequential approach is easier to debug and keeps costs predictable.
-
-> **Pro** Trading Agents Lab Pro runs the upstream LangGraph graph itself for a Full analysis, with the library's own agent prompts left as published. The simpler sequential debate described on this page is what a Quick analysis runs.
 
 ---
 
