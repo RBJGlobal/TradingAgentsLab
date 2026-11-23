@@ -74,9 +74,9 @@ For the full OAuth flow + Codex backend technical details, see [oauth.md](oauth.
 
 ## Picking which provider runs your debate
 
-When multiple providers are configured, the **Analyze page header** shows a "Run with" dropdown listing every connected provider plus the OpenAI OAuth row when present. The dropdown selection persists across sessions in `localStorage`.
+When multiple providers are configured, the **Analyze page header** shows a "Run with" dropdown listing every connected provider with the OpenAI entry labeled "OpenAI (OAuth)" when you signed in with ChatGPT. The dropdown selection persists across sessions in `localStorage`.
 
-Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI account (OAuth) · gpt-6.1-sol" and back will restore your previous picks for each.
+Below it, a second dropdown lets you pick the specific model for the active provider. Each (provider, auth-mode) pair remembers its last-chosen model independently, switching from "OpenAI · gpt-4o" to "OpenAI (OAuth) · gpt-6.1-sol" and back will restore your previous picks for each.
 
 ### The model list is live
 
@@ -95,7 +95,7 @@ Cost Guard still applies to a model that is newer than your copy of the app. Mod
 
 If no provider is configured, the dropdown is disabled and debates run in **stub mode** (canned debate using real yfinance data, see [how-it-works.md](how-it-works.md)).
 
-The default-active provider when you have multiple keys: first in the priority list (OpenAI → Anthropic → OpenRouter → Gemini). Use **Reset overrides** under the dropdown to clear manual selections and fall back to the recommended pre-selection.
+The default-active provider when you have multiple keys: first in the priority list (OpenAI → Anthropic → OpenRouter → Gemini). Use the **Reset** button next to the dropdowns (it appears once you have changed the provider or model) to clear manual selections and fall back to the recommended pre-selection.
 
 ---
 
@@ -136,7 +136,7 @@ OAuth credentials are stored under a separate `oauth:openai` key prefix, with th
 
 The `session.complete` event in live mode carries `estimated_cost_usd`, `input_tokens`, and `output_tokens` for cost tracking. OAuth sessions report `estimated_cost_usd: 0` since billing is via subscription.
 
-A future **Cost Guard** feature will let you set per-day / per-week / per-month budget caps to prevent runaway spend.
+**Cost Guard** lets you set per-day / per-week / per-month budget caps to prevent runaway spend. See [cost-guard.md](cost-guard.md).
 
 To keep costs low:
 

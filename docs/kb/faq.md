@@ -94,7 +94,7 @@ Trading Agents Lab works fully on its own and does not connect to Clawless Compu
 
 ### Does Trading Agents Lab require Clawless Computer?
 
-No. Trading Agents Lab runs entirely on its own. An earlier version of Settings showed a placeholder for an optional Clawless Computer gateway connector; it was never functional and has been removed. If a gateway integration ships in the future it will be announced in the release notes.
+No. Trading Agents Lab runs entirely on its own. An earlier version of Settings showed a placeholder for an optional Clawless Computer gateway connector; it was never functional and has been removed.
 
 ---
 

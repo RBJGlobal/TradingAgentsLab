@@ -12,15 +12,15 @@ order: 100
 
 ## What it is
 
-Cost Guard is a quota layer that sits in front of the live LLM debate. Before every paid-API session, the engine estimates the worst-case cost of the debate and checks it against the caps you've set. If the cost would push any cap over the limit, the request is blocked and a modal opens, you can either **Cancel** or **Override and run anyway**. The override is per-run; it does not raise the cap.
+Cost Guard is a quota layer that sits in front of the live LLM debate. Before every paid-API session, the engine estimates the worst-case cost of the debate and checks it against the caps you've set. If the cost would push any cap over the limit, the request is blocked and a modal opens, you can either **Cancel** or **Override and continue**. The override is per-run; it does not raise the cap.
 
 The four cap dimensions:
 
 | Dimension | What it limits |
 |---|---|
 | **Daily** | USD spent across all debates that started today (UTC) |
-| **Weekly** | USD spent across the rolling 7-day window |
-| **Monthly** | USD spent across the rolling 30-day window |
+| **Weekly** | USD spent since 00:00 UTC on Monday of the current week |
+| **Monthly** | USD spent since 00:00 UTC on the 1st of the current month |
 | **Sessions per day** | Count of debates started today, regardless of cost |
 
 A cap of `0` means **disabled**. You can enable any subset, e.g. monthly USD only, or sessions-per-day only.
@@ -39,7 +39,7 @@ It also protects against accidental loops, runaway scripts, and the occasional U
 
 **Settings → Cost Guard**.
 
-Top of the page: a **status row** showing your current spend totals (daily / weekly / monthly USD, sessions today) with color bars indicating how close you are to each cap. Green = below 50%, amber = 50-90%, red = 90%+.
+Top of the page: a **status row** showing your current spend totals (daily / weekly / monthly USD, sessions today) with color bars indicating how close you are to each cap. Green = below 80%, amber = 80-99%, red = at or above 100%. (The Spend pill in the status strip at the top of the window uses its own thresholds: green below 50% of the daily cap, amber 50-90%, red 90% or more.)
 
 Below that: an **Enable / Disable** toggle and a form with four numeric inputs (one per cap dimension). Caps update via PUT on save. Settings can be changed at any time, including mid-session.
 
@@ -78,7 +78,7 @@ The modal shows:
 
 You then choose:
 - **Cancel**, the debate aborts. No tokens spent.
-- **Override and run anyway**, the renderer re-reserves with `override=true`. The session runs, and the cost is added to the rolling totals just like any other run. **The cap itself does not change.**
+- **Override and run anyway**, the renderer re-reserves with `override=true`. The session runs, and the cost is added to the spend totals just like any other run. **The cap itself does not change.**
 
 A three-second anti-tamper countdown disables the Override button on first appearance so you can't accidentally double-click through it. The Cancel button is always enabled.
 
@@ -118,9 +118,9 @@ The status row at the top of the Cost Guard tab shows each cap dimension as a ba
 
 | Color | % of cap used | What it means |
 |---|---|---|
-| 🟢 Green | 0-49% | Plenty of headroom. |
-| 🟡 Amber | 50-89% | You're past halfway. Next runs may push you near the limit. |
-| 🔴 Red | 90-100% | You're at or above the cap. Next live debate will be blocked. |
+| Green | 0-79% | Plenty of headroom. |
+| Amber | 80-99% | Close to the cap. Next runs may push you over the limit. |
+| Red | 100% | You're at the cap. Next live debate will be blocked unless you override. |
 
 For unset caps (value = 0 / disabled), the bar shows the raw spend with no fill, just a number, no progress visualization.
 
@@ -128,11 +128,11 @@ For unset caps (value = 0 / disabled), the bar shows the raw spend with no fill,
 
 ## Resetting spend
 
-Spend totals are **rolling windows**, not user-resettable values. They automatically roll forward as time passes:
+Spend totals are **calendar windows** (all in UTC), not user-resettable values. They start over automatically:
 
 - Daily totals reset at **00:00 UTC**.
-- Weekly totals shed entries older than 7 days each midnight.
-- Monthly totals shed entries older than 30 days each midnight.
+- Weekly totals reset at **00:00 UTC on Monday**.
+- Monthly totals reset at **00:00 UTC on the 1st of the month**.
 
 There is **no manual reset**, by design, so spend history can't be wiped to dodge a cap. If you need to forget historical data entirely, you can quit the app and delete `sessions.db` (plus any `sessions.db-wal` and `sessions.db-shm` beside it). The installed app keeps it at `~/Library/Application Support/Trading Agents Lab/sessions.db`; running from source, it is `<repo>/data/sessions.db`. See [security-and-storage.md](security-and-storage.md). This is destructive and not recommended; debate history is the same DB.
 

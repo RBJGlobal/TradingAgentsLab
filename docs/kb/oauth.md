@@ -29,7 +29,7 @@ The result: $0 per debate (within your subscription's rate limits), with the dee
 5. Approve the OAuth scope request.
 6. The row updates to show your email and plan tier.
 
-You're connected. The Analyze-page "Run with" dropdown now lists *"OpenAI account (OAuth)"* as an option, with a separate model dropdown showing the Codex-supported model list.
+You're connected. The Analyze-page "Run with" dropdown now lists *"OpenAI (OAuth)"* as an option, with a separate model dropdown showing the Codex-supported model list.
 
 To disconnect, click **Disconnect** on the same row. Both access and refresh tokens are wiped from the encrypted store.
 

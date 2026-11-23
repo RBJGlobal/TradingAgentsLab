@@ -71,7 +71,7 @@ The default Yahoo Finance news provider returns crypto news when the ticker is i
 
 **"not a valid equity or crypto ticker"**, the symbol isn't on the recognized list. Try the explicit pair form: `ETH/USD` instead of just `ETHEREUM`. Or use the yfinance form: `BTC-USD`.
 
-**Data card stays empty for a crypto ticker**, yfinance occasionally doesn't have data for less-traded pairs. Check the engine log via **About → Open engine log** for the actual yfinance error. Alpaca usually has better crypto coverage for major pairs.
+**Data card stays empty for a crypto ticker**, yfinance occasionally doesn't have data for less-traded pairs. Quit and reopen the app to restart the engine, then run the ticker again. Alpaca usually has better crypto coverage for major pairs.
 
 **Sentiment analyst says "no Reddit posts found"**, small crypto tickers don't get a lot of dedicated subreddit discussion. The bull/bear ratio from StockTwits is usually still informative.
 

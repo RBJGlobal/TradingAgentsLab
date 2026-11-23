@@ -77,9 +77,9 @@ Click **Save**. The (URL, model) pair is encrypted via your OS keychain just lik
 
 ## Picking a model for a debate
 
-When **local** is the active provider, the Run-with dropdown on the **Analyze** page shows it like any other provider. The model used is whatever you saved in Settings, there's no separate model picker on Analyze for local runtimes, because the model list is dynamic per runtime.
+When **local** is the active provider, the Run-with dropdown on the **Analyze** page shows it like any other provider. A model dropdown next to it lists the models your detected runtime currently serves, with the one you saved in Settings preselected. Picking a different model there saves it as your local model, the same as picking it in Settings. If the runtime is offline, your last saved model is shown as "last used, runtime offline".
 
-To switch models, return to **Settings → LLM Providers** and pick a different one from the dropdown next to your detected runtime.
+You can also switch models in **Settings → LLM Providers** from the dropdown next to your detected runtime.
 
 ---
 
@@ -117,7 +117,7 @@ Trading Agents Lab itself still makes outbound requests for **data**, yfinance f
 
 **"No local runtime detected"**, none of Ollama / LM Studio / llama.cpp's server is listening on the expected port. Verify with `curl http://localhost:11434/v1/models` (Ollama) or `curl http://localhost:1234/v1/models` (LM Studio). If they respond but Trading Agents Lab still doesn't detect them, check that the URL you can `curl` is exactly one of those defaults.
 
-**"Detection error: …"**, the engine sidecar couldn't reach its own `/llm/local-runtimes` endpoint. Restart the app and try again. If it persists, check the engine log in **About → Open engine log**.
+**"Detection error: …"**, the engine sidecar couldn't reach its own `/llm/local-runtimes` endpoint. Quit and reopen the app (this restarts the engine) and try again.
 
 **Debate fails with a model error**, confirm the model is loaded:
 - Ollama: `ollama list` should include the exact model id you saved (with `:latest` or whatever tag).

@@ -34,7 +34,7 @@ The Settings page shows **Yahoo Finance, Active · default** in the Data Provide
   - Average daily volume
   - Session count
 
-- **News headlines:** up to 5 recent headlines from Yahoo Finance's news feed for the ticker. Each headline has a title, publisher, publication date, URL, and summary.
+- **News headlines:** up to 4 recent headlines from Yahoo Finance's news feed for the ticker. Each headline has a title, publisher, publication date, URL, and summary.
 
 ### Limitations
 

@@ -70,7 +70,7 @@ When no LLM provider is configured (no API keys saved, no OAuth connected), the 
 
 Stub mode is useful for verifying that the pipeline, data fetching, and UI rendering work correctly without spending any API credits.
 
-The status cards on the Analyze page show **LLM: Not configured** when the engine is in stub mode.
+The **LLM** pill in the status strip at the top of the window reads "unconfigured" when the engine is in stub mode.
 
 ### Live mode (activated automatically when any provider is configured)
 

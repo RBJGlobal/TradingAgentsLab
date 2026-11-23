@@ -14,9 +14,10 @@ The Analyze page has these sections, top to bottom:
 
 1. **Page header**, title and one-line description
 2. **Input card**, ticker, date, Analyze/Stop button
-3. **Status grid**, three status cards (Engine, Data, LLM)
-4. **Debate stream**, session header, data summary strip, news card, phase cards, committee assessment
-5. **Disclaimer footer**
+3. **Debate stream**, session header, data summary strip, news card, phase cards, committee assessment
+4. **Disclaimer footer**
+
+A status strip at the top of the window (Engine, Data, LLM, Spend) is visible on every page; see [Status strip](#status-strip) below.
 
 ---
 
@@ -24,7 +25,7 @@ The Analyze page has these sections, top to bottom:
 
 ### Ticker field
 
-Type any exchange-listed ticker symbol. The input converts to uppercase automatically. Maximum 6 characters. The field is disabled while a debate is streaming.
+Type any exchange-listed ticker symbol. The input converts to uppercase automatically. Maximum 8 characters. The field is disabled while a debate is streaming.
 
 ### As-of date field
 
@@ -57,29 +58,33 @@ If the stream closes unexpectedly (non-1000 close code, parse error, or connecti
 
 ---
 
-## Status grid
+## Status strip
 
-Four status cards give you a quick health overview.
+A status strip at the top of the app window (visible on every page) shows four pills: Engine, Data, LLM, and Spend.
 
-### Engine card
+### Engine pill
 
 Shows whether the Python sidecar is running.
 
 | State | Indicator |
 |---|---|
-| Starting… | Yellow dot |
+| starting… | Pulsing dot while the engine starts (up to about 12 seconds) |
 | Running | Green dot |
 | Error | Red dot |
 
-When the engine is in "Error" state, the Analyze button remains disabled. Check the helper text for the error message, or run `bash tools/dev-smoke.sh` to diagnose the backend independently.
+When the engine is in "Error" state, the Analyze button remains disabled. Hover the pill to see the error message. If the engine stops unexpectedly, the app tries to restart it automatically; if the pill stays red, quit and reopen the app.
 
-### Data card
+### Data pill
 
-Shows the active data provider. Flips from "Pending…" to "yfinance · live" once the engine handshake completes and `/health` confirms the provider. The hint line below shows "Yahoo Finance · free · default" for yfinance.
+Shows the active data provider. It reads "pending" until the engine confirms the provider (for example "yfinance"), and shows the provider used for the current run once a debate starts (for example "alpaca" or "yfinance · crypto").
 
-### LLM card
+### LLM pill
 
-Shows the LLM configuration state. Currently always shows "Not configured" because the renderer-to-engine key injection is in progress (Phase 2.1). The hint line points you to Settings → LLM Providers.
+Shows which LLM provider the app will use: the provider name (for example "Anthropic"), or "OpenAI · OAuth" when you signed in with ChatGPT. It reads "unconfigured" when no provider is set up, in which case debates run in stub mode. Set up a provider in Settings → LLM Providers.
+
+### Spend pill
+
+Shows what you have spent today against your daily Cost Guard cap, for example "$0.42 / $2.00". It ticks up during a run. The dot is green below 50% of the cap, amber from 50% to 90%, and red at 90% or more. With the cap disabled it shows the day's total with no color warning. See [cost-guard.md](cost-guard.md).
 
 
 ---
@@ -106,7 +111,7 @@ If yfinance could not fetch data (offline, unknown ticker, future date), the sum
 
 ### News card
 
-Appears after the `news.headlines` event arrives. Shows up to 5 recent headlines for the ticker, from Yahoo Finance by default or from Alpaca (Benzinga) when Alpaca is connected. The card names its source. Each headline is a clickable link to the original article, with the publisher name and a relative timestamp. If no headlines were found, the card is absent.
+Appears after the `news.headlines` event arrives. Shows up to 4 recent headlines for the ticker, from Yahoo Finance by default or from Alpaca (Benzinga) when Alpaca is connected. The card names its source. Each headline is a clickable link to the original article, with the publisher name and a relative timestamp. If no headlines were found, the card is absent.
 
 ### Phase cards
 

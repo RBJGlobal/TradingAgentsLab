@@ -136,6 +136,6 @@ The trade lives on Alpaca's books. TAL never sees your broker credentials and do
 ## What v1 doesn't do
 
 - No retry queue. If a webhook fails, it fails for that debate.
-- No batch / summary webhooks across multiple tickers, fires per single ticker. Multi-ticker batch runner is Phase 8b.
-- No per-receiver custom payload template, Telegram/Slack/Discord get short-form text; Generic gets the full JSON. Phase 8b candidate.
+- No batch / summary webhook across multiple tickers. The Watchlist **Run all** batch runs each ticker in turn, and each ticker fires your configured webhooks as its own debate finishes, so receivers get one payload per ticker.
+- No per-receiver custom payload template, Telegram/Slack/Discord get short-form text; Generic gets the full JSON.
 - No scheduled / cron-style runs. Set this up via your own watchlist + cron + the engine HTTP API if you want morning auto-analysis today.
