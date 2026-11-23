@@ -1,3 +1,7 @@
+---
+order: 100
+---
+
 # Cost Guard
 
 *Stacked daily / weekly / monthly USD caps and an optional sessions-per-day rate cap. On by default for new installs: $2.00 a day, $5.00 a week, $15.00 a month. Override per-run.*

@@ -1,3 +1,7 @@
+---
+order: 60
+---
+
 # Trading Agents Lab Pro
 
 *What the Pro desktop app adds, and where its documentation lives.*
@@ -17,4 +21,4 @@ Pro keeps the interface you know from the Lite app and adds a **Full analysis** 
 
 Pro also has a **Quick analysis** mode, the shorter single-pass debate this app uses.
 
-Pro has its own complete set of docs: start with [Getting started with Pro](/docs/pro/getting-started).
+Pro has its own complete set of docs: start with [Getting started with Pro](https://tradingagentslab.ai/docs/pro/getting-started/).

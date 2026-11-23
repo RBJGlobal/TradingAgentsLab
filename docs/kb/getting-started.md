@@ -1,3 +1,7 @@
+---
+order: 10
+---
+
 # Getting Started
 
 *How to clone the repo, set up the engine, install the desktop, and run Trading Agents Lab for the first time.*

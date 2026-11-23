@@ -1,3 +1,7 @@
+---
+order: 50
+---
+
 # ChatGPT OAuth
 
 *Use your paid ChatGPT subscription to power Trading Agents Lab debates, no API key, no per-token billing.*

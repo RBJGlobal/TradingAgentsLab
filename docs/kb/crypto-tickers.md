@@ -1,3 +1,7 @@
+---
+order: 80
+---
+
 # Crypto tickers
 
 *Analyze crypto pairs the same way you analyze equities. BTC, ETH, BTC/USD, BTC-USD all work; the engine routes to the right data source automatically.*

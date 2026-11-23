@@ -1,3 +1,7 @@
+---
+order: 30
+---
+
 # Configuring LLM Providers
 
 *How to connect OpenAI, Anthropic, OpenRouter, Google Gemini, xAI Grok, and MiniMax; how to pick which provider and model each debate uses; how keys are stored.*

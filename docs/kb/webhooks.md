@@ -1,3 +1,7 @@
+---
+order: 110
+---
+
 # Webhooks
 
 Push every completed debate's committee assessment to your own systems, Telegram, Slack, Discord, or any HTTPS endpoint. Useful for getting notified on a phone while an overnight analysis runs, logging assessments to a spreadsheet for backtesting later, or bridging the analysis output to your own broker via a small script.

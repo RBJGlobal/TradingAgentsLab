@@ -1,3 +1,7 @@
+---
+order: 20
+---
+
 # How It Works
 
 *A conceptual walkthrough of the multi-agent debate pipeline, from ticker input to final decision.*

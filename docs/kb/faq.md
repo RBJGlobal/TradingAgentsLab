@@ -1,3 +1,7 @@
+---
+order: 160
+---
+
 # Frequently Asked Questions
 
 *Posture, license, what Trading Agents Lab is and is not, and the relationship with the upstream project.*
@@ -58,7 +62,7 @@ The `tradingagents/` directory contains code from Tauric Research's TradingAgent
 
 ### What is Trading Agents Lab Pro?
 
-Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. It also offers a Quick analysis, the shorter single-pass debate, which usually finishes in about a minute. The source is public at github.com/RBJGlobal/TradingAgentsLab-Pro, and a signed macOS download is available on the [download page](https://tradingagentslab.ai/download/). See [pro.md](pro.md) and the [Pro docs](/docs/pro/getting-started).
+Trading Agents Lab Pro is a separate desktop app, also free and open source under AGPL-3.0, that wires the same interface to the full research-grade multi-agent pipeline from the upstream project: tool-using analysts, multi-round bull/bear and risk debates, and a portfolio-manager assessment with the five-stance scale, modeled scenario range, and time horizon. It also offers a Quick analysis, the shorter single-pass debate, which usually finishes in about a minute. The source is public at github.com/RBJGlobal/TradingAgentsLab-Pro, and a signed macOS download is available on the [download page](https://tradingagentslab.ai/download/). See [pro.md](pro.md) and the [Pro docs](https://tradingagentslab.ai/docs/pro/getting-started/).
 
 ### Does the Lite app stay free?
 

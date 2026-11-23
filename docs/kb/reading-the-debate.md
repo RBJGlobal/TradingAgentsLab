@@ -1,3 +1,7 @@
+---
+order: 120
+---
+
 # Reading the Debate
 
 *A guided tour of the Analyze page, every element explained, from the input form to the committee assessment.*

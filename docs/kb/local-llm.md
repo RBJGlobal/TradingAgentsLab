@@ -1,3 +1,7 @@
+---
+order: 40
+---
+
 # Local LLM (Ollama / LM Studio)
 
 *Run the multi-agent debate entirely on your own machine with Ollama or LM Studio: no API key, no per-token bill, no data leaves your computer.*

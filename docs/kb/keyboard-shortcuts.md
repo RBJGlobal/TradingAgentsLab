@@ -1,3 +1,7 @@
+---
+order: 130
+---
+
 # Keyboard Shortcuts
 
 *Every keyboard shortcut in Trading Agents Lab, menu accelerators and page-level shortcuts.*
