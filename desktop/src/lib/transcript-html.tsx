@@ -25,6 +25,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { DebateEvent } from './engine-client';
 import { riskLabel, stanceLabel, stanceLean } from './stance';
+import { TRANSCRIPT_FAVICON_DATA_URI } from './transcript-favicon';
 import {
   PHASE_LABEL,
   findDecision,
@@ -260,6 +261,7 @@ export function buildTranscriptHtml(events: DebateEvent[]): TranscriptHtmlResult
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     `<title>${esc(title)}</title>`,
+    `<link rel="icon" type="image/png" href="${TRANSCRIPT_FAVICON_DATA_URI}">`,
     `<style>${STYLE}</style>`,
     '</head>',
     '<body><div class="wrap">',

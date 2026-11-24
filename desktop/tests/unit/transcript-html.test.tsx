@@ -73,6 +73,14 @@ describe('buildTranscriptHtml', () => {
     expect(html).toContain('rel="noreferrer noopener"');
   });
 
+  it('embeds the app icon as an inline favicon (no outside fetch)', () => {
+    const { html } = buildTranscriptHtml(sampleEvents());
+    const head = html.slice(0, html.indexOf('</head>'));
+    expect(head).toMatch(/<link rel="icon" type="image\/png" href="data:image\/png;base64,[A-Za-z0-9+/=]+">/);
+    // The page must stay self-contained: no http(s) asset links in the head.
+    expect(head).not.toMatch(/(href|src)="https?:/);
+  });
+
   it('bakes in all three locked disclaimer tiers', () => {
     const { html } = buildTranscriptHtml(sampleEvents());
     // Tier 1 (footer line)
