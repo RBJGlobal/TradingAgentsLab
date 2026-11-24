@@ -169,7 +169,7 @@ def _summary_text(
             strengths += f" · Risk {risk}"
         strengths += "\n"
     return (
-        f"📊 *{ticker}* — *{stance}* (conviction {pct})\n"
+        f"📊 *{ticker}*: *{stance}* (conviction {pct})\n"
         f"As-of {trade_date}\n"
         f"{strengths}\n"
         f"{_truncate(str(decision.get('reasoning', '')))}\n\n"

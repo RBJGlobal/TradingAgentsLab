@@ -171,7 +171,7 @@ def canned_debate(
             "risk_level": "moderate",
             "reasoning": (
                 _decision_reasoning(summary) if summary else
-                "Stub canned debate — replaced in Phase 3+ by real agents."
+                "Stub canned debate, not a live agent run."
             ),
         },
         "_delay": 0,
@@ -294,8 +294,8 @@ def _trader_message(ticker: str, summary: Optional[QuoteSummary]) -> str:
 def _decision_reasoning(summary: QuoteSummary) -> str:
     direction = "up" if summary.period_change_pct >= 0 else "down"
     return (
-        f"Stub canned debate using real {summary.source} quotes — replaced in "
-        f"Phase 3+ by real agents. Anchor: {summary.ticker} last close "
+        f"Stub canned debate using real {summary.source} quotes, not a live "
+        f"agent run. Anchor: {summary.ticker} last close "
         f"{summary.last_close:.2f} as of {summary.as_of}, "
         f"{abs(summary.period_change_pct):.2f}% {direction} over "
         f"{summary.sessions} sessions."
